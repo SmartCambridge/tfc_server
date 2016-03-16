@@ -1,0 +1,228 @@
+/******************************************************************************
+ *  Compilation:  javac tfc.java
+ *  Execution:    java tfc
+ *
+ *  Prints "Hello, World". By tradition, this is everyone's first program.
+ *
+ *  % java tfc
+ *  Hello, World
+ *
+ *  These 17 lines of text are comments. They are not part of the program;
+ *  they serve to remind us about its properties. The first two lines tell
+ *  us what to type to compile and test the program. The next line describes
+ *  the purpose of the program. The next few lines give a sample execution
+ *  of the program and the resulting output. We will always include such 
+ *  lines in our programs and encourage you to do the same.
+ *
+ ******************************************************************************/
+
+import java.lang.*;
+
+class Position {
+    public double lat;
+    public double lng;
+
+    Position(double initial_lat, double initial_lng) {
+        lat = initial_lat;
+        lng = initial_lng;
+    }
+
+    public String toString() {
+        return "("+String.format("%.4f",lat)+","+String.format("%.4f",lng)+")";
+    }
+
+    // Return distance in m between positions p1 and p2.
+    // lat/longs in e.g. p1.lat etc
+    double distance(Position p) {
+        //double R = 6378137.0; // Earth's mean radius in meter
+        double R = 6380000.0; // Earth's radius at Lat 52 deg in meter
+        double dLat = Math.toRadians(p.lat - lat);
+        double dLong = Math.toRadians(p.lng - lng);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(lat)) * Math.cos(Math.toRadians(p.lat)) *
+                Math.sin(dLong / 2) * Math.sin(dLong / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        double d = R * c;
+        return d; // returns the distance in meter
+    };
+}
+
+/* **************************************************
+ * Zone holds the definition of an area on the map
+ * we want to monitor, e.g. track vehicles entering
+ * and leaving.
+ ************************************************* */
+class Zone {
+    static private String name;
+    static private Position center;
+    static private int zoom;
+    static private Position[] path;
+    static private int finish_index;
+    static private boolean checked;
+    static private String vehicles[];
+    static private Box box;
+    
+    Zone() {
+        checked = false;
+    }
+
+    // The Zone has a simplified boundary of a Box, i.e. a
+    // simple rectangle. This permits a fast check of
+    // whether a Position is outside the Zone. I.e. if
+    // a Position is outside the Box, it's outside the Zone.
+    class Box {
+        double north = -90;
+        double south = 90;
+        double east = -180;
+        double west = 180;
+
+        Box() {
+            for (int i=0; i<path.length; i++)
+            {
+                if (path[i].lat > north) north = path[i].lat;
+                if (path[i].lat < south) south = path[i].lat;
+                if (path[i].lng > east) east = path[i].lng;
+                if (path[i].lng < west) west = path[i].lng;
+            }
+        }
+    }
+
+    public String toString() {
+        return name;
+    }
+
+    public void name(String zone_name) {
+        name = zone_name;
+    }
+
+    public void center(Position p) {
+        center = p;
+    }
+
+    public void zoom(int zoom_value) {
+        zoom = zoom_value;
+    }
+
+    public void path(Position[] path_positions) {
+        path = path_positions;
+        box = new Box();
+    }
+    
+    public void finish_index(int finish_index_value) {
+        finish_index = finish_index_value;
+    }
+
+    // return true if Position p is INSIDE the Zone
+    // http://stackoverflow.com/questions/13950062/checking-if-a-longitude-latitude-coordinate-resides-inside-a-complex-polygon-in
+    public boolean inside(Position p) {
+        // easy optimization - return false if position is outside bounding rectangle (box)
+        if (p.lat > box.north || p.lat < box.south || p.lng < box.west || p.lng > box.east)
+        return false;
+
+        Position lastPoint = path[path.length - 1];
+        boolean isInside = false;
+        double x = p.lng;
+        for (int i=0; i<path.length; i++)
+        {
+            Position point = path[i];
+            double x1 = lastPoint.lng;
+            double x2 = point.lng;
+            double dx = x2 - x1;
+
+            if (Math.abs(dx) > 180.0)
+            {
+                // we have, most likely, just jumped the dateline.  Normalise the numbers.
+                if (x > 0)
+                {
+                    while (x1 < 0)
+                    x1 += 360;
+                    while (x2 < 0)
+                    x2 += 360;
+                }
+                else
+                {
+                    while (x1 > 0)
+                    x1 -= 360;
+                    while (x2 > 0)
+                    x2 -= 360;
+                }
+                dx = x2 - x1;
+            }
+
+            if ((x1 <= x && x2 > x) || (x1 >= x && x2 < x))
+            {
+                double grad = (point.lat - lastPoint.lat) / dx;
+                double intersectAtLat = lastPoint.lat + ((x - x1) * grad);
+
+                if (intersectAtLat > p.lat)
+                isInside = !isInside;
+            }
+            lastPoint = point;
+        }
+
+        return isInside;
+    }
+}
+
+class MyClass {
+    private String my_string;
+
+    MyClass( String data_value) {
+        my_string = data_value;
+    }
+
+    String get_value() {
+        return my_string;
+    }
+}
+
+public class tfc {
+
+    public static void main(String[] args) {
+    MyClass foo = new MyClass("Hello World?");
+        // Prints "Hello, World" to the terminal window.
+        System.out.println(foo.get_value());
+
+    Position p1 = new Position(50.0,-5.0);
+    System.out.println(String.valueOf(p1.lat)+","+String.valueOf(p1.lng));
+
+    Position p2 = new Position(51.0, -6.0);
+    System.out.println(String.valueOf(p1.distance(p2)));
+
+    Zone z = new Zone();
+    z.name("TOFT");
+    z.center(new Position(52.2, 0.05));
+    z.zoom(13);
+    z.path( new Position[] { new Position(52.18181339776096, -0.00102996826171875),
+          new Position(52.190127806299266, -0.006008148193359375),
+          new Position(52.1878125575784, -0.019397735595703125),
+          new Position(52.178339830038674, -0.01682281494140625) } );
+    z.finish_index(2);
+    System.out.println(z.toString());
+
+    // inside = true
+    Position p = new Position(52.185,-0.010);
+    System.out.println(p.toString()+" inside="+z.inside(p));
+    // inside = false
+    p = new Position(52.185, -0.02);
+    System.out.println(p.toString()+" inside="+z.inside(p));
+    p = new Position(52.185, 0.02);
+    System.out.println(p.toString()+" inside="+z.inside(p));
+    p = new Position(52.185, -0.002);
+    System.out.println(p.toString()+" inside="+z.inside(p));
+    p = new Position(52.191, -0.02);
+    System.out.println(p.toString()+" inside="+z.inside(p));
+    // inside = true
+    p = new Position(52.189, -0.007);
+    System.out.println(p.toString()+" inside="+z.inside(p));
+    p = new Position(52.186, -0.018);
+    System.out.println(p.toString()+" inside="+z.inside(p));
+    p = new Position(52.182, -0.002);
+    System.out.println(p.toString()+" inside="+z.inside(p));
+    p = new Position(52.179, -0.015);
+    System.out.println(p.toString()+" inside="+z.inside(p));
+
+    }
+
+}
+
