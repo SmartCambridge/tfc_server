@@ -1,0 +1,266 @@
+<html>
+  <head>
+    <script src="//cdn.jsdelivr.net/sockjs/1.0.3/sockjs.min.js"></script>
+    <script src='vertx-eventbus.js'></script>
+    <title>RITA Console 0.1</title>
+    <style>
+      body {
+        font-family: sans-serif;
+      }
+
+      #rita_icon {
+        float: left;
+      }
+
+      .status_area {
+        display: inline-block;
+        width: 100px;
+        height: 60px;
+        text-align: center;
+        vertical-align: middle;
+        margin: 10px;
+      }
+    </style>
+
+<script>
+  // ******************************************************************************************************
+  // This JS console receives messages from the Vertx eventbus, published by server-side Console.java.
+  // Console.java provides both the web server for this page, and the eventbus bridge to this javascript.
+  //
+  // "console_out_status_update": periodic messages published by all modules onto "status_update" address
+  //
+  // "console_out": other general messages send by Console.java, not fully designed yet
+  
+  // Message format: "console_out_status_update":
+  //   { "module_name": "console",
+  //     "module_id": <whatever unique identifier this instance has>,
+  //     "status": "UP" ,
+  //     "status_amber_seconds": 35,
+  //     "status_red_seconds": 65 }
+  //   where the status_amber-seconds and status_red_seconds are optional
+  //
+  // Where possible, the console (server-side java and client javascript) doesn't need prior definition
+  // of the 'status reporting' modules, i.e. it will dynamically create a display block for any new module
+  // it hears from.
+  // ******************************************************************************************************
+
+  // Constant address of server-side eventbus bridge
+  // Provided by Console.java
+  var CONSOLE_EVENTBUS_HTTP = 'http://carrier.csi.cam.ac.uk:8081/eb';
+  
+  // Default constants for status timeouts for module from green->amber, and amber->red
+  // Note these threshold values can also be sent in the "console_out_status_update" message
+  // i.e. if the console hasn't received an 'UP' status message in 35 seconds, it will treat the
+  // local status of that module as 'amber'
+  var STATUS_AMBER_SECONDS_DEFAULT = 35;
+  var STATUS_RED_SECONDS_DEFAULT = 65;
+  
+  var eb; // eventbus
+  var status_areas; // div on page to hold status areas for each module
+  var console1; // console div on page for general purpose scrolling text messages
+  var clock; // element to display clock
+  
+  // Object to hold current status of each module (e.g. feedhandler, zone, feedcsv, console)
+  var module_status = {};
+  
+  // Startup (called on page load)
+  // Initialize the eventbus connection to Console.java
+  // Register handlers for the eventbus messages
+  function init()
+    {
+      // initialize eventbus to connect to Console.java on server
+      eb = new EventBus(CONSOLE_EVENTBUS_HTTP);
+
+      // pre-cache page elements to be written to as status messages arrive
+      status_areas = document.getElementById('status_areas');
+
+      console1 = document.getElementById('console1');
+
+      clock = document.getElementById('clock');
+
+      // script to run when Vertx EventBus is ready
+      eb.onopen = function() {
+
+        // set a handler to receive a "console_out" message
+        eb.registerHandler('console_out', function(error, message) {
+          log(console1, 'console_out: ' + message.body);
+        });
+
+        // set a handler to receive a "console_out_system_status" message
+        eb.registerHandler('console_out_system_status', handle_status );
+
+        // send a message on startup
+        // alert("about to send on eventbus...");
+        // eb.send('console_in', {name: 'tim', age: 587});
+      }
+
+      // refresh all status buttons every 3 seconds
+      setInterval(update_all_status, 3000);
+  
+      // update clock every second
+      setInterval(update_clock, 1000);
+  
+  } // end init()
+
+// We have just received a message on the "console_out_system_status" address
+// so update the appropriate 'status_area' on the page
+function handle_status(error,message)
+{
+    var status = JSON.parse(message.body);
+
+    if (!status.hasOwnProperty('module_id'))
+    {
+      status.module_id = '';
+    }
+    
+    var module_ref = status.module_name + "." + status.module_id;
+    
+    // Create a new 'module_status' object if it doesn't already exist for current module
+    // and add a status area on the page for it.
+    if (!module_status.hasOwnProperty(module_ref))
+    {
+      // create a new module_status object
+      module_status[module_ref] = { status: 'UP' };
+    
+      // create a new 'status_area' page element
+      var status_area = document.createElement('DIV');
+      status_area.setAttribute('class','status_area');
+      status_area.setAttribute('id',module_ref);
+      status_area.innerHTML = status.module_name + '<br/>' + status.module_id;
+  
+      // add this status area to 'status_areas' document element
+      status_areas.appendChild(status_area);
+
+      // create a new module_status object
+      module_status[module_ref].el = document.getElementById(module_ref);
+    }
+
+    // Set the "status_amber_seconds" and "status_red_seconds" properties for current module
+    // either obtaining these values from the status message, or using the defaults on this page
+    // status_amber_seconds:
+    if (!module_status[module_ref].hasOwnProperty("status_amber_seconds"))
+    {
+      if (status.hasOwnProperty("status_amber_seconds"))
+      {
+        module_status[module_ref].status_amber_seconds = status.status_amber_seconds;
+      }
+      else
+      {
+        module_status[module_ref].status_amber_seconds = STATUS_AMBER_SECONDS_DEFAULT;
+      }
+    }
+    // status_red_seconds:
+    if (!module_status[module_ref].hasOwnProperty("status_red_seconds"))
+    {
+      if (status.hasOwnProperty("status_red_seconds"))
+      {
+        module_status[module_ref].status_red_seconds = status.status_red_seconds;
+      }
+      else
+      {
+        module_status[module_ref].status_red_seconds = STATUS_RED_SECONDS_DEFAULT;
+      }
+    }
+    module_status[module_ref].heartbeat = new Date();
+    update_status(module_ref);
+    //log(console1, 'system_status: ' + message.body);
+} // end handle_status()
+  
+       var sock = new SockJS('http://carrier.csi.cam.ac.uk:8081/ws');
+       
+       sock.onopen = function() {
+           console.log('opened');
+       };
+       
+       sock.onmessage = function(e) {
+           console.log('message', e.data);
+       };
+       
+       sock.onclose = function() {
+           console.log('closed');
+       };
+
+       function send_sock() {
+           console.log('sending...');
+           sock.send('test');
+       }
+
+       function close_sock() {
+           console.log('closing...');
+           sock.close();
+       }
+
+function format_time(t)
+{
+      var hours = t.getHours();
+      var mins = t.getMinutes();
+      var secs = t.getSeconds();
+      hours = hours < 10 ? '0'+hours : hours;
+      mins = mins < 10 ? '0'+mins : mins;
+      secs = secs < 10 ? '0'+secs : secs;
+      return hours + ':' + mins + ':' + secs;
+}
+
+// Update the status area for a given module reference
+function update_status(module_ref)
+{
+      var t = module_status[module_ref].heartbeat;
+      //console.log(str_time);
+      
+      module_status[module_ref].el.innerHTML = module_ref+'<br/>'+format_time(t);
+      
+      var seconds_since_heartbeat = ((new Date()).getTime() - module_status[module_ref].heartbeat.getTime())/1000;
+      if (seconds_since_heartbeat > module_status[module_ref].status_red_seconds)
+      {
+        module_status[module_ref].el.setAttribute("style", "background-color: red");
+      }
+      else if (seconds_since_heartbeat > module_status[module_ref].status_amber_seconds)
+      {
+        module_status[module_ref].el.setAttribute("style", "background-color: yellow");
+      }
+      else
+      {
+        module_status[module_ref].el.setAttribute("style", "background-color: green");
+      }
+} // end update_status()
+
+function update_clock()
+{
+    clock.innerHTML = format_time(new Date());
+}
+
+// Update all the module status areas
+function update_all_status()
+  {
+    for (var p in module_status)
+    {
+      //console.log("Updating "+p);
+      update_status(p);
+    }
+  }
+
+// General purpose function to append text to div on screen, used for general console messages.
+// In particular, often used for messages from "console_out" address as these are more general
+function log(console_div, text)
+  {
+    //console.log(text);
+    console_div.innerHTML = console_div.innerHTML + (new Date().toTimeString())+' '+text+'<br/>';
+  }
+
+
+</script>
+
+</head>
+  <body onload="init()">
+    <img id="rita_icon" src="images/rita.jpg"/>
+    <h1>RITA Console</h1>
+    <button onclick="send_sock()">Send</button>
+    <button onclick="close_sock()">Close</button>
+    <div id="status_areas">
+      <h4>Module Status <span id="clock"></span></h4>
+    </div>
+    <div id="console1">
+      <h4>Console messages</h4>
+    </div>
+  </body>
+</html>

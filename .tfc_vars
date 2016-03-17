@@ -1,0 +1,27 @@
+# TFC Environment variables
+#
+# PRODUCTION
+#
+#export TFC_DATA_CACHE=/media/tfc/data_cache
+#export TFC_DATA_BIN=/media/tfc/data_bin
+#export TFC_DATA_CSV=/media/tfc/data_csv
+#export TFC_DATA_HTML=/mnt/dsfiles/IJL20/public_html/tfc
+#export TFC_LOG=/home/ijl20/tfc/log
+#export TFC_DATA_MONITOR=/home/ijl20/tfc/data_monitor
+#export TFC_HOME=/home/ijl20/tfc# PRODUCTION
+#
+# DEVELOPMENT
+#
+export TFC_DATA_CACHE=$HOME/tfc_server_data/data_cache
+export TFC_DATA_BIN=$HOME/tfc_server_data/data_bin
+export TFC_DATA_CSV=$HOME/tfc_server_data/data_csv
+export TFC_DATA_ZONE=$HOME/tfc_server_data/data_zone
+export TFC_DATA_HTML=/mnt/dsfiles/IJL20/public_html/tfc
+export TFC_LOG=$HOME/tfc_server_data/log
+export TFC_DATA_MONITOR=$HOME/tfc_server_data/data_monitor
+export TFC_HOME=$HOME/tfc_server
+#
+# VERT.X SETUP
+#
+PATH="$PATH:$HOME/vertx/bin"
+export CLASSPATH=".:google/*:$HOME/tfc_dev/target/classes"
