@@ -4,7 +4,7 @@ package uk.ac.cam.tfc_server.zone;
 // *************************************************************************************************
 // *************************************************************************************************
 // Zone.java
-// Version 0.02
+// Version 0.03
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
@@ -161,18 +161,135 @@ class Intersect {
     }
 }
 
-// Geographic definition of a zone, i.e. the path of the bounding polygon and start/finish line
-// The start line is always between path[0]..path[1].
-// The finish line is path[finish_index]..path[finish_index+1]
-class ZoneBoundary {
-    public Position center = null;
-    public int zoom;
-    public Position[] path;
-    public int finish_index;
+// ********************************************************************************************
+// ********************************************************************************************
+// ********************************************************************************************
+// Here is the main Zone class definition
+// ********************************************************************************************
+// ********************************************************************************************
+// ********************************************************************************************
+public class Zone extends AbstractVerticle {
+
+    private String ZONE_NAME; // from config() zone.name
+    private String MODULE_ID; // from config zone.id
+    private Position[] PATH;
+    private Position CENTER = null;
+    private int ZOOM;
+    private int FINISH_INDEX;
     
     private Box box;
     
-    // The ZoneBoundary has a simplified boundary of a Box, i.e. a
+    private String EB_SYSTEM_STATUS; // eventbus status reporting address
+
+    static private String MODULE_NAME = "zone";
+    
+  // Config vars
+  private final String ENV_VAR_ZONE_PATH = "TFC_DATA_ZONE"; // Linux var containing filepath root for csv files
+    
+  private final String EB_CAM_BUS_FEED = "feed_vehicle"; // eventbus address for JSON feed position updates
+    
+  private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
+  private final int SYSTEM_STATUS_AMBER_SECONDS = 15; // delay before flagging system as AMBER
+  private final int SYSTEM_STATUS_RED_SECONDS = 25; // delay before flagging system as RED
+
+  // ************************************************************
+  // Config vars from Vertx Config(), initialized in Zone.start()
+  // ************************************************************
+  // eb.zone -- eventbus address base for zones
+  // path.zone_data -- filepath for Zone csv files
+  // eb.feedmanager -- eventbus address for feed management
+  // eb.system_status -- eventbus address for status messages
+  // zone.id -- identifier for this Zone
+  // zone.name -- text name for this Zone
+  // zone.path -- boundary points of this Zone
+  // zone.finish_index -- index to finish line vector in path
+    
+  // Zone globals
+  private String zone_eb_address;
+    
+  private EventBus eb = null;
+  private String tfc_data_zone = null;
+
+  private HashMap<String, Vehicle> vehicles; // dictionary to store vehicle status updated from feed
+
+  // **************************************************************************************
+  // Zone Verticle Startup procedure
+  @Override
+  public void start(Future<Void> fut) throws Exception {
+
+    // will use EventBus address "<eb.zone>.<zone id>"
+    
+    MODULE_ID = config().getString("zone.id","cam_test");
+
+    String eb_zone = config().getString("eb.zone", "tfc.zone"); // get zone EventBus base address
+    zone_eb_address = eb_zone + "." + MODULE_ID;
+
+    System.out.println("Zone started! Using EventBus address " + zone_eb_address);
+
+    // get config eventbus address for system status
+    EB_SYSTEM_STATUS = config().getString("eb.system_status","system_status");
+    
+    ZONE_NAME = config().getString("zone.name","Cam Test");
+
+    //debug here we hardcode actual bounds parameters (will come from ZoneManager when written)
+    PATH = new Position[] { new Position(52.201475385236485,0.12256622314453125),
+                                   new Position(52.20352691291383,0.1272439956665039),
+                                   new Position(52.195530680537125,0.1363849639892578),
+                                   new Position(52.190716465371736,0.13153553009033203)
+        };
+    CENTER = new Position(52.200542498481255,0.1292002677917159);
+    ZOOM = 15;
+    FINISH_INDEX = 2;
+
+    box = new Box();
+    
+    // Initialization from config() complete
+    
+    eb = vertx.eventBus();
+
+    tfc_data_zone = System.getenv(ENV_VAR_ZONE_PATH);
+    if (tfc_data_zone == null)
+    {
+      System.err.println(ENV_VAR_ZONE_PATH + " environment var not set -- aborting Zone startup");
+      vertx.close();
+      return;
+    }
+
+    // **********  Define the data structure for updated vehicle data  ***********************
+
+    vehicles = new HashMap<String, Vehicle>();
+
+
+    //debug test intersect
+    //Vehicle v = new Vehicle();
+    //v.position = new Position(52.2,0.125,1458065671L);
+    //v.prev_position = new Position(52.2045,0.125,1458065641L);
+    //Intersect i = bounds.intersect(0,v);
+    
+    // **********  Set up connection to EventBus  ********************************************
+
+    // set up a handler for the actual vehicle position feed messages
+    eb.consumer(EB_CAM_BUS_FEED, message -> {
+
+      JsonObject feed_message = new JsonObject(message.body().toString());
+
+      handle_feed(feed_message);
+    });
+
+    // send periodic "system_status" messages
+    vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> {
+      eb.publish(EB_SYSTEM_STATUS,
+                 "{ \"module_name\": \""+MODULE_NAME+"\"," +
+                   "\"module_id\": \""+MODULE_ID+"\"," +
+                   "\"status\": \"UP\"," +
+                   "\"status_amber_seconds\": "+String.valueOf( SYSTEM_STATUS_AMBER_SECONDS ) + "," +
+                   "\"status_red_seconds\": "+String.valueOf( SYSTEM_STATUS_RED_SECONDS ) +
+                 "}" );
+      });
+
+  } // end start()
+
+    // The Zone Boundary has a simplified boundary of a Box, i.e. a
     // simple rectangle. This permits a fast check of
     // whether a Position is outside the Zone. I.e. if
     // a Position is outside the Box, it's outside the Zone.
@@ -183,22 +300,16 @@ class ZoneBoundary {
         double west = 180;
 
         Box() {
-            for (int i=0; i<path.length; i++)
+            for (int i=0; i<PATH.length; i++)
             {
-                if (path[i].lat > north) north = path[i].lat;
-                if (path[i].lat < south) south = path[i].lat;
-                if (path[i].lng > east) east = path[i].lng;
-                if (path[i].lng < west) west = path[i].lng;
+                if (PATH[i].lat > north) north = PATH[i].lat;
+                if (PATH[i].lat < south) south = PATH[i].lat;
+                if (PATH[i].lng > east) east = PATH[i].lng;
+                if (PATH[i].lng < west) west = PATH[i].lng;
             }
         }
     }
 
-    public ZoneBoundary(Position[] path)
-    {
-        this.path = path;
-        box = new Box();
-    }
-    
     // return true if Position p is INSIDE the Zone
     // http://stackoverflow.com/questions/13950062/checking-if-a-longitude-latitude-coordinate-resides-inside-a-complex-polygon-in
     public boolean inside(Position p) {
@@ -206,12 +317,12 @@ class ZoneBoundary {
         if (p.lat > box.north || p.lat < box.south || p.lng < box.west || p.lng > box.east)
         return false;
 
-        Position lastPoint = path[path.length - 1];
+        Position lastPoint = PATH[PATH.length - 1];
         boolean isInside = false;
         double x = p.lng;
-        for (int i=0; i<path.length; i++)
+        for (int i=0; i<PATH.length; i++)
         {
-            Position point = path[i];
+            Position point = PATH[i];
             double x1 = lastPoint.lng;
             double x2 = point.lng;
             double dx = x2 - x1;
@@ -253,15 +364,15 @@ class ZoneBoundary {
     // return a 'startline' Intersect
     // .success = true if vehicle crossed startline between v.prev_position & v.position
     // .position = lat, lnt, ts of point of intersection
-    public Intersect start(Vehicle v)
+    public Intersect start_line(Vehicle v)
     {
         return intersect(0,v);
     }
 
     // as above, for finish line
-    public Intersect finish(Vehicle v)
+    public Intersect finish_line(Vehicle v)
     {
-        return intersect(finish_index, v);
+        return intersect(FINISH_INDEX, v);
     }
     
     // http://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
@@ -276,8 +387,8 @@ class ZoneBoundary {
         Position A = v.prev_position;
         Position B = v.position;
 
-        Position C = path[path_index];
-        Position D = path[path_index+1];
+        Position C = PATH[path_index];
+        Position D = PATH[path_index+1];
 
         double s1_lat = B.lat - A.lat;
         double s1_lng = B.lng - A.lng;
@@ -304,117 +415,6 @@ class ZoneBoundary {
         return i; // lines don't intersect
     } // end intersect()
     
-} // end ZoneBoundary
-
-// ********************************************************************************************
-// ********************************************************************************************
-// ********************************************************************************************
-// Here is the main Zone class definition
-// ********************************************************************************************
-// ********************************************************************************************
-// ********************************************************************************************
-public class Zone extends AbstractVerticle {
-
-  static final String MODULE_NAME = "zone";
-
-  private String module_id;
-    
-  // Config vars
-  private final String ENV_VAR_ZONE_PATH = "TFC_DATA_ZONE"; // Linux var containing filepath root for csv files
-    
-  private final String EB_CAM_BUS_FEED = "feed_vehicle"; // eventbus address for JSON feed position updates
-  private final String EB_SYSTEM_STATUS = "system_status"; // eventbus status reporting address
-    
-  private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
-  private final int SYSTEM_STATUS_AMBER_SECONDS = 15; // delay before flagging system as AMBER
-  private final int SYSTEM_STATUS_RED_SECONDS = 25; // delay before flagging system as RED
-
-  // Config vars from Vertx Config(), initialized in Zone.start()
-  private String EB_ZONE; // eventbus address for zone messages
-    
-  // Zone globals
-  private String zone_name;
-  private String zone_eb_address;
-    
-  private EventBus eb = null;
-  private String tfc_data_zone = null;
-
-  private HashMap<String, Vehicle> vehicles; // dictionary to store vehicle status updated from feed
-
-  private ZoneBoundary bounds = null; // object to store definition of zone boundary
-
-  // **************************************************************************************
-  // Zone Verticle Startup procedure
-  @Override
-  public void start(Future<Void> fut) throws Exception {
-
-      //debug - these should not be hardcoded
-      zone_name = "Cam Test";
-      module_id = "cam_test";
-
-    String eb_zone = config().getString("eb.zone", "tfc.zone"); // get zone EventBus base address
-    zone_eb_address = eb_zone + "." + module_id;
-    
-    // will use EventBus address "tfc.zone.<zone id>"
-    
-    System.out.println("Zone started! Using EventBus address " + zone_eb_address);
-
-    eb = vertx.eventBus();
-
-    tfc_data_zone = System.getenv(ENV_VAR_ZONE_PATH);
-    if (tfc_data_zone == null)
-    {
-      System.err.println(ENV_VAR_ZONE_PATH + " environment var not set -- aborting Zone startup");
-      vertx.close();
-      return;
-    }
-
-    // **********  Define the data structure for updated vehicle data  ***********************
-
-    vehicles = new HashMap<String, Vehicle>();
-
-    // **********  Define the Zone boundary  *************************************************
-
-    // initialize bounds for this Zone
-    //debug here we hardcode actual bounds parameters (will come from ZoneManager when written)
-    bounds = new ZoneBoundary( new Position[] { new Position(52.201475385236485,0.12256622314453125),
-                                   new Position(52.20352691291383,0.1272439956665039),
-                                   new Position(52.195530680537125,0.1363849639892578),
-                                   new Position(52.190716465371736,0.13153553009033203)
-        });
-    bounds.center = new Position(52.200542498481255,0.1292002677917159);
-    bounds.zoom = 15;
-    bounds.finish_index = 2;
-
-    //debug test intersect
-    //Vehicle v = new Vehicle();
-    //v.position = new Position(52.2,0.125,1458065671L);
-    //v.prev_position = new Position(52.2045,0.125,1458065641L);
-    //Intersect i = bounds.intersect(0,v);
-    
-    // **********  Set up connection to EventBus  ********************************************
-
-    // set up a handler for the actual vehicle position feed messages
-    eb.consumer(EB_CAM_BUS_FEED, message -> {
-
-      JsonObject feed_message = new JsonObject(message.body().toString());
-
-      handle_feed(feed_message);
-    });
-
-    // send periodic "system_status" messages
-    vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> {
-      eb.publish(EB_SYSTEM_STATUS,
-                 "{ \"module_name\": \""+MODULE_NAME+"\"," +
-                   "\"module_id\": \""+module_id+"\"," +
-                   "\"status\": \"UP\"," +
-                   "\"status_amber_seconds\": "+String.valueOf( SYSTEM_STATUS_AMBER_SECONDS ) + "," +
-                   "\"status_red_seconds\": "+String.valueOf( SYSTEM_STATUS_RED_SECONDS ) +
-                 "}" );
-      });
-
-  } // end start()
-
 // ***************************************************************************************
 // **********                            *************************************************
 // **********  Here is where we handle   *************************************************
@@ -487,7 +487,7 @@ public class Zone extends AbstractVerticle {
       if (v == null)
           {
               v = new Vehicle(position_record);
-              v.within = bounds.inside(v.position);
+              v.within = inside(v.position);
               vehicles.put(vehicle_id, v);
               return; // This is first position record for this vehicle, so just initialize entry
           }
@@ -495,7 +495,7 @@ public class Zone extends AbstractVerticle {
       // These is existing position record for this vehicle, so update with the latest attributes from feed
       v.update(position_record);
       // And set the flag for whether this vehicle is within this Zone
-      v.within = bounds.inside(v.position);
+      v.within = inside(v.position);
 
 
       //****************************************************************************************************
@@ -503,9 +503,9 @@ public class Zone extends AbstractVerticle {
       //****************************************************************************************************
       if (v.within && !v.prev_within)
           {
-              //System.out.println("Zone: vehicle_id("+vehicle_id+") entered zone "+zone_name);
+              //System.out.println("Zone: vehicle_id("+vehicle_id+") entered zone "+ZONE_NAME);
               // Did vehicle cross start line?
-              Intersect i = bounds.start(v);
+              Intersect i = start_line(v);
               if (i.success)
                   {
                       //debug - we need to set a confidence factor on start/finish times
@@ -513,25 +513,25 @@ public class Zone extends AbstractVerticle {
                       // Set start timestamp to timestamp at Intersection with startline
                       v.start_ts = i.position.ts;
                       
-                      System.out.println("Zone: "+zone_name+ " "+
+                      System.out.println("Zone: "+ZONE_NAME+ " "+
                                          "vehicle_id("+vehicle_id+") clean start at "+ts_to_time_str(i.position.ts));
                   }
               else
                   {
-                      System.out.println("Zone: vehicle_id("+vehicle_id+") early entry into zone "+zone_name);
+                      System.out.println("Zone: vehicle_id("+vehicle_id+") early entry into zone "+ZONE_NAME);
                   }
           }
       if (v.within && v.prev_within)
           {
               // vehicle is continuing to travel within zone
-              //System.out.println("Zone: vehicle_id("+vehicle_id+") inside zone "+zone_name);
+              //System.out.println("Zone: vehicle_id("+vehicle_id+") inside zone "+ZONE_NAME);
           }
       if (!v.within && v.prev_within)
           {
               // Vehicle has just exitted zone
 
               // did vehicle cross finish line?
-              Intersect i = bounds.finish(v);
+              Intersect i = finish_line(v);
               if (i.success)
                   {
                       Long finish_ts = i.position.ts;
@@ -546,7 +546,7 @@ public class Zone extends AbstractVerticle {
                           // Build console string and output
                           // e.g. 2016-03-16 15:19:08,Cam Test,315,no_route,00:00:29,0.58,COMPLETED,15:11:41,15:18:55,00:07:14
                           String completed_log = ts_to_datetime_str(v.position.ts) + ",";
-                          completed_log += zone_name + ",";
+                          completed_log += ZONE_NAME + ",";
                           completed_log += v.vehicle_id + ",";
                           completed_log += v.route_id + ",";
                           completed_log += ts_to_time_str(v.start_ts) + ",";
@@ -558,13 +558,13 @@ public class Zone extends AbstractVerticle {
                       else
                         {
                           // output clean exit message
-                          System.out.println("Zone: "+zone_name+ " "+
+                          System.out.println("Zone: "+ZONE_NAME+ " "+
                                          "vehicle_id("+vehicle_id+") clean exit (no start) at "+ts_to_time_str(finish_ts));
                         }
                   }
               else
                   {
-                      System.out.println("Zone: vehicle_id("+vehicle_id+") early exit zone "+zone_name);
+                      System.out.println("Zone: vehicle_id("+vehicle_id+") early exit zone "+ZONE_NAME);
                   }
               
               // Reset the Zone start time for this vehicle
@@ -608,4 +608,4 @@ public class Zone extends AbstractVerticle {
   } // end write_file
 
 
-} // end class FeedCSV
+} // end class Zone

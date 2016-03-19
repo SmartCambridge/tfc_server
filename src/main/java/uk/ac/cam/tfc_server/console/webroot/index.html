@@ -106,6 +106,9 @@
 // so update the appropriate 'status_area' on the page
 function handle_status(error,message)
 {
+
+    //log(console1, message.body);
+    
     var status = JSON.parse(message.body);
 
     if (!status.hasOwnProperty('module_id'))
@@ -114,19 +117,22 @@ function handle_status(error,message)
     }
     
     var module_ref = status.module_name + "." + status.module_id;
-    
+
     // Create a new 'module_status' object if it doesn't already exist for current module
     // and add a status area on the page for it.
     if (!module_status.hasOwnProperty(module_ref))
     {
       // create a new module_status object
-      module_status[module_ref] = { status: 'UP' };
+      module_status[module_ref] = { };
+
+      module_status[module_ref].name = status.module_name;
+      module_status[module_ref].id = status.module_id;
     
       // create a new 'status_area' page element
       var status_area = document.createElement('DIV');
       status_area.setAttribute('class','status_area');
       status_area.setAttribute('id',module_ref);
-      status_area.innerHTML = status.module_name + '<br/>' + status.module_id;
+//      status_area.innerHTML = format_status(status.module_name + '<br/>' + status.module_id;
   
       // add this status area to 'status_areas' document element
       status_areas.appendChild(status_area);
@@ -134,7 +140,10 @@ function handle_status(error,message)
       // create a new module_status object
       module_status[module_ref].el = document.getElementById(module_ref);
     }
-
+    
+    // put timestamp into module_status
+    module_status[module_ref].heartbeat = new Date();
+    
     // Set the "status_amber_seconds" and "status_red_seconds" properties for current module
     // either obtaining these values from the status message, or using the defaults on this page
     // status_amber_seconds:
@@ -161,7 +170,7 @@ function handle_status(error,message)
         module_status[module_ref].status_red_seconds = STATUS_RED_SECONDS_DEFAULT;
       }
     }
-    module_status[module_ref].heartbeat = new Date();
+
     update_status(module_ref);
     //log(console1, 'system_status: ' + message.body);
 } // end handle_status()
@@ -201,13 +210,20 @@ function format_time(t)
       return hours + ':' + mins + ':' + secs;
 }
 
+function format_status(module_name, module_id, t)
+{
+    return module_name+"<br/>"+module_id+"<br/>"+format_time(t);
+}
+                    
 // Update the status area for a given module reference
 function update_status(module_ref)
 {
       var t = module_status[module_ref].heartbeat;
       //console.log(str_time);
       
-      module_status[module_ref].el.innerHTML = module_ref+'<br/>'+format_time(t);
+      module_status[module_ref].el.innerHTML = module_status[module_ref].name+'<br/>'+
+                    module_status[module_ref].id+'<br/>'+
+                    format_time(t);
       
       var seconds_since_heartbeat = ((new Date()).getTime() - module_status[module_ref].heartbeat.getTime())/1000;
       if (seconds_since_heartbeat > module_status[module_ref].status_red_seconds)
