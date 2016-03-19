@@ -4,7 +4,7 @@ package uk.ac.cam.tfc_server.zone;
 // *************************************************************************************************
 // *************************************************************************************************
 // Zone.java
-// Version 0.03
+// Version 0.05
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
@@ -28,58 +28,15 @@ import io.vertx.core.json.JsonArray;
 
 import java.io.*;
 import java.util.HashMap;
+import java.util.ArrayList;
+
 // time/date crapola
 import java.util.Date;
 import java.text.SimpleDateFormat; // for timestamp conversion to HH:MM:SS
 import java.time.LocalTime; // for timestamp duration conversion to HH:mm:ss
 import java.util.TimeZone;
 
-// Position simply stores a lat/long/timestamp tuple
-// and provides some utility methods, such as distance from another Position.
-class Position {
-    public double lat;
-    public double lng;
-    public Long ts;
-
-    public Position()
-    {
-        lat = 0.0;
-        lng = 0.0;
-        ts = 0L;
-    }
-    
-    public Position(double init_lat, double init_lng)
-    {
-        this(init_lat, init_lng, 0L);
-    }
-    
-    public Position(double init_lat, double init_lng, Long init_ts)
-    {
-        lat = init_lat;
-        lng = init_lng;
-        ts = init_ts;
-    }
-
-    public String toString() {
-        return "("+String.format("%.4f",lat)+","+String.format("%.4f",lng)+"," + String.valueOf(ts)+")";
-    }
-
-    // Return distance in m between positions p1 and p2.
-    // lat/longs in e.g. p1.lat etc
-    double distance(Position p) {
-        //double R = 6378137.0; // Earth's mean radius in meter
-        double R = 6380000.0; // Earth's radius at Lat 52 deg in meter
-        double dLat = Math.toRadians(p.lat - lat);
-        double dLong = Math.toRadians(p.lng - lng);
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(Math.toRadians(lat)) * Math.cos(Math.toRadians(p.lat)) *
-                Math.sin(dLong / 2) * Math.sin(dLong / 2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        double d = R * c;
-        return d; // returns the distance in meter
-    };
-    
-}
+import uk.ac.cam.tfc_server.util.Position;
 
 // Vehicle stores the up-to-date status of a vehicle with a given vehicle_id
 // in the context of the current zone, e.g. is it currently within bounds
@@ -101,11 +58,6 @@ class Vehicle {
     public boolean within; // true if within bounds at current timestamp
     public Long start_ts; // timestamp of successful start (otherwise 0)
 
-    //debug
-    //public Vehicle()
-    //{
-    //}
-    
     // Initialize a new Vehicle object from a JSON position record
     public Vehicle(JsonObject position_record)
     {
@@ -170,9 +122,11 @@ class Intersect {
 // ********************************************************************************************
 public class Zone extends AbstractVerticle {
 
-    private String ZONE_NAME; // from config() zone.name
+    private String MODULE_NAME;
     private String MODULE_ID; // from config zone.id
-    private Position[] PATH;
+    
+    private String ZONE_NAME; // from config() zone.name
+    private ArrayList<Position> PATH;
     private Position CENTER = null;
     private int ZOOM;
     private int FINISH_INDEX;
@@ -181,8 +135,6 @@ public class Zone extends AbstractVerticle {
     
     private String EB_SYSTEM_STATUS; // eventbus status reporting address
 
-    static private String MODULE_NAME = "zone";
-    
   // Config vars
   private final String ENV_VAR_ZONE_PATH = "TFC_DATA_ZONE"; // Linux var containing filepath root for csv files
     
@@ -192,20 +144,8 @@ public class Zone extends AbstractVerticle {
   private final int SYSTEM_STATUS_AMBER_SECONDS = 15; // delay before flagging system as AMBER
   private final int SYSTEM_STATUS_RED_SECONDS = 25; // delay before flagging system as RED
 
-  // ************************************************************
-  // Config vars from Vertx Config(), initialized in Zone.start()
-  // ************************************************************
-  // eb.zone -- eventbus address base for zones
-  // path.zone_data -- filepath for Zone csv files
-  // eb.feedmanager -- eventbus address for feed management
-  // eb.system_status -- eventbus address for status messages
-  // zone.id -- identifier for this Zone
-  // zone.name -- text name for this Zone
-  // zone.path -- boundary points of this Zone
-  // zone.finish_index -- index to finish line vector in path
-    
   // Zone globals
-  private String zone_eb_address;
+  private String EB_ADDRESS; // created from config().zone.address+config().module_id
     
   private EventBus eb = null;
   private String tfc_data_zone = null;
@@ -218,28 +158,16 @@ public class Zone extends AbstractVerticle {
   public void start(Future<Void> fut) throws Exception {
 
     // will use EventBus address "<eb.zone>.<zone id>"
-    
-    MODULE_ID = config().getString("zone.id","cam_test");
 
-    String eb_zone = config().getString("eb.zone", "tfc.zone"); // get zone EventBus base address
-    zone_eb_address = eb_zone + "." + MODULE_ID;
-
-    System.out.println("Zone started! Using EventBus address " + zone_eb_address);
-
-    // get config eventbus address for system status
-    EB_SYSTEM_STATUS = config().getString("eb.system_status","system_status");
-    
-    ZONE_NAME = config().getString("zone.name","Cam Test");
-
-    //debug here we hardcode actual bounds parameters (will come from ZoneManager when written)
-    PATH = new Position[] { new Position(52.201475385236485,0.12256622314453125),
-                                   new Position(52.20352691291383,0.1272439956665039),
-                                   new Position(52.195530680537125,0.1363849639892578),
-                                   new Position(52.190716465371736,0.13153553009033203)
-        };
-    CENTER = new Position(52.200542498481255,0.1292002677917159);
-    ZOOM = 15;
-    FINISH_INDEX = 2;
+    // load Zone initialization values from config()
+    if (!get_config())
+          {
+              System.err.println("Zone: failed to load initial config()");
+              vertx.close();
+              return;
+          }
+      
+    System.out.println("Zone started!! " + MODULE_NAME + "/" + MODULE_ID + "EB: " + EB_ADDRESS);
 
     box = new Box();
     
@@ -250,7 +178,7 @@ public class Zone extends AbstractVerticle {
     tfc_data_zone = System.getenv(ENV_VAR_ZONE_PATH);
     if (tfc_data_zone == null)
     {
-      System.err.println(ENV_VAR_ZONE_PATH + " environment var not set -- aborting Zone startup");
+      System.err.println("Zone: " +ENV_VAR_ZONE_PATH + " environment var not set -- aborting Zone startup");
       vertx.close();
       return;
     }
@@ -260,12 +188,6 @@ public class Zone extends AbstractVerticle {
     vehicles = new HashMap<String, Vehicle>();
 
 
-    //debug test intersect
-    //Vehicle v = new Vehicle();
-    //v.position = new Position(52.2,0.125,1458065671L);
-    //v.prev_position = new Position(52.2045,0.125,1458065641L);
-    //Intersect i = bounds.intersect(0,v);
-    
     // **********  Set up connection to EventBus  ********************************************
 
     // set up a handler for the actual vehicle position feed messages
@@ -289,6 +211,64 @@ public class Zone extends AbstractVerticle {
 
   } // end start()
 
+    // Load initialization global constants defining this Zone from config()
+    private boolean get_config()
+    {
+        // config() values needed by all TFC modules are:
+        //   tfc.module_id - unique module reference to be used by this verticle
+        //   eb.system_status - String eventbus address for system status messages
+        
+        // config() values needed by all Zones are:
+        //   eb.zone - String eventbus base address for zone update messages
+        
+        // Expected config() values defining this Zone are:
+        //   zone.name - String
+        //   zone.id   - String
+        //   zone.path - Position[]
+        //   zone.center - Position
+        //   zone.zoom - int
+        //   zone.finish_index - int
+
+        MODULE_NAME = config().getString("module.name","module_name_test");
+        
+        MODULE_ID = config().getString("module.id","module_id_testzone");
+        if (MODULE_ID==null) return false;
+
+        EB_SYSTEM_STATUS = config().getString("eb.system_status","system_status_test");
+        
+        
+        String eb_zone = config().getString("eb.zone", "tfc.zone_test"); // get zone EventBus base address
+        EB_ADDRESS = eb_zone + "." + MODULE_ID;
+
+        ZONE_NAME = config().getString("zone.name","Cam test");
+
+        PATH = new ArrayList<Position>();
+        JsonArray json_path = config().getJsonArray("zone.path", new JsonArray());
+        for (int i=0; i < json_path.size(); i++) {
+            PATH.add(new Position(json_path.getJsonObject(i)));
+        }
+
+        if (json_path.size() == 0)
+            {
+                //debug here we hardcode actual bounds parameters (will come from ZoneManager when written)
+                PATH = new ArrayList<Position>();
+                PATH.add( new Position(52.201475385236485,0.12256622314453125) );
+                PATH.add( new Position(52.20352691291383,0.1272439956665039) );
+                PATH.add( new Position(52.195530680537125,0.1363849639892578));
+                PATH.add( new Position(52.190716465371736,0.13153553009033203));
+            }
+        
+        CENTER = new Position(config().getJsonObject("zone.center", PATH.get(0).toJsonObject()));
+        
+        ZOOM = config().getInteger("zone.zoom", 15);
+        
+        FINISH_INDEX = config().getInteger("zone.finish_index", 2);
+
+        System.out.println("Zone get_config(): ZONE_NAME is "+String.valueOf(ZONE_NAME));
+        
+        return true;
+    }
+    
     // The Zone Boundary has a simplified boundary of a Box, i.e. a
     // simple rectangle. This permits a fast check of
     // whether a Position is outside the Zone. I.e. if
@@ -300,12 +280,12 @@ public class Zone extends AbstractVerticle {
         double west = 180;
 
         Box() {
-            for (int i=0; i<PATH.length; i++)
+            for (int i=0; i<PATH.size(); i++)
             {
-                if (PATH[i].lat > north) north = PATH[i].lat;
-                if (PATH[i].lat < south) south = PATH[i].lat;
-                if (PATH[i].lng > east) east = PATH[i].lng;
-                if (PATH[i].lng < west) west = PATH[i].lng;
+                if (PATH.get(i).lat > north) north = PATH.get(i).lat;
+                if (PATH.get(i).lat < south) south = PATH.get(i).lat;
+                if (PATH.get(i).lng > east) east = PATH.get(i).lng;
+                if (PATH.get(i).lng < west) west = PATH.get(i).lng;
             }
         }
     }
@@ -317,12 +297,12 @@ public class Zone extends AbstractVerticle {
         if (p.lat > box.north || p.lat < box.south || p.lng < box.west || p.lng > box.east)
         return false;
 
-        Position lastPoint = PATH[PATH.length - 1];
+        Position lastPoint = PATH.get(PATH.size() - 1);
         boolean isInside = false;
         double x = p.lng;
-        for (int i=0; i<PATH.length; i++)
+        for (int i=0; i<PATH.size(); i++)
         {
-            Position point = PATH[i];
+            Position point = PATH.get(i);
             double x1 = lastPoint.lng;
             double x2 = point.lng;
             double dx = x2 - x1;
@@ -387,8 +367,8 @@ public class Zone extends AbstractVerticle {
         Position A = v.prev_position;
         Position B = v.position;
 
-        Position C = PATH[path_index];
-        Position D = PATH[path_index+1];
+        Position C = PATH.get(path_index);
+        Position D = PATH.get(path_index+1);
 
         double s1_lat = B.lat - A.lat;
         double s1_lng = B.lng - A.lng;
