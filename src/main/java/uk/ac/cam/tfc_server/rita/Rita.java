@@ -46,15 +46,16 @@ import java.time.*;
 import java.time.format.*;
 
 public class Rita extends AbstractVerticle {
-  //debug pick up in config()
-  private final int HTTP_PORT = 8084;
-  private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
+
+  private int HTTP_PORT; // from config()
   private String EB_RITA; // from config()
   private String EB_SYSTEM_STATUS; // from config()
   private String MODULE_NAME; // from config()
   private String MODULE_ID; // from config()
-  private int SYSTEM_STATUS_AMBER_SECONDS = 15;
-  private int SYSTEM_STATUS_RED_SECONDS = 25;
+    
+  private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
+  private final int SYSTEM_STATUS_AMBER_SECONDS = 15;
+  private final int SYSTEM_STATUS_RED_SECONDS = 25;
     
   private EventBus eb = null;
 
@@ -62,8 +63,6 @@ public class Rita extends AbstractVerticle {
     
   @Override
   public void start(Future<Void> fut) throws Exception {
-
-    System.out.println("Rita started! ");
 
     // Get src/main/conf/tfc_server.conf config values for module
     if (!get_config())
@@ -73,12 +72,14 @@ public class Rita extends AbstractVerticle {
             return;
         }
 
+    System.out.println("Rita started using "+MODULE_NAME+"."+MODULE_ID);
+
     eb = vertx.eventBus();
 
     //debug
     // get test config options for Zone from conf file given to Rita
     DeploymentOptions zone_options = new DeploymentOptions()
-        .setConfig( get_zone_config() );
+        .setConfig( make_zone_config() );
     
     vertx.deployVerticle("uk.ac.cam.tfc_server.zone.Zone",
                          zone_options,
@@ -137,6 +138,7 @@ public class Rita extends AbstractVerticle {
 
     SockJSHandler ebHandler = SockJSHandler.create(vertx);
 
+    //debug rita_in/out EB names should be in config()
     PermittedOptions inbound_permitted = new PermittedOptions().setAddress("rita_in");
     BridgeOptions bridge_options = new BridgeOptions();
     bridge_options.addOutboundPermitted( new PermittedOptions().setAddress("rita_out") );
@@ -172,18 +174,25 @@ public class Rita extends AbstractVerticle {
         //   tfc.module_id - unique module reference to be used by this verticle
         //   eb.system_status - String eventbus address for system status messages
 
-        MODULE_NAME = config().getString("module.name");
+        MODULE_NAME = config().getString("module.name"); // "rita"
+        if (MODULE_NAME==null)
+            {
+                return false;
+            }
         
-        MODULE_ID = config().getString("module.id");
+        MODULE_ID = config().getString("module.id"); // A, B, ...
 
         EB_SYSTEM_STATUS = config().getString("eb.system_status","system_status_test");
 
-        EB_RITA = config().getString("eb.rita", "rita_test");
+        EB_RITA = config().getString("eb.rita", "tfc.rita_test")+"."+MODULE_ID;
+
+        HTTP_PORT = config().getInteger(MODULE_NAME+"."+MODULE_ID+"."+"http.port");
+        //debug test for bad config
         
         return true;
     }
 
-    private JsonObject get_zone_config()
+    private JsonObject make_zone_config()
     {
         // config given to Zone starts with original system config
         JsonObject zone_config = config();
