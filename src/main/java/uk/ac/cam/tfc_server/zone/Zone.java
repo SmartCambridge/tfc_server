@@ -38,6 +38,47 @@ import java.util.TimeZone;
 
 import uk.ac.cam.tfc_server.util.Position;
 
+// ********************************************************************************************
+// ********************************************************************************************
+// ********************************************************************************************
+// Here is the main Zone class definition
+// ********************************************************************************************
+// ********************************************************************************************
+// ********************************************************************************************
+public class Zone extends AbstractVerticle {
+
+    private String MODULE_NAME;
+    private String MODULE_ID; // from config zone.id
+    
+    private String ZONE_NAME; // from config() zone.name
+    private ArrayList<Position> PATH;
+    private Position CENTER = null;
+    private int ZOOM;
+    private int FINISH_INDEX;
+    
+    private Box box;
+    
+    private String EB_SYSTEM_STATUS; // eventbus status reporting address
+
+  // Config vars
+    //debug
+  private final String ENV_VAR_ZONE_PATH = "TFC_DATA_ZONE"; // Linux var containing filepath root for csv files
+
+    //debug
+  private final String EB_CAM_BUS_FEED = "feed_vehicle"; // eventbus address for JSON feed position updates
+    
+  private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
+  private final int SYSTEM_STATUS_AMBER_SECONDS = 15; // delay before flagging system as AMBER
+  private final int SYSTEM_STATUS_RED_SECONDS = 25; // delay before flagging system as RED
+
+  // Zone globals
+  private String EB_ADDRESS; // created from config().zone.address+config().module_id
+    
+  private EventBus eb = null;
+  private String tfc_data_zone = null;
+
+  private HashMap<String, Vehicle> vehicles; // dictionary to store vehicle status updated from feed
+
 // Vehicle stores the up-to-date status of a vehicle with a given vehicle_id
 // in the context of the current zone, e.g. is it currently within bounds
 class Vehicle {
@@ -113,44 +154,6 @@ class Intersect {
     }
 }
 
-// ********************************************************************************************
-// ********************************************************************************************
-// ********************************************************************************************
-// Here is the main Zone class definition
-// ********************************************************************************************
-// ********************************************************************************************
-// ********************************************************************************************
-public class Zone extends AbstractVerticle {
-
-    private String MODULE_NAME;
-    private String MODULE_ID; // from config zone.id
-    
-    private String ZONE_NAME; // from config() zone.name
-    private ArrayList<Position> PATH;
-    private Position CENTER = null;
-    private int ZOOM;
-    private int FINISH_INDEX;
-    
-    private Box box;
-    
-    private String EB_SYSTEM_STATUS; // eventbus status reporting address
-
-  // Config vars
-  private final String ENV_VAR_ZONE_PATH = "TFC_DATA_ZONE"; // Linux var containing filepath root for csv files
-    
-  private final String EB_CAM_BUS_FEED = "feed_vehicle"; // eventbus address for JSON feed position updates
-    
-  private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
-  private final int SYSTEM_STATUS_AMBER_SECONDS = 15; // delay before flagging system as AMBER
-  private final int SYSTEM_STATUS_RED_SECONDS = 25; // delay before flagging system as RED
-
-  // Zone globals
-  private String EB_ADDRESS; // created from config().zone.address+config().module_id
-    
-  private EventBus eb = null;
-  private String tfc_data_zone = null;
-
-  private HashMap<String, Vehicle> vehicles; // dictionary to store vehicle status updated from feed
 
   // **************************************************************************************
   // Zone Verticle Startup procedure
@@ -167,7 +170,7 @@ public class Zone extends AbstractVerticle {
               return;
           }
       
-    System.out.println("Zone started!! " + MODULE_NAME + "/" + MODULE_ID + "EB: " + EB_ADDRESS);
+    System.out.println("Zone started!! " + MODULE_NAME + "/" + MODULE_ID + ", EB: " + EB_ADDRESS);
 
     box = new Box();
     
@@ -215,7 +218,8 @@ public class Zone extends AbstractVerticle {
     private boolean get_config()
     {
         // config() values needed by all TFC modules are:
-        //   tfc.module_id - unique module reference to be used by this verticle
+        //   module.id - unique module reference to be used by this verticle
+        //   module.name - usually "zone"
         //   eb.system_status - String eventbus address for system status messages
         
         // config() values needed by all Zones are:
