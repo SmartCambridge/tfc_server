@@ -78,10 +78,10 @@ public class Rita extends AbstractVerticle {
 
     //debug
     // get test config options for Zone from conf file given to Rita
-    DeploymentOptions zone_options = new DeploymentOptions()
-        .setConfig( make_zone_config() );
+    DeploymentOptions zone_options = new DeploymentOptions();
+        //    .setConfig( make_zone_config() );
     
-    vertx.deployVerticle("uk.ac.cam.tfc_server.zone.Zone",
+    vertx.deployVerticle("service:uk.ac.cam.tfc_server.zone.cam_test",
                          zone_options,
                          res -> {
             if (res.succeeded()) {
@@ -186,7 +186,7 @@ public class Rita extends AbstractVerticle {
 
         EB_RITA = config().getString("eb.rita", "tfc.rita_test")+"."+MODULE_ID;
 
-        HTTP_PORT = config().getInteger(MODULE_NAME+"."+MODULE_ID+"."+"http.port");
+        HTTP_PORT = config().getInteger(MODULE_NAME+"."+"http.port");
         //debug test for bad config
         
         return true;
