@@ -1,0 +1,19 @@
+                                                                                
+{
+    "main":    "uk.ac.cam.tfc_server.zonemanager.ZoneManager",
+    "options":
+        { "config":
+          {
+
+            "module.name":      "zonemanager",
+            "module.id":        "A",
+
+            "eb.system_status": "system_status",
+            "eb.console_out":   "console_out",
+
+            "eb.zonemanager":   "tfc.zonemanager.A",
+
+            "zonemanager.name": "ZoneManager-A"
+          }
+        }
+}
