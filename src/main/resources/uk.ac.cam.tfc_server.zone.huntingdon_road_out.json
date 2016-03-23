@@ -1,0 +1,24 @@
+{
+    "main":    "uk.ac.cam.tfc_server.zone.Zone",
+    "options": { "config":
+                 {
+        "module.name":      "zone",
+        "module.id":        "huntingdon_road_out",
+
+        "eb.system_status": "system_status",
+        "eb.zone":          "tfc.zone",
+                     
+        "zone.id":          "huntingdon_road_out",
+        "zone.center":{"lat":52.21966380410292,"lng":0.08257274627682332},
+        "zone.zoom":14,
+        "zone.path":[{"lat":52.21107138030075,"lng":0.11218070983886719},
+                     {"lat":52.212859510682065,"lng":0.11509895324707031},
+                     {"lat":52.226373344589554,"lng":0.08917808532714844},
+                     {"lat":52.224901219867796,"lng":0.08480072021484375}],
+        "zone.finish_index":2,
+        "zone.name":"Huntingdon Road OUT"
+
+                 }
+               }
+    
+}

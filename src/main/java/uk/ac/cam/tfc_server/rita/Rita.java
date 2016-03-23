@@ -79,15 +79,14 @@ public class Rita extends AbstractVerticle {
     //debug
     // get test config options for Zone from conf file given to Rita
     DeploymentOptions zone_options = new DeploymentOptions();
-        //    .setConfig( make_zone_config() );
     
-    vertx.deployVerticle("service:uk.ac.cam.tfc_server.zone.cam_test",
+    vertx.deployVerticle("service:uk.ac.cam.tfc_server.zonemanager.A",
                          zone_options,
                          res -> {
             if (res.succeeded()) {
-                System.out.println("Rita: Zone started");
+                System.out.println("Rita: ZoneManager A started");
             } else {
-                System.err.println("Rita: failed to start Zone");
+                System.err.println("Rita: failed to start ZoneManager A");
                 fut.fail(res.cause());
             }
         });

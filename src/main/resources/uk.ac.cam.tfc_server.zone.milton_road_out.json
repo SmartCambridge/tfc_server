@@ -1,0 +1,24 @@
+{
+    "main":    "uk.ac.cam.tfc_server.zone.Zone",
+    "options": { "config":
+                 {
+        "module.name":      "zone",
+        "module.id":        "milton_road_out",
+
+        "eb.system_status": "system_status",
+        "eb.zone":          "tfc.zone",
+                     
+        "zone.id":          "milton_road_out",
+        "zone.center":{"lat":52.22411669991708,"lng":0.14427428245541218},
+        "zone.zoom":15,
+        "zone.path":[{"lat":52.21541338826678,"lng":0.12690067291259766},
+                     {"lat":52.2164388421966,"lng":0.12462615966796875},
+                     {"lat":52.23155496676674,"lng":0.1487445831298828},
+                     {"lat":52.22958359016109,"lng":0.15071868896484375}],
+        "zone.finish_index":2,
+        "zone.name":"Milton Road OUT"
+
+                 }
+               }
+    
+}

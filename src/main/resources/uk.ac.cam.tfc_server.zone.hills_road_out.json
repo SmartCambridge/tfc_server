@@ -1,0 +1,26 @@
+                                                                                
+{
+    "main":    "uk.ac.cam.tfc_server.zone.Zone",
+    "options": { "config":
+                 {
+        "module.name":      "zone",
+        "module.id":        "hills_road_out",
+
+        "eb.system_status": "system_status",
+        "eb.zone":          "tfc.zone",
+                     
+        "zone.name":        "Hills Road OUT",
+        "zone.id":          "hills_road_out",
+        "zone.path":        [{"lat":52.19797376106204,"lng":0.12685775756835938},
+                             {"lat":52.19881549121571,"lng":0.1295185089111328},
+                             {"lat":52.191660276779764,"lng":0.13655662536621094},
+                             {"lat":52.180451633654826,"lng":0.14299392700195312},
+                             {"lat":52.18018848602521,"lng":0.13998985290527344}
+                            ],
+        "zone.center":      {"lat":52.191733476750535,"lng":0.1393497467040694},
+        "zone.zoom" :       14,
+        "zone.finish_index": 3
+                 }
+               }
+    
+}

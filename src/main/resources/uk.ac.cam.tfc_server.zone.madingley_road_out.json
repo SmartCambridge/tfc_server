@@ -1,0 +1,23 @@
+{
+    "main":    "uk.ac.cam.tfc_server.zone.Zone",
+    "options": { "config":
+                 {
+        "module.name":      "zone",
+        "module.id":        "madingley_road_out",
+
+        "eb.system_status": "system_status",
+        "eb.zone":          "tfc.zone",
+                     
+        "zone.center":{"lat":52.2120353340221,"lng":0.09216432571407918},
+        "zone.zoom":15,
+        "zone.path":[{"lat":52.21065392038191,"lng":0.1052713394165039},
+                     {"lat":52.21228429276869,"lng":0.10535717010498047},
+                     {"lat":52.21386201552824,"lng":0.08419990539550781},
+                     {"lat":52.21281020658135,"lng":0.08368492126464844}],
+        "zone.finish_index":2,
+        "zone.name":"Madingley Road OUT",
+        "zone.id":          "madingley_road_out"
+                 }
+               }
+    
+}

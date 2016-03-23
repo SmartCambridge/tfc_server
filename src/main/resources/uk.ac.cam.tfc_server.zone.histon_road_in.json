@@ -1,0 +1,24 @@
+{
+    "main":    "uk.ac.cam.tfc_server.zone.Zone",
+    "options": { "config":
+                 {
+        "module.name":      "zone",
+        "module.id":        "histon_road_in",
+
+        "eb.system_status": "system_status",
+        "eb.zone":          "tfc.zone",
+                     
+        "zone.id":          "histon_road_in",
+        "zone.center":{"lat":52.20825841138823,"lng":0.13840560913082722},
+        "zone.zoom":13,
+        "zone.path":[{"lat":52.23354793984571,"lng":0.10907363786827773},
+                     {"lat":52.23365307275228,"lng":0.1150817860616371},
+                     {"lat":52.21630277403146,"lng":0.11285018816124648},
+                     {"lat":52.21756484254275,"lng":0.10855865373741835}],
+        "zone.finish_index":2,
+        "zone.name":"Histon Road IN"
+
+                 }
+               }
+    
+}

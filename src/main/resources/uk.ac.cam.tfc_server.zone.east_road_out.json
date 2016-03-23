@@ -1,0 +1,23 @@
+{
+    "main":    "uk.ac.cam.tfc_server.zone.Zone",
+    "options": { "config":
+                 {
+        "module.name":      "zone",
+        "module.id":        "east_road_out",
+
+        "eb.system_status": "system_status",
+        "eb.zone":          "tfc.zone",
+                     
+        "zone.id":          "east_road_out",
+        "zone.center":{"lat":52.20298135849034,"lng":0.10277728982033718},
+        "zone.zoom":14,
+        "zone.path":[{"lat":52.2021717318512,"lng":0.13229942302132258},
+                     {"lat":52.20348680398583,"lng":0.13058280925179133},
+                     {"lat":52.207852564396035,"lng":0.13599014262581477},
+                     {"lat":52.20795775814953,"lng":0.13873672465706477}],
+        "zone.finish_index":2,
+        "zone.name":"East Road OUT"
+                 }
+               }
+    
+}

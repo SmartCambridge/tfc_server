@@ -31,20 +31,23 @@ import java.io.*;
 import java.time.*;
 import java.time.format.*;
 
+import java.util.ArrayList;
+
 public class ZoneManager extends AbstractVerticle {
 
   private String EB_ZONE_MANAGER; // from config()
   private String EB_SYSTEM_STATUS; // from config()
   private String MODULE_NAME; // from config()
   private String MODULE_ID; // from config()
+  private ArrayList<String> START_ZONES; // from config()
     
   private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
   private final int SYSTEM_STATUS_AMBER_SECONDS = 15;
   private final int SYSTEM_STATUS_RED_SECONDS = 25;
-    
+
   private EventBus eb = null;
 
-  private JsonObject zone_config; // Vertx config for cam_test Zone
+  private JsonObject zone_config; // Vertx config for Zone
     
   @Override
   public void start(Future<Void> fut) throws Exception {
@@ -61,22 +64,24 @@ public class ZoneManager extends AbstractVerticle {
 
     eb = vertx.eventBus();
 
-    //debug
-    // get test config options for Zone from conf file given to Rita
-    DeploymentOptions zone_options = new DeploymentOptions();
-        //    .setConfig( make_zone_config() );
-    
-    vertx.deployVerticle("service:uk.ac.cam.tfc_server.zone.cam_test",
-                         zone_options,
-                         res -> {
-            if (res.succeeded()) {
-                System.out.println("ZoneManager: Zone started");
-            } else {
-                System.err.println("ZoneManager: failed to start Zone");
-                fut.fail(res.cause());
-            }
-        });
-    
+    for (int i=0; i<START_ZONES.size(); i++)
+        {
+            final String zone_id = START_ZONES.get(i);
+            //debug -- also should get start commands from eb.zonemanager.X
+            DeploymentOptions zone_options = new DeploymentOptions();
+
+            vertx.deployVerticle("service:uk.ac.cam.tfc_server.zone."+zone_id,
+                                 zone_options,
+                                 res -> {
+                    if (res.succeeded()) {
+                        System.out.println("ZoneManager: Zone "+zone_id+ "started");
+                    } else {
+                        System.err.println("ZoneManager: failed to start Zone " + zone_id);
+                        fut.fail(res.cause());
+                    }
+                });
+        }
+
     // send periodic "system_status" messages
     vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> {
       eb.publish(EB_SYSTEM_STATUS,
@@ -105,11 +110,17 @@ public class ZoneManager extends AbstractVerticle {
         
         MODULE_ID = config().getString("module.id"); // A, B, ...
 
-        EB_SYSTEM_STATUS = config().getString("eb.system_status","system_status_test");
+        EB_SYSTEM_STATUS = config().getString("eb.system_status");
 
-        EB_ZONE_MANAGER = config().getString("eb.zonemanager", "tfc.zonemanager_test");
+        EB_ZONE_MANAGER = config().getString("eb.zonemanager");
         //debug test for bad config
-        
+
+        START_ZONES = new ArrayList<String>();
+        JsonArray zone_list = config().getJsonArray("zonemanager.start");
+        for (int i=0; i<zone_list.size(); i++)
+            {
+                START_ZONES.add(zone_list.getString(i));
+            }
         return true;
     }
 
