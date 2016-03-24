@@ -413,7 +413,7 @@ class Intersect {
         String filename = feed_message.getString("filename");
         String filepath = feed_message.getString("filepath");
 
-        System.out.println("Zone feed_vehicle ("+ String.valueOf(entities.size()) + " records): " + filename);
+        //System.out.println("Zone feed_vehicle ("+ String.valueOf(entities.size()) + " records): " + filename);
 
         for (int i = 0; i < entities.size(); i++)
             {
@@ -421,7 +421,7 @@ class Intersect {
               update_vehicle(position_record);
             }
 
-        System.out.println("Zone "+ String.valueOf(vehicles.size()) + " records in vehicles HashMap)");
+        //System.out.println("Zone "+ String.valueOf(vehicles.size()) + " records in vehicles HashMap)");
         //debug
         return;
         /*
@@ -529,8 +529,10 @@ class Intersect {
 
                           // Build console string and output
                           // e.g. 2016-03-16 15:19:08,Cam Test,315,no_route,00:00:29,0.58,COMPLETED,15:11:41,15:18:55,00:07:14
-                          String completed_log = ts_to_datetime_str(v.position.ts) + ",";
+                          String completed_log = "";
+                          completed_log += ts_to_datetime_str(v.position.ts) + ",";
                           completed_log += ZONE_NAME + ",";
+                          completed_log += "COMPLETED,";
                           completed_log += v.vehicle_id + ",";
                           completed_log += v.route_id + ",";
                           completed_log += ts_to_time_str(v.start_ts) + ",";
