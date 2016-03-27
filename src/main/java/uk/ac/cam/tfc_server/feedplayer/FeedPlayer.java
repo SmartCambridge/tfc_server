@@ -4,7 +4,7 @@ package uk.ac.cam.tfc_server.feedplayer;
 // *************************************************************************************************
 // *************************************************************************************************
 // FeedPlayer.java
-// Version 0.01
+// Version 0.02
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
@@ -31,7 +31,8 @@ import java.io.*;
 import java.time.*;
 import java.time.format.*;
 import java.util.*;
-
+import java.text.SimpleDateFormat;
+    
 import uk.ac.cam.tfc_server.util.GTFS;
 
 // ********************************************************************************************
@@ -55,6 +56,8 @@ public class FeedPlayer extends AbstractVerticle {
     private String EB_ADDRESS; // EB_FEEDPLAYER + "." + MODULE_ID;
     
     private String tfc_data_bin; // root of bin files
+    private String filepath; // path to files, e.g. 2016/03/07, derived from feedplayer.ts
+    private Long ts; // start timestamp
 
   private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
   private final int SYSTEM_STATUS_AMBER_SECONDS = 15; // delay before flagging system as AMBER
@@ -86,11 +89,6 @@ public class FeedPlayer extends AbstractVerticle {
                      "}" );
           });
 
-        //debug all this file processing is temporary - should iterate over directory
-        String filepath = "2016/03/07";
-        String filename = "1457339414_2016-03-07-08-30-14";
-        
-        //        FileSystem fs = vertx.fileSystem();
 
         final String bin_path = tfc_data_bin+"/"+filepath;
 
@@ -98,15 +96,23 @@ public class FeedPlayer extends AbstractVerticle {
         vertx.fileSystem().readDir(bin_path, res -> {
                 if (res.succeeded())
                     {
-                        System.out.println(res.result().get(0));
                         // process the gtfs binary files, starting at file 0
                         try
                             {
-                                process_gtfs_files(filepath, res.result(), 0);
+                                Collections.sort(res.result());
+                                int file_index = 0;
+                                while (file_index < res.result().size() &&
+                                       ts > get_ts_from_filepath(bin_path, res.result().get(file_index))
+                                      )
+                                    {
+                                        file_index++;
+                                    }
+                                System.out.println("FilePlayer: file_index="+file_index);
+                                process_gtfs_files(bin_path, filepath, res.result(), file_index);
                             }
                         catch (Exception e)
                             {
-                                System.err.println("FeedPlayer: exception in process_gtfs_files()");
+                                System.err.println("FeedPlayer: exception in process_gtfs_files() " + e.getMessage());
                             }
                     }
                 else
@@ -117,15 +123,38 @@ public class FeedPlayer extends AbstractVerticle {
         
       } // end start()
 
-    //
-    void process_gtfs_files(String filepath, List<String> files, int i) throws Exception
+    // pick out the Long timestamp embedded in the file name
+    // e.g. <bin_path>/2016/03/07/1457334014_2016-03-07-07-00-14.bin -> 1457334014
+    Long get_ts_from_filepath(String bin_path, String filename)
+    {
+        
+        int ts_start = bin_path.length()+1;
+        int ts_length = filename.indexOf('_', ts_start) - ts_start;
+        String ts_string = filename.substring(ts_start, ts_start+ts_length);
+        return Long.parseLong(ts_string);
+    }
+
+    // Iterate through the list of files
+    void process_gtfs_files(String bin_path, String filepath, List<String> files, int i) throws Exception
     {
         //debug - arbitrary period constant, no confirmation zones are ready
-        System.out.println("timer " + i);
+
+        if (i >= files.size())
+            {
+                System.out.println("FilePlayer: file list completed");
+                return;
+            }
+        // process current file
+        //System.out.println("FeedPlayer: "+files.get(i));
+        String filename = files.get(i).substring(bin_path.length()+1); // strip leading path
+        filename = filename.substring(0,filename.length() - 4); // strip ".bin"
+        process_gtfs_file(filename, filepath);
+
+        // process remaining files
         vertx.setTimer(3000, id -> {
                 try
                     {
-                        process_gtfs_files(filepath, files, i + 1);
+                        process_gtfs_files(bin_path,filepath, files, i + 1);
                     }
                 catch (Exception e)
                     {
@@ -184,7 +213,14 @@ public class FeedPlayer extends AbstractVerticle {
         
         //debug - this should be coming from a dynamic request, probably...
         tfc_data_bin = config().getString("feedplayer.files","");
-        
+
+        ts = config().getLong("feedplayer.ts");
+
+        Date d = new Date(ts * 1000);
+
+        //debug does this pick up the timezone?
+        filepath =  new SimpleDateFormat("yyyy/MM/dd").format(d);
+
         return true;
     }
     
