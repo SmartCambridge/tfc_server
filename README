@@ -1,0 +1,15 @@
+Transport for Cambridge -- RITA: Realtime Intelligent Traffic Analysis
+
+Author: Ian Lewis - ijl20@cam.ac.uk
+
+This repository is for the the "tfc_server" system, containing:
+
+* Realtime vehicle position feed handlers
+
+* Zone analyzers, i.e. modules that detect vehicles entering/leaving geographic zones
+
+* Consoles, for reporting the status of the various modules
+
+* HTTP servers that present the user interface and consoles.
+
+The system uses Java / Vertx to be event driven throughout

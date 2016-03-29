@@ -47,32 +47,31 @@ import uk.ac.cam.tfc_server.util.Position;
 // ********************************************************************************************
 public class Zone extends AbstractVerticle {
 
-    private String MODULE_NAME;
-    private String MODULE_ID; // from config zone.id
+    // from config()
+    private String MODULE_NAME;       // config module.name
+    private String MODULE_ID;         // config module.id
     
-    private String ZONE_NAME; // from config() zone.name
-    private ArrayList<Position> PATH;
-    private Position CENTER = null;
-    private int ZOOM;
-    private int FINISH_INDEX;
+    private String ZONE_NAME;         // config zone.name
+    private ArrayList<Position> PATH; // config zone.path
+    private Position CENTER;          // config zone.center
+    private int ZOOM;                 // config zone.zoom
+    private int FINISH_INDEX;         // config zone.finish_index
+    private String EB_SYSTEM_STATUS;  // config eb.system_status
+    private String ZONE_FEED;      // config zone.feed (Zone SUBSCRIBES to this)
+    private String ZONE_ADDRESS; // eb.zone
     
     private Box box;
     
-    private String EB_SYSTEM_STATUS; // eventbus status reporting address
 
-  // Config vars
+  // Previous env vars
     //debug
   private final String ENV_VAR_ZONE_PATH = "TFC_DATA_ZONE"; // Linux var containing filepath root for csv files
 
-    //debug
-  private final String EB_CAM_BUS_FEED = "feed_vehicle"; // eventbus address for JSON feed position updates
-    
   private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
   private final int SYSTEM_STATUS_AMBER_SECONDS = 15; // delay before flagging system as AMBER
   private final int SYSTEM_STATUS_RED_SECONDS = 25; // delay before flagging system as RED
 
   // Zone globals
-  private String EB_ADDRESS; // created from config().zone.address+config().module_id
     
   private EventBus eb = null;
   private String tfc_data_zone = null;
@@ -170,7 +169,7 @@ class Intersect {
               return;
           }
       
-    System.out.println("Zone started!! " + MODULE_NAME + "/" + MODULE_ID + ", EB: " + EB_ADDRESS);
+    System.out.println("Zone started!! " + MODULE_NAME + "/" + MODULE_ID + ", EB: " + ZONE_ADDRESS);
 
     box = new Box();
     
@@ -194,7 +193,7 @@ class Intersect {
     // **********  Set up connection to EventBus  ********************************************
 
     // set up a handler for the actual vehicle position feed messages
-    eb.consumer(EB_CAM_BUS_FEED, message -> {
+    eb.consumer(ZONE_FEED, message -> {
 
       JsonObject feed_message = new JsonObject(message.body().toString());
 
@@ -218,12 +217,9 @@ class Intersect {
     private boolean get_config()
     {
         // config() values needed by all TFC modules are:
-        //   module.id - unique module reference to be used by this verticle
         //   module.name - usually "zone"
+        //   module.id - unique module reference to be used by this verticle
         //   eb.system_status - String eventbus address for system status messages
-        
-        // config() values needed by all Zones are:
-        //   eb.zone - String eventbus base address for zone update messages
         
         // Expected config() values defining this Zone are:
         //   zone.name - String
@@ -232,19 +228,23 @@ class Intersect {
         //   zone.center - Position
         //   zone.zoom - int
         //   zone.finish_index - int
-
-        MODULE_NAME = config().getString("module.name","module_name_test");
+        //   zone.feed - String      -- Zone SUBSCRIBES to this EB address
+        //   zone.address - String   -- Zone PUBLISHES to this EB address
         
-        MODULE_ID = config().getString("module.id","module_id_testzone");
+        MODULE_NAME = config().getString("module.name");
+        
+        MODULE_ID = config().getString("module.id");
         if (MODULE_ID==null) return false;
 
-        EB_SYSTEM_STATUS = config().getString("eb.system_status","system_status_test");
-        
-        
-        String eb_zone = config().getString("eb.zone", "tfc.zone_test"); // get zone EventBus base address
-        EB_ADDRESS = eb_zone + "." + MODULE_ID;
+        EB_SYSTEM_STATUS = config().getString("eb.system_status");
 
-        ZONE_NAME = config().getString("zone.name","Cam test");
+        ZONE_FEED = config().getString("zone.feed");
+        
+        ZONE_ADDRESS = config().getString("zone.address");
+        //String eb_zone = config().getString("eb.zone", "tfc.zone_test"); // get zone EventBus base address
+        //ZONE_ADDRESS = eb_zone + "." + MODULE_ID;
+
+        ZONE_NAME = config().getString("zone.name");
 
         PATH = new ArrayList<Position>();
         JsonArray json_path = config().getJsonArray("zone.path", new JsonArray());
@@ -252,21 +252,11 @@ class Intersect {
             PATH.add(new Position(json_path.getJsonObject(i)));
         }
 
-        if (json_path.size() == 0)
-            {
-                //debug here we hardcode actual bounds parameters (will come from ZoneManager when written)
-                PATH = new ArrayList<Position>();
-                PATH.add( new Position(52.201475385236485,0.12256622314453125) );
-                PATH.add( new Position(52.20352691291383,0.1272439956665039) );
-                PATH.add( new Position(52.195530680537125,0.1363849639892578));
-                PATH.add( new Position(52.190716465371736,0.13153553009033203));
-            }
+        CENTER = new Position(config().getJsonObject("zone.center"));
         
-        CENTER = new Position(config().getJsonObject("zone.center", PATH.get(0).toJsonObject()));
+        ZOOM = config().getInteger("zone.zoom");
         
-        ZOOM = config().getInteger("zone.zoom", 15);
-        
-        FINISH_INDEX = config().getInteger("zone.finish_index", 2);
+        FINISH_INDEX = config().getInteger("zone.finish_index");
 
         System.out.println("Zone get_config(): ZONE_NAME is "+String.valueOf(ZONE_NAME));
         
@@ -413,7 +403,7 @@ class Intersect {
         String filename = feed_message.getString("filename");
         String filepath = feed_message.getString("filepath");
 
-        //System.out.println("Zone feed_vehicle ("+ String.valueOf(entities.size()) + " records): " + filename);
+        System.out.println("Zone feed_vehicle ("+ String.valueOf(entities.size()) + " records): " + filename);
 
         for (int i = 0; i < entities.size(); i++)
             {
