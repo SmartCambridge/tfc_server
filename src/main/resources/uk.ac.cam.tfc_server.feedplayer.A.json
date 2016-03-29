@@ -5,15 +5,16 @@
         { "config":
           {
 
-            "module.name":      "feedplayer",
-            "module.id":        "A",
+            "module.name":           "feedplayer",
+            "module.id":             "A",
 
-            "eb.system_status": "system_status",
-            "eb.console_out":   "console_out",
-            "eb.feedplayer" :   "tfc.feedplayer",
+            "eb.system_status":      "system_status",
+            "eb.console_out":        "console_out",
+            "eb.feedplayer" :        "tfc.feedplayer",
 
-            "feedplayer.files": "/home/ijl20/tfc_server_data/data_bin",
-            "feedplayer.ts" : 1457334000
+            "feedplayer.files":      "/home/ijl20/tfc_server_data/data_bin",
+            "feedplayer.start_ts" :  1457334000,
+            "feedplayer.finish_ts" : 1457337600
           }
         }
 }

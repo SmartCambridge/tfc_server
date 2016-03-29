@@ -4,13 +4,14 @@ package uk.ac.cam.tfc_server.zone;
 // *************************************************************************************************
 // *************************************************************************************************
 // Zone.java
-// Version 0.05
+// Version 0.06
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
 //
-// Subscribes to address "feed_vehicle" and sends "tfc.zone.update" messages
+// Subscribes to address ZONE_FEED and sends messages to ZONE_ADDRESS
 //
+//debug
 // Also writes zone updates to $TFC_DATA_ZONE/YYYY/MM/DD/<zone>.csv
 //
 // *************************************************************************************************
@@ -57,8 +58,11 @@ public class Zone extends AbstractVerticle {
     private int ZOOM;                 // config zone.zoom
     private int FINISH_INDEX;         // config zone.finish_index
     private String EB_SYSTEM_STATUS;  // config eb.system_status
-    private String ZONE_FEED;      // config zone.feed (Zone SUBSCRIBES to this)
-    private String ZONE_ADDRESS; // eb.zone
+    private String EB_MANAGER;        // config eb.manager
+
+    // These values are updated on receipt of EB_MANAGER config commands
+    private String ZONE_FEED;         // EB_MANAGER config zone.feed (Zone SUBSCRIBES to this)
+    private String ZONE_ADDRESS;      // EB_MANAGER config zone.address
     
     private Box box;
     
@@ -78,88 +82,13 @@ public class Zone extends AbstractVerticle {
 
   private HashMap<String, Vehicle> vehicles; // dictionary to store vehicle status updated from feed
 
-// Vehicle stores the up-to-date status of a vehicle with a given vehicle_id
-// in the context of the current zone, e.g. is it currently within bounds
-class Vehicle {
-    // These are attributes that come from the position record
-    public String vehicle_id;
-    public String label;
-    public String route_id;
-    public String trip_id;
-    public Position prev_position;
-    public boolean prev_within; // true if was within bounds at previous timestamp
-    public Position position;
-    public Float bearing;
-    public String stop_id;
-    public Long current_stop_sequence;
-    
-    // additional attributes used within this Zone
-    public boolean init; // only true if this position has been initialized but not updated
-    public boolean within; // true if within bounds at current timestamp
-    public Long start_ts; // timestamp of successful start (otherwise 0)
-
-    // Initialize a new Vehicle object from a JSON position record
-    public Vehicle(JsonObject position_record)
-    {
-        vehicle_id = position_record.getString("vehicle_id");
-        
-        label = position_record.getString("label","");
-        route_id = position_record.getString("route_id","");
-        trip_id = position_record.getString("trip_id","");
-        bearing = position_record.getFloat("bearing",0.0f);
-        stop_id = position_record.getString("stop_id","");
-        current_stop_sequence = position_record.getLong("current_stop_sequence",0L);
-        
-        position = new Position();
-        position.ts = position_record.getLong("timestamp");
-        position.lat = position_record.getDouble("latitude");
-        position.lng = position_record.getDouble("longitude");
-
-        init = true; // will be reset to false when this entry is updated
-        within = false;
-        start_ts = 0L;
-      
-    }
-
-    // update this existing Vehicle when a subsequent position_record has arrived
-    public void update(JsonObject position_record)
-    {
-        prev_position = position;
-        prev_within = within;
-        
-        Vehicle v = new Vehicle(position_record);
-        label = v.label;
-        route_id = v.route_id;
-        trip_id = v.trip_id;
-        position = v.position;
-        bearing = v.bearing;
-        stop_id = v.stop_id;
-        current_stop_sequence = v.current_stop_sequence;
-
-        init = false;
-    }
-
-}
-
-// Intersect class holds the result of an intersect test
-// Actual intersect method is in ZoneBoundary
-class Intersect {
-    public Position position; // position is lat, long and timestamp (secs) of intersection point
-    public boolean success;
-
-    public Intersect()
-    {
-        success = false;
-    }
-}
-
 
   // **************************************************************************************
   // Zone Verticle Startup procedure
   @Override
   public void start(Future<Void> fut) throws Exception {
 
-    // will use EventBus address "<eb.zone>.<zone id>"
+    // will publish to EventBus address ZONE_ADDRESS
 
     // load Zone initialization values from config()
     if (!get_config())
@@ -169,7 +98,7 @@ class Intersect {
               return;
           }
       
-    System.out.println("Zone started!! " + MODULE_NAME + "/" + MODULE_ID + ", EB: " + ZONE_ADDRESS);
+    System.out.println("Zone: " + MODULE_NAME + "." + MODULE_ID + " started, subscribing to "+ZONE_FEED);
 
     box = new Box();
     
@@ -177,13 +106,13 @@ class Intersect {
     
     eb = vertx.eventBus();
 
-    tfc_data_zone = System.getenv(ENV_VAR_ZONE_PATH);
-    if (tfc_data_zone == null)
-    {
-      System.err.println("Zone: " +ENV_VAR_ZONE_PATH + " environment var not set -- aborting Zone startup");
-      vertx.close();
-      return;
-    }
+    //tfc_data_zone = System.getenv(ENV_VAR_ZONE_PATH);
+    //if (tfc_data_zone == null)
+    // {
+    //  System.err.println("Zone: " +ENV_VAR_ZONE_PATH + " environment var not set -- aborting Zone startup");
+    //  vertx.close();
+    //  return;
+    //}
 
     // **********  Define the data structure for updated vehicle data  ***********************
 
@@ -191,15 +120,28 @@ class Intersect {
 
 
     // **********  Set up connection to EventBus  ********************************************
+    // set up a handler for manager messages
+    eb.consumer(EB_MANAGER, eb_message -> {
+            //debug must test for module.name and module.id
 
-    // set up a handler for the actual vehicle position feed messages
-    eb.consumer(ZONE_FEED, message -> {
-
-      JsonObject feed_message = new JsonObject(message.body().toString());
-
-      handle_feed(feed_message);
+            if (!manager(new JsonObject(eb_message.body().toString())))
+                {
+                    System.err.println("Zone: " + MODULE_NAME + "." + MODULE_ID + " manager bad message");
+                }
     });
 
+
+    //debug - this is a hack - should come from eventbus EB_MANAGER
+    JsonObject subscribe = new JsonObject();
+    subscribe.put("zone.address", "tfc.zone.test");
+    subscribe.put("zone.feed", "tfc.feedplayer.B");
+    JsonObject manager_msg = new JsonObject();
+    manager_msg.put("subscribe", subscribe);
+    if (!manager( manager_msg ))
+        {
+            System.err.println("Zone: "+MODULE_ID+" manager bad message");
+        }
+    
     // send periodic "system_status" messages
     vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> {
       eb.publish(EB_SYSTEM_STATUS,
@@ -220,6 +162,7 @@ class Intersect {
         //   module.name - usually "zone"
         //   module.id - unique module reference to be used by this verticle
         //   eb.system_status - String eventbus address for system status messages
+        //   eb.manager - eventbus address for manager messages
         
         // Expected config() values defining this Zone are:
         //   zone.name - String
@@ -228,8 +171,6 @@ class Intersect {
         //   zone.center - Position
         //   zone.zoom - int
         //   zone.finish_index - int
-        //   zone.feed - String      -- Zone SUBSCRIBES to this EB address
-        //   zone.address - String   -- Zone PUBLISHES to this EB address
         
         MODULE_NAME = config().getString("module.name");
         
@@ -238,11 +179,7 @@ class Intersect {
 
         EB_SYSTEM_STATUS = config().getString("eb.system_status");
 
-        ZONE_FEED = config().getString("zone.feed");
-        
-        ZONE_ADDRESS = config().getString("zone.address");
-        //String eb_zone = config().getString("eb.zone", "tfc.zone_test"); // get zone EventBus base address
-        //ZONE_ADDRESS = eb_zone + "." + MODULE_ID;
+        EB_MANAGER = config().getString("eb.manager");
 
         ZONE_NAME = config().getString("zone.name");
 
@@ -258,7 +195,7 @@ class Intersect {
         
         FINISH_INDEX = config().getInteger("zone.finish_index");
 
-        System.out.println("Zone get_config(): ZONE_NAME is "+String.valueOf(ZONE_NAME));
+        System.out.println("Zone: " + MODULE_NAME + "." + MODULE_ID + " get_config(): ZONE_NAME is "+String.valueOf(ZONE_NAME));
         
         return true;
     }
@@ -281,6 +218,107 @@ class Intersect {
                 if (PATH.get(i).lng > east) east = PATH.get(i).lng;
                 if (PATH.get(i).lng < west) west = PATH.get(i).lng;
             }
+        }
+    }
+
+
+    // Process a manager message to this module
+    private boolean manager(JsonObject message)
+    {
+        JsonObject subscribe = message.getJsonObject("subscribe");
+        if (subscribe != null)
+            {
+                // set up a subscription to a feed
+                //debug this should be added to a list of subscriptions
+              ZONE_FEED = subscribe.getString("zone.feed");
+        
+              ZONE_ADDRESS = subscribe.getString("zone.address");
+              System.out.println("Zone: " + MODULE_NAME + "." + MODULE_ID +  " subscribing to "+ ZONE_FEED);
+              
+              // set up a handler for the actual vehicle position feed messages
+              vertx.eventBus().consumer(ZONE_FEED, eb_message -> {
+
+                  JsonObject feed_message = new JsonObject(eb_message.body().toString());
+
+                  handle_feed(feed_message);
+              });
+
+            }
+        return true;
+    }
+    
+    // Vehicle stores the up-to-date status of a vehicle with a given vehicle_id
+    // in the context of the current zone, e.g. is it currently within bounds
+    class Vehicle {
+        // These are attributes that come from the position record
+        public String vehicle_id;
+        public String label;
+        public String route_id;
+        public String trip_id;
+        public Position prev_position;
+        public boolean prev_within; // true if was within bounds at previous timestamp
+        public Position position;
+        public Float bearing;
+        public String stop_id;
+        public Long current_stop_sequence;
+
+        // additional attributes used within this Zone
+        public boolean init; // only true if this position has been initialized but not updated
+        public boolean within; // true if within bounds at current timestamp
+        public Long start_ts; // timestamp of successful start (otherwise 0)
+
+        // Initialize a new Vehicle object from a JSON position record
+        public Vehicle(JsonObject position_record)
+        {
+            vehicle_id = position_record.getString("vehicle_id");
+
+            label = position_record.getString("label","");
+            route_id = position_record.getString("route_id","");
+            trip_id = position_record.getString("trip_id","");
+            bearing = position_record.getFloat("bearing",0.0f);
+            stop_id = position_record.getString("stop_id","");
+            current_stop_sequence = position_record.getLong("current_stop_sequence",0L);
+
+            position = new Position();
+            position.ts = position_record.getLong("timestamp");
+            position.lat = position_record.getDouble("latitude");
+            position.lng = position_record.getDouble("longitude");
+
+            init = true; // will be reset to false when this entry is updated
+            within = false;
+            start_ts = 0L;
+
+        }
+
+        // update this existing Vehicle when a subsequent position_record has arrived
+        public void update(JsonObject position_record)
+        {
+            prev_position = position;
+            prev_within = within;
+
+            Vehicle v = new Vehicle(position_record);
+            label = v.label;
+            route_id = v.route_id;
+            trip_id = v.trip_id;
+            position = v.position;
+            bearing = v.bearing;
+            stop_id = v.stop_id;
+            current_stop_sequence = v.current_stop_sequence;
+
+            init = false;
+        }
+
+    }
+
+    // Intersect class holds the result of an intersect test
+    // Actual intersect method is in ZoneBoundary
+    class Intersect {
+        public Position position; // position is lat, long and timestamp (secs) of intersection point
+        public boolean success;
+
+        public Intersect()
+        {
+            success = false;
         }
     }
 
@@ -396,14 +434,14 @@ class Intersect {
 // **********                            *************************************************
 // ***************************************************************************************
   
-  private void handle_feed(JsonObject feed_message)
+    private void handle_feed(JsonObject feed_message)
     {
         JsonArray entities = feed_message.getJsonArray("entities");
 
         String filename = feed_message.getString("filename");
         String filepath = feed_message.getString("filepath");
 
-        System.out.println("Zone feed_vehicle ("+ String.valueOf(entities.size()) + " records): " + filename);
+        System.out.println("Zone: "+MODULE_NAME+"."+MODULE_ID+" ("+ String.valueOf(entities.size()) + " records): " + filename);
 
         for (int i = 0; i < entities.size(); i++)
             {
@@ -487,12 +525,12 @@ class Intersect {
                       // Set start timestamp to timestamp at Intersection with startline
                       v.start_ts = i.position.ts;
                       
-                      System.out.println("Zone: "+ZONE_NAME+ " "+
-                                         "vehicle_id("+vehicle_id+") clean start at "+ts_to_time_str(i.position.ts));
+                      System.out.println("Zone: "+MODULE_NAME+"."+MODULE_ID+
+                                         " vehicle_id("+vehicle_id+") clean start at "+ts_to_time_str(i.position.ts));
                   }
               else
                   {
-                      System.out.println("Zone: vehicle_id("+vehicle_id+") early entry into zone "+ZONE_NAME);
+                      System.out.println("Zone: "+MODULE_NAME+"."+MODULE_ID+" vehicle_id("+vehicle_id+") early entry");
                   }
           }
       if (v.within && v.prev_within)
@@ -519,9 +557,8 @@ class Intersect {
 
                           // Build console string and output
                           // e.g. 2016-03-16 15:19:08,Cam Test,315,no_route,00:00:29,0.58,COMPLETED,15:11:41,15:18:55,00:07:14
-                          String completed_log = "";
+                          String completed_log = "Zone: "+MODULE_NAME+"."+MODULE_ID + " ";
                           completed_log += ts_to_datetime_str(v.position.ts) + ",";
-                          completed_log += ZONE_NAME + ",";
                           completed_log += "COMPLETED,";
                           completed_log += v.vehicle_id + ",";
                           completed_log += v.route_id + ",";
@@ -534,13 +571,14 @@ class Intersect {
                       else
                         {
                           // output clean exit message
-                          System.out.println("Zone: "+ZONE_NAME+ " "+
-                                         "vehicle_id("+vehicle_id+") clean exit (no start) at "+ts_to_time_str(finish_ts));
+                          System.out.println("Zone: "+MODULE_NAME+"."+MODULE_ID+
+                                         " vehicle_id("+vehicle_id+") clean exit (no start) at "+ts_to_time_str(finish_ts));
                         }
                   }
               else
                   {
-                      System.out.println("Zone: vehicle_id("+vehicle_id+") early exit zone "+ZONE_NAME);
+                      System.out.println("Zone: "+MODULE_NAME+"."+MODULE_ID+
+                                         " vehicle_id("+vehicle_id+") early exit");
                   }
               
               // Reset the Zone start time for this vehicle

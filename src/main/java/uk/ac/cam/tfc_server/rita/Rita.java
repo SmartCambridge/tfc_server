@@ -4,6 +4,11 @@ package uk.ac.cam.tfc_server.rita;
 // *************************************************************************************************
 // *************************************************************************************************
 // Rita.java
+//
+// RITA is the user "master controller" of the tfc modules...
+// Based on user requests via the http UI, RITA will spawn feedplayers and zones, to
+// display the analysis in real time on the user browser.
+//
 // Version 0.02
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
@@ -44,14 +49,20 @@ import io.vertx.ext.web.handler.sockjs.SockJSHandlerOptions;
 import java.io.*;
 import java.time.*;
 import java.time.format.*;
+import java.util.*;
 
 public class Rita extends AbstractVerticle {
 
   private int HTTP_PORT; // from config()
-  private String EB_RITA; // from config()
+  private String RITA_ADDRESS; // from config()
   private String EB_SYSTEM_STATUS; // from config()
+  private String EB_MANAGER; // from config()
   private String MODULE_NAME; // from config()
   private String MODULE_ID; // from config()
+
+    //debug - these may come from user commands
+    private ArrayList<String> FEEDPLAYERS; // from config()
+    private ArrayList<String> ZONEMANAGERS; // from config()
     
   private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
   private final int SYSTEM_STATUS_AMBER_SECONDS = 15;
@@ -59,8 +70,6 @@ public class Rita extends AbstractVerticle {
     
   private EventBus eb = null;
 
-  private JsonObject zone_config; // Vertx config for cam_test Zone
-    
   @Override
   public void start(Future<Void> fut) throws Exception {
 
@@ -72,24 +81,49 @@ public class Rita extends AbstractVerticle {
             return;
         }
 
-    System.out.println("Rita started using "+MODULE_NAME+"."+MODULE_ID);
+    System.out.println("Rita starting as "+MODULE_NAME+"."+MODULE_ID);
 
     eb = vertx.eventBus();
 
     //debug
-    // get test config options for Zone from conf file given to Rita
-    DeploymentOptions zone_options = new DeploymentOptions();
+    // get test config options for FeedPlayers from conf file given to Rita
     
-    vertx.deployVerticle("service:uk.ac.cam.tfc_server.zonemanager.A",
-                         zone_options,
-                         res -> {
-            if (res.succeeded()) {
-                System.out.println("Rita: ZoneManager A started");
-            } else {
-                System.err.println("Rita: failed to start ZoneManager A");
-                fut.fail(res.cause());
-            }
-        });
+    for (int i=0; i<FEEDPLAYERS.size(); i++)
+        {
+            final String feedplayer_id = FEEDPLAYERS.get(i);
+            //debug -- also should get start commands from eb.zonemanager.X
+            DeploymentOptions feedplayer_options = new DeploymentOptions();
+
+            vertx.deployVerticle("service:uk.ac.cam.tfc_server.feedplayer."+feedplayer_id,
+                                 feedplayer_options,
+                                 res -> {
+                    if (res.succeeded()) {
+                        System.out.println("Rita"+MODULE_ID+": FeedPlayer "+feedplayer_id+ "started");
+                    } else {
+                        System.err.println("Rita"+MODULE_ID+": failed to start FeedPlayer " + feedplayer_id);
+                        fut.fail(res.cause());
+                    }
+                });
+        }
+    
+    //debug
+    for (int i=0; i<ZONEMANAGERS.size(); i++)
+        {
+            final String zonemanager_id = ZONEMANAGERS.get(i);
+            //debug -- also should get start commands from eb.zonemanager.X
+            DeploymentOptions zonemanager_options = new DeploymentOptions();
+
+            vertx.deployVerticle("service:uk.ac.cam.tfc_server.zonemanager."+zonemanager_id,
+                                 zonemanager_options,
+                                 res -> {
+                    if (res.succeeded()) {
+                        System.out.println("Rita"+MODULE_ID+": ZoneManager "+zonemanager_id+ "started");
+                    } else {
+                        System.err.println("Rita"+MODULE_ID+": failed to start ZoneManager " + zonemanager_id);
+                        fut.fail(res.cause());
+                    }
+                });
+        }
     
     // send periodic "system_status" messages
     vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> {
@@ -181,12 +215,27 @@ public class Rita extends AbstractVerticle {
         
         MODULE_ID = config().getString("module.id"); // A, B, ...
 
-        EB_SYSTEM_STATUS = config().getString("eb.system_status","system_status_test");
+        EB_SYSTEM_STATUS = config().getString("eb.system_status");
+        EB_MANAGER = config().getString("eb.manager");
 
-        EB_RITA = config().getString("eb.rita", "tfc.rita_test")+"."+MODULE_ID;
+        RITA_ADDRESS = config().getString(MODULE_NAME+".address");
 
-        HTTP_PORT = config().getInteger(MODULE_NAME+"."+"http.port");
+        HTTP_PORT = config().getInteger(MODULE_NAME+".http.port");
         //debug test for bad config
+        
+        FEEDPLAYERS = new ArrayList<String>();
+        JsonArray feedplayer_list = config().getJsonArray(MODULE_NAME+".feedplayers");
+        for (int i=0; i<feedplayer_list.size(); i++)
+            {
+                FEEDPLAYERS.add(feedplayer_list.getString(i));
+            }
+        
+        ZONEMANAGERS = new ArrayList<String>();
+        JsonArray zonemanager_list = config().getJsonArray(MODULE_NAME+".zonemanagers");
+        for (int i=0; i<zonemanager_list.size(); i++)
+            {
+                ZONEMANAGERS.add(zonemanager_list.getString(i));
+            }
         
         return true;
     }

@@ -35,11 +35,14 @@ import java.util.ArrayList;
 
 public class ZoneManager extends AbstractVerticle {
 
-  private String EB_ZONE_MANAGER; // from config()
   private String EB_SYSTEM_STATUS; // from config()
   private String MODULE_NAME; // from config()
   private String MODULE_ID; // from config()
   private ArrayList<String> START_ZONES; // from config()
+
+    // debug these should be coming from manager messages
+  private String ZONE_ADDRESS; // from config() - address for Zones to publish to
+  private String ZONE_FEED; // from config() - address for Zones to subscribe to
     
   private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
   private final int SYSTEM_STATUS_AMBER_SECONDS = 15;
@@ -64,11 +67,12 @@ public class ZoneManager extends AbstractVerticle {
 
     eb = vertx.eventBus();
 
+    //debug -- zone.address and zone.feed should come from manager messages
+    DeploymentOptions zone_options = new DeploymentOptions();
+
     for (int i=0; i<START_ZONES.size(); i++)
         {
             final String zone_id = START_ZONES.get(i);
-            //debug -- also should get start commands from eb.zonemanager.X
-            DeploymentOptions zone_options = new DeploymentOptions();
 
             vertx.deployVerticle("service:uk.ac.cam.tfc_server.zone."+zone_id,
                                  zone_options,
@@ -112,7 +116,6 @@ public class ZoneManager extends AbstractVerticle {
 
         EB_SYSTEM_STATUS = config().getString("eb.system_status");
 
-        EB_ZONE_MANAGER = config().getString("eb.zonemanager");
         //debug test for bad config
 
         START_ZONES = new ArrayList<String>();

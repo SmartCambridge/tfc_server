@@ -1,0 +1,28 @@
+                                                                                
+{
+    "main":    "uk.ac.cam.tfc_server.zone.Zone",
+    "options": { "config":
+                 {
+        "module.name":      "zone",
+        "module.id":        "cam_test",
+
+        "eb.system_status": "system_status",
+        "eb.manager":       "tfc.manager",
+                     
+        "zone.feed":        "feed_vehicle",
+        "zone.address":     "zone_test",
+                     
+        "zone.name":        "Cam Test 2",
+        "zone.id":          "cam_test_rita",
+        "zone.path":        [{"lat":52.202067912425456,"lng":0.12299642039579634},
+                             {"lat":52.20519772750898,"lng":0.1270733780984301},
+                             {"lat":52.20212051618095,"lng":0.13591393901151605},
+                             {"lat":52.19575500969684,"lng":0.1282320923928637}
+                            ],
+        "zone.center":      { "lat": 52.200542498481255, "lng": 0.1292002677917159 },
+        "zone.zoom" :       14,
+        "zone.finish_index": 2
+                 }
+               }
+    
+}

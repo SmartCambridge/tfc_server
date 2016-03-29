@@ -7,12 +7,10 @@
         "module.id":        "cam_test",
 
         "eb.system_status": "system_status",
-                     
-        "zone.feed":        "feed_vehicle",
-        "zone.address":     "zone_test",
-                     
-        "zone.name":        "Cam Test 2",
-        "zone.id":          "cam_test_rita",
+        "eb.manager":       "tfc.manager",
+
+        "zone.name":        "Cam Test",
+        "zone.id":          "cam_test",
         "zone.path":        [{"lat":52.202067912425456,"lng":0.12299642039579634},
                              {"lat":52.20519772750898,"lng":0.1270733780984301},
                              {"lat":52.20212051618095,"lng":0.13591393901151605},

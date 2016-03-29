@@ -44,37 +44,35 @@ import uk.ac.cam.tfc_server.util.GTFS;
 // ********************************************************************************************
 
 public class FeedPlayer extends AbstractVerticle {
-  // Config vars
+    // Config vars
     private String MODULE_NAME; // from config()
     private String MODULE_ID; // from config()
     private String EB_SYSTEM_STATUS; // eventbus status reporting address
 
-  String EB_FEEDPLAYER; // eventbus address for JSON feed position updates
+    private String FEEDPLAYER_ADDRESS; // eventbus address for JSON feed position updates
+
+    private String TFC_DATA_BIN; // root of bin files
+    private Long START_TS;   // UTC timestamp for first position record file to publish
+    private Long FINISH_TS;  // UTC timestamp to end feed
+
+    private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
+    private final int SYSTEM_STATUS_AMBER_SECONDS = 15; // delay before flagging system as AMBER
+    private final int SYSTEM_STATUS_RED_SECONDS = 25; // delay before flagging system as RED
+
+    private EventBus eb = null;
+    private String yyyymmdd; // path to files, e.g. 2016/03/07, derived from feedplayer.start_ts
     
+    @Override
+    public void start(Future<Void> fut) throws Exception
+    {
 
-    // eventbus address to replay messages
-    private String EB_ADDRESS; // EB_FEEDPLAYER + "." + MODULE_ID;
-    
-    private String tfc_data_bin; // root of bin files
-    private String filepath; // path to files, e.g. 2016/03/07, derived from feedplayer.ts
-    private Long ts; // start timestamp
-
-  private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
-  private final int SYSTEM_STATUS_AMBER_SECONDS = 15; // delay before flagging system as AMBER
-  private final int SYSTEM_STATUS_RED_SECONDS = 25; // delay before flagging system as RED
-
-  private EventBus eb = null;
-    
-      @Override
-      public void start(Future<Void> fut) throws Exception {
-
-        // load Zone initialization values from config()
+        // load initialization values from config()
         if (!get_config())
               {
                   fut.fail("FeedPlayer: failed to load initial config()");
               }
 
-        System.out.println("FeedPlayer " + MODULE_NAME + "." + MODULE_ID + " started!");
+        System.out.println("FeedPlayer: " + MODULE_NAME + "." + MODULE_ID + " started on " + FEEDPLAYER_ADDRESS);
 
         eb = vertx.eventBus();
 
@@ -90,7 +88,7 @@ public class FeedPlayer extends AbstractVerticle {
           });
 
 
-        final String bin_path = tfc_data_bin+"/"+filepath;
+        final String bin_path = TFC_DATA_BIN+"/"+yyyymmdd;
 
         // read list of days filenames from directory
         vertx.fileSystem().readDir(bin_path, res -> {
@@ -102,13 +100,13 @@ public class FeedPlayer extends AbstractVerticle {
                                 Collections.sort(res.result());
                                 int file_index = 0;
                                 while (file_index < res.result().size() &&
-                                       ts > get_ts_from_filepath(bin_path, res.result().get(file_index))
+                                       START_TS > get_ts_from_filepath(bin_path, res.result().get(file_index))
                                       )
                                     {
                                         file_index++;
                                     }
-                                System.out.println("FilePlayer: file_index="+file_index);
-                                process_gtfs_files(bin_path, filepath, res.result(), file_index);
+                                System.out.println("FeedPlayer: starting with "+bin_path+" file #"+file_index);
+                                process_gtfs_files(bin_path, yyyymmdd, res.result(), file_index);
                             }
                         catch (Exception e)
                             {
@@ -122,17 +120,6 @@ public class FeedPlayer extends AbstractVerticle {
             });
         
       } // end start()
-
-    // pick out the Long timestamp embedded in the file name
-    // e.g. <bin_path>/2016/03/07/1457334014_2016-03-07-07-00-14.bin -> 1457334014
-    Long get_ts_from_filepath(String bin_path, String filename)
-    {
-        
-        int ts_start = bin_path.length()+1;
-        int ts_length = filename.indexOf('_', ts_start) - ts_start;
-        String ts_string = filename.substring(ts_start, ts_start+ts_length);
-        return Long.parseLong(ts_string);
-    }
 
     // Iterate through the list of files
     void process_gtfs_files(String bin_path, String filepath, List<String> files, int i) throws Exception
@@ -148,13 +135,13 @@ public class FeedPlayer extends AbstractVerticle {
         //System.out.println("FeedPlayer: "+files.get(i));
         String filename = files.get(i).substring(bin_path.length()+1); // strip leading path
         filename = filename.substring(0,filename.length() - 4); // strip ".bin"
-        process_gtfs_file(filename, filepath);
+        process_gtfs_file(filename, yyyymmdd);
 
         // process remaining files
         vertx.setTimer(3000, id -> {
                 try
                     {
-                        process_gtfs_files(bin_path,filepath, files, i + 1);
+                        process_gtfs_files(bin_path,yyyymmdd, files, i + 1);
                     }
                 catch (Exception e)
                     {
@@ -163,20 +150,18 @@ public class FeedPlayer extends AbstractVerticle {
     }
     
     //debug this is just a placeholder to test compile
-    void process_gtfs_file(String filename, String filepath) throws Exception
+    void process_gtfs_file(String filename, String yyyymmdd) throws Exception
     {
-        System.out.println("Reading "+tfc_data_bin+"/"+filepath+"/"+filename+".bin");
-
         // Read a file
-        vertx.fileSystem().readFile(tfc_data_bin+"/"+filepath+"/"+filename+".bin", res -> {
+        vertx.fileSystem().readFile(TFC_DATA_BIN+"/"+yyyymmdd+"/"+filename+".bin", res -> {
                 if (res.succeeded())
                 {
                     try
                     {
-                      JsonObject msg = GTFS.buf_to_json(res.result(), filename, filepath);
+                      JsonObject msg = GTFS.buf_to_json(res.result(), filename, yyyymmdd);
         
-                      eb.publish(EB_ADDRESS, msg);
-                      System.out.println("FeedPlayer " + MODULE_NAME + "." + MODULE_ID + " published to " + EB_ADDRESS);
+                      eb.publish(FEEDPLAYER_ADDRESS, msg);
+                      //System.out.println("FeedPlayer: " + MODULE_NAME + "." + MODULE_ID + " published to " + FEEDPLAYER_ADDRESS);
                     } catch (Exception e)
                     {
                         System.err.println("FeedPlayer: exception in GTFS.buf_to_json()");
@@ -189,6 +174,17 @@ public class FeedPlayer extends AbstractVerticle {
         
     } // end process_gtfs()
   
+    // pick out the Long timestamp embedded in the file name
+    // e.g. <bin_path>/2016/03/07/1457334014_2016-03-07-07-00-14.bin -> 1457334014
+    Long get_ts_from_filepath(String bin_path, String filename)
+    {
+        
+        int ts_start = bin_path.length()+1;
+        int ts_length = filename.indexOf('_', ts_start) - ts_start;
+        String ts_string = filename.substring(ts_start, ts_start+ts_length);
+        return Long.parseLong(ts_string);
+    }
+
     // Load initialization global constants defining this Zone from config()
     private boolean get_config()
     {
@@ -204,22 +200,22 @@ public class FeedPlayer extends AbstractVerticle {
         
         MODULE_ID = config().getString("module.id"); // A, B, ...
 
-        EB_FEEDPLAYER = config().getString("eb.feedplayer");
-
-        EB_ADDRESS = EB_FEEDPLAYER + "." + MODULE_ID;
-
         EB_SYSTEM_STATUS = config().getString("eb.system_status");
 
         
+        FEEDPLAYER_ADDRESS = config().getString(MODULE_NAME+".address"); // eventbus address to publish feed on
+
         //debug - this should be coming from a dynamic request, probably...
-        tfc_data_bin = config().getString("feedplayer.files","");
+        TFC_DATA_BIN = config().getString(MODULE_NAME+".files");
 
-        ts = config().getLong("feedplayer.ts");
+        START_TS = config().getLong(MODULE_NAME+".start_ts");
 
-        Date d = new Date(ts * 1000);
+        FINISH_TS = config().getLong(MODULE_NAME+".finish_ts"); //debug not used yet
+
+        Date d = new Date(START_TS * 1000);
 
         //debug does this pick up the timezone?
-        filepath =  new SimpleDateFormat("yyyy/MM/dd").format(d);
+        yyyymmdd =  new SimpleDateFormat("yyyy/MM/dd").format(d);
 
         return true;
     }
