@@ -54,7 +54,8 @@ public class FeedPlayer extends AbstractVerticle {
     private String TFC_DATA_BIN; // root of bin files
     private Long START_TS;   // UTC timestamp for first position record file to publish
     private Long FINISH_TS;  // UTC timestamp to end feed
-
+    private int RATE; // milliseconds between each published feed message
+    
     private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
     private final int SYSTEM_STATUS_AMBER_SECONDS = 15; // delay before flagging system as AMBER
     private final int SYSTEM_STATUS_RED_SECONDS = 25; // delay before flagging system as RED
@@ -138,13 +139,14 @@ public class FeedPlayer extends AbstractVerticle {
         process_gtfs_file(filename, yyyymmdd);
 
         // process remaining files
-        vertx.setTimer(3000, id -> {
+        vertx.setTimer(RATE, id -> {
                 try
                     {
                         process_gtfs_files(bin_path,yyyymmdd, files, i + 1);
                     }
                 catch (Exception e)
                     {
+                        System.err.println("FeedPlayer: "+MODULE_ID+" exception in process_gtfs_files()");
                     }
             });
     }
@@ -211,6 +213,8 @@ public class FeedPlayer extends AbstractVerticle {
         START_TS = config().getLong(MODULE_NAME+".start_ts");
 
         FINISH_TS = config().getLong(MODULE_NAME+".finish_ts"); //debug not used yet
+
+        RATE = config().getInteger(MODULE_NAME+".rate");
 
         Date d = new Date(START_TS * 1000);
 

@@ -61,8 +61,8 @@ public class Zone extends AbstractVerticle {
     private String EB_MANAGER;        // config eb.manager
 
     // These values are updated on receipt of EB_MANAGER config commands
-    private String ZONE_FEED;         // EB_MANAGER config zone.feed (Zone SUBSCRIBES to this)
-    private String ZONE_ADDRESS;      // EB_MANAGER config zone.address
+    //private String ZONE_FEED;         // EB_MANAGER config zone.feed (Zone SUBSCRIBES to this)
+    //private String ZONE_ADDRESS;      // EB_MANAGER config zone.address
     
     private Box box;
     
@@ -98,7 +98,7 @@ public class Zone extends AbstractVerticle {
               return;
           }
       
-    System.out.println("Zone: " + MODULE_NAME + "." + MODULE_ID + " started, subscribing to "+ZONE_FEED);
+    System.out.println("Zone: " + MODULE_NAME + "." + MODULE_ID + " started");
 
     box = new Box();
     
@@ -131,7 +131,8 @@ public class Zone extends AbstractVerticle {
     });
 
 
-    //debug - this is a hack - should come from eventbus EB_MANAGER
+    //debug !!- this is a hack - should come from eventbus EB_MANAGER
+    //... if (zone.feed in config(), then start processing immediately
     JsonObject subscribe = new JsonObject();
     subscribe.put("zone.address", "tfc.zone.test");
     subscribe.put("zone.feed", "tfc.feedplayer.B");
@@ -230,9 +231,18 @@ public class Zone extends AbstractVerticle {
             {
                 // set up a subscription to a feed
                 //debug this should be added to a list of subscriptions
-              ZONE_FEED = subscribe.getString("zone.feed");
+              String ZONE_FEED = subscribe.getString("zone.feed");
         
-              ZONE_ADDRESS = subscribe.getString("zone.address");
+              String ZONE_ADDRESS = subscribe.getString("zone.address");
+
+              monitor_feed(ZONE_FEED, ZONE_ADDRESS);
+              
+            }
+        return true;
+    }
+
+    private void monitor_feed(String ZONE_FEED, String ZONE_ADDRESS)
+    {
               System.out.println("Zone: " + MODULE_NAME + "." + MODULE_ID +  " subscribing to "+ ZONE_FEED);
               
               // set up a handler for the actual vehicle position feed messages
@@ -240,13 +250,10 @@ public class Zone extends AbstractVerticle {
 
                   JsonObject feed_message = new JsonObject(eb_message.body().toString());
 
-                  handle_feed(feed_message);
+                  handle_feed(feed_message, ZONE_ADDRESS);
               });
-
-            }
-        return true;
     }
-    
+        
     // Vehicle stores the up-to-date status of a vehicle with a given vehicle_id
     // in the context of the current zone, e.g. is it currently within bounds
     class Vehicle {
@@ -434,7 +441,7 @@ public class Zone extends AbstractVerticle {
 // **********                            *************************************************
 // ***************************************************************************************
   
-    private void handle_feed(JsonObject feed_message)
+    private void handle_feed(JsonObject feed_message, String ZONE_ADDRESS)
     {
         JsonArray entities = feed_message.getJsonArray("entities");
 

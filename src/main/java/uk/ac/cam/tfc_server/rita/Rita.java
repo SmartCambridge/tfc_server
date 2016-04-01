@@ -59,7 +59,8 @@ public class Rita extends AbstractVerticle {
   private String EB_MANAGER; // from config()
   private String MODULE_NAME; // from config()
   private String MODULE_ID; // from config()
-
+  private String WEBROOT; // from config()
+    
     //debug - these may come from user commands
     private ArrayList<String> FEEDPLAYERS; // from config()
     private ArrayList<String> ZONEMANAGERS; // from config()
@@ -185,7 +186,7 @@ public class Rita extends AbstractVerticle {
     // create handler for static pages
 
     StaticHandler static_handler = StaticHandler.create();
-    static_handler.setWebRoot("webroot");
+    static_handler.setWebRoot(WEBROOT);
     static_handler.setCachingEnabled(false);
     router.route(HttpMethod.GET, "/*").handler( static_handler );
 
@@ -196,6 +197,14 @@ public class Rita extends AbstractVerticle {
     // create listener for eventbus 'console_in' messages
     eb.consumer("rita_in", message -> {
           System.out.println("Rita_in: "+message.body());
+      });
+
+    //debug !! wrong to hardcode the feedplayer eventbus address
+    //debug also hardcoded "rita_out"
+    // create listener for eventbus FeedPlayer messages
+    // and send them to the browser via rita_out
+    eb.consumer("tfc.feedplayer.B", message -> {
+            eb.send("rita_out", message.body());
       });
 
   } // end start()
@@ -221,6 +230,8 @@ public class Rita extends AbstractVerticle {
         RITA_ADDRESS = config().getString(MODULE_NAME+".address");
 
         HTTP_PORT = config().getInteger(MODULE_NAME+".http.port");
+
+        WEBROOT = config().getString(MODULE_NAME+".webroot");
         //debug test for bad config
         
         FEEDPLAYERS = new ArrayList<String>();

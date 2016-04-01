@@ -13,3 +13,34 @@ This repository is for the the "tfc_server" system, containing:
 * HTTP servers that present the user interface and consoles.
 
 The system uses Java / Vertx to be event driven throughout
+
+Update 2016-04-01
+
+The entire architecture is ‘message passing’ beginning with the realtime feeds coming in through to the analysis of buses and zones – it can also replay any day.  At the moment I’m building out the set of Agents that will be needed, so far I have working:
+
+[FeedHandler]: receives the realtime feed and publishes it as (json) position update messages into my platform.
+
+[Zone]: subscribes to position update messages and calculates whether buses have entered/left a zone, or has a successful transit of the zone, and publishes those ‘zone’ messages. I’ve defined parameters for about 10 zones around Cambridge, but there’s no limit.
+
+[ZoneManager]: dynamically spawns new zones as needed
+
+[FeedPlayer]: reads historical data and publishes it similar to a FeedHandler
+
+[FeedCSV]: reads the FeedHandler messages and archives the records as CSV
+
+[Rita]: provides a web user interface, e.g. to display Zone congestion info, or just draw positions on a map. I want to tart this up a bit in the short term so it is producing pages a transport user would recognise.
+
+[Console]: listens to everything and provides a system status / log message browser window for administration.
+
+Additional agents I’m pretty sure I will need, but haven’t built yet, include:
+
+[Route]: will subscribe to zone messages and maybe watch individual buses to produce some Route status.
+
+[Stop]: similar to Route, but only care about messages affecting an individual stop.
+
+[Bus] (maybe): I could dynamically spawn agents that track each bus, if that makes the system more powerful – it would be the logical place to accumulate real-time information for each bus in case Stops or Routes want to query that, or receive alert messages saying a bus has an issue, but not sure. As I write this it seems to make more sense (the Bus agent would detect a bus getting stuck between stops, and could send a Bus-related alert message which other agents *might* subscribe to, but still not sure).
+
+[Messenger]: subscribes to a variety of alert messages, and publishes human-readable versions outside the system in the form of emails, tweets and rss.
+
+[FeedComposer]: My existing agents just subscribe to the FeedHandler receiving the Vix positions updates – actually I’m assuming a Zone ‘requests’ a feed (e.g. Vix buses within Cambridge) and the FeedComposer would subscribe to the (e.g.) Vix feed and produce a custom feed that only contains the data of interest – this will make the platform more scalable (not that that’s an issue at the moment).
+
