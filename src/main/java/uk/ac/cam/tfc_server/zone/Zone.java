@@ -133,6 +133,13 @@ public class Zone extends AbstractVerticle {
 
     //debug !!- this is a hack - should come from eventbus EB_MANAGER
     //... if (zone.feed in config(), then start processing immediately
+    String ZONE_ADDRESS = config().getString("zone.address");
+    String ZONE_FEED = config().getString("zone.feed");
+    if (ZONE_ADDRESS != null && ZONE_FEED != null)
+        {
+            monitor_feed(ZONE_FEED, ZONE_ADDRESS);
+        }
+    /*
     JsonObject subscribe = new JsonObject();
     subscribe.put("zone.address", "tfc.zone.test");
     subscribe.put("zone.feed", "tfc.feedplayer.B");
@@ -142,7 +149,7 @@ public class Zone extends AbstractVerticle {
         {
             System.err.println("Zone: "+MODULE_ID+" manager bad message");
         }
-    
+    */
     // send periodic "system_status" messages
     vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> {
       eb.publish(EB_SYSTEM_STATUS,

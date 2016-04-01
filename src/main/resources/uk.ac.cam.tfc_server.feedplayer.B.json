@@ -12,7 +12,7 @@
             "eb.console_out":        "console_out",
             "eb.manager" :           "tfc.manager",
 
-            "feedplayer.address":    "tfc.feedplayer.B",
+            "feedplayer.address":    "tfc.feedplayer.Bx",
             "feedplayer.files":      "/home/ijl20/tfc_server_data/data_bin",
             "feedplayer.start_ts" :  1447402803,
             "feedplayer.finish_ts" : 1447406403,

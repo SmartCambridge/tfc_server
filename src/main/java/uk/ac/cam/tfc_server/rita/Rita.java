@@ -9,7 +9,7 @@ package uk.ac.cam.tfc_server.rita;
 // Based on user requests via the http UI, RITA will spawn feedplayers and zones, to
 // display the analysis in real time on the user browser.
 //
-// Version 0.02
+// Version 0.03
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
@@ -40,7 +40,6 @@ import io.vertx.core.json.JsonArray;
 // vertx web, service proxy, sockjs eventbus bridge
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.StaticHandler;
-//import io.vertx.serviceproxy.ProxyHelper;
 import io.vertx.ext.web.handler.sockjs.BridgeOptions;
 import io.vertx.ext.web.handler.sockjs.PermittedOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
@@ -64,6 +63,9 @@ public class Rita extends AbstractVerticle {
     //debug - these may come from user commands
     private ArrayList<String> FEEDPLAYERS; // from config()
     private ArrayList<String> ZONEMANAGERS; // from config()
+
+    private String ZONE_ADDRESS; // optional from config()
+    private String FEEDPLAYER_ADDRESS; // optional from config()
     
   private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
   private final int SYSTEM_STATUS_AMBER_SECONDS = 15;
@@ -88,13 +90,17 @@ public class Rita extends AbstractVerticle {
 
     //debug
     // get test config options for FeedPlayers from conf file given to Rita
-    
     for (int i=0; i<FEEDPLAYERS.size(); i++)
         {
             final String feedplayer_id = FEEDPLAYERS.get(i);
             //debug -- also should get start commands from eb.zonemanager.X
             DeploymentOptions feedplayer_options = new DeploymentOptions();
-
+            JsonObject conf = new JsonObject();
+            if (FEEDPLAYER_ADDRESS != null)
+                {
+                    conf.put("feedplayer.address", FEEDPLAYER_ADDRESS);
+                    feedplayer_options.setConfig(conf);
+                }
             vertx.deployVerticle("service:uk.ac.cam.tfc_server.feedplayer."+feedplayer_id,
                                  feedplayer_options,
                                  res -> {
@@ -113,7 +119,16 @@ public class Rita extends AbstractVerticle {
             final String zonemanager_id = ZONEMANAGERS.get(i);
             //debug -- also should get start commands from eb.zonemanager.X
             DeploymentOptions zonemanager_options = new DeploymentOptions();
-
+            JsonObject conf = new JsonObject();
+            if (ZONE_ADDRESS != null)
+                {
+                    conf.put("zonemanager.zone.address", ZONE_ADDRESS);
+                }
+            if (FEEDPLAYER_ADDRESS != null)
+                {
+                    conf.put("zonemanager.zone.feed", FEEDPLAYER_ADDRESS);
+                }
+            zonemanager_options.setConfig(conf);
             vertx.deployVerticle("service:uk.ac.cam.tfc_server.zonemanager."+zonemanager_id,
                                  zonemanager_options,
                                  res -> {
@@ -247,6 +262,10 @@ public class Rita extends AbstractVerticle {
             {
                 ZONEMANAGERS.add(zonemanager_list.getString(i));
             }
+
+        ZONE_ADDRESS = config().getString(MODULE_NAME+".zone.address");
+        
+        FEEDPLAYER_ADDRESS = config().getString(MODULE_NAME+".feedplayer.address");
         
         return true;
     }

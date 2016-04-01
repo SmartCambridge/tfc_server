@@ -4,7 +4,7 @@ package uk.ac.cam.tfc_server.zonemanager;
 // *************************************************************************************************
 // *************************************************************************************************
 // ZoneManager.java
-// Version 0.01
+// Version 0.02
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
@@ -69,6 +69,16 @@ public class ZoneManager extends AbstractVerticle {
 
     //debug -- zone.address and zone.feed should come from manager messages
     DeploymentOptions zone_options = new DeploymentOptions();
+    JsonObject conf = new JsonObject();
+    if (ZONE_ADDRESS != null)
+        {
+            conf.put("zone.address", ZONE_ADDRESS);
+        }
+    if (ZONE_FEED != null)
+        {
+            conf.put("zone.feed", ZONE_FEED);
+        }
+    zone_options.setConfig(conf);
 
     for (int i=0; i<START_ZONES.size(); i++)
         {
@@ -119,11 +129,16 @@ public class ZoneManager extends AbstractVerticle {
         //debug test for bad config
 
         START_ZONES = new ArrayList<String>();
-        JsonArray zone_list = config().getJsonArray("zonemanager.start");
+        JsonArray zone_list = config().getJsonArray(MODULE_NAME+".start");
         for (int i=0; i<zone_list.size(); i++)
             {
                 START_ZONES.add(zone_list.getString(i));
             }
+
+        ZONE_ADDRESS = config().getString(MODULE_NAME+".zone.address");
+
+        ZONE_FEED = config().getString(MODULE_NAME+".zone.feed");
+        
         return true;
     }
 
