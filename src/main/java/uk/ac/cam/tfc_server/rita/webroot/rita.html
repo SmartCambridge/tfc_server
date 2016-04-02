@@ -5,9 +5,11 @@
     <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
     <script src="//cdn.jsdelivr.net/sockjs/1.0.3/sockjs.min.js"></script>
     <script src='vertx-eventbus.js'></script>
-	<title>TFC RITA 0.52</title>
+	<title>TFC RITA 0.53</title>
 <!--
 RELEASE INFO:
+2016-04-01 0.52 html/js ported to Rita NG, now served by vertx
+----
 2016-01-18 0.31 added 'name' to save of current bounds
         moved process_positions into got_data instead of parse_positions
         bugfix moved bounds initialization code in load_saves()
@@ -17,6 +19,23 @@ RELEASE INFO:
 
 2016-01-14 0.29 Now supports multiple bounds
 
+Feed format:
+{ "filename":"1447402833_2015-11-13-08-20-33",
+  "filepath":"2015/11/13",
+  "entities":[ { "trip_id":"1176607-20151101-20151224",
+                 "route_id":"FE-B",
+                 "current_stop_sequence":9,
+                 "bearing":18,
+                 "latitude":52.341217,
+                 "longitude":-0.17712024,
+                 "timestamp":1447402814,
+                 "stop_id":"2688",
+                 "label":"FE-15657",
+                 "vehicle_id":"13",
+                 "received_timestamp":1459603668
+               }, ...
+             ]
+}
 -->	
 <style type="text/css">
 html {
@@ -89,15 +108,20 @@ var console1_html = ''; // strings used to accumulate console content
 
 var APP_KEY = 'tfc_current_bounds'; // 'unique' key used to identify localstorage values
 var SAVE_KEY = 'save'; // local key to identify saved path localstorage values
-var CURRENT_KEY = 'current'; // localstorage save key for current path (so page can restore dynamic content on reload)
+var CURRENT_KEY = 'current'; // localstorage save key for current path (so page can restore
+                             // dynamic content on reload)
 
-var data_mode = 'REALTIME'; // REALTIME or HISTORIC -- controls whether page pages for data.csv or files within 'web_day' directory
+var data_mode = 'REALTIME'; // REALTIME or HISTORIC -- controls whether page pages for
+                            // data.csv or files within 'web_day' directory
 var update_time = REALTIME_POLLING_INTERVAL; // time between update polls in ms
 
 
 var data_historic_index; // current file index within web_day directory
 
 var map; // google.maps.Map object
+
+// initialize lat/lng bounds of the Google map, to prune the markers we need to draw
+var map_bounds = { n: 90, s: -90, e: 180, w: -180 };
 
 //var marker;
 var infowindow;
@@ -158,24 +182,20 @@ var timer; // id of setInterval
 
 var bounds_cache = new Array();
 bounds_cache.push(JSON.parse('{"center":{"lat":52.2,"lng":0.049999999999954525},\
-								"zoom":13,\
-								"path":[{"lat":52.18181339776096,"lng":-0.00102996826171875},\
-										{"lat":52.190127806299266,"lng":-0.006008148193359375},\
-										{"lat":52.1878125575784,"lng":-0.019397735595703125},\
-										{"lat":52.178339830038674,"lng":-0.01682281494140625}],\
-								"finish_index":2,\
-								"name":"TOFT",\
-								"checked":false,\
-								"vehicles":{},\
-								"box":{"north":52.190127806299266,\
-										"south":52.178339830038674,\
-										"east":-0.00102996826171875,\
-										"west":-0.019397735595703125}}'));
-bounds_cache.push(JSON.parse('{"center":{"lat":52.191733476750535,"lng":0.1393497467040694},"zoom":14,"path":[{"lat":52.19797376106204,"lng":0.12685775756835938},{"lat":52.19881549121571,"lng":0.1295185089111328},{"lat":52.191660276779764,"lng":0.13655662536621094},{"lat":52.180451633654826,"lng":0.14299392700195312},{"lat":52.18018848602521,"lng":0.13998985290527344}],"finish_index":3,"name":"Hills Road OUT","checked":false,"vehicles":{},"box":{"north":52.19881549121571,"south":52.18018848602521,"east":0.14299392700195312,"west":0.12685775756835938}}'));
-bounds_cache.push(JSON.parse('{"center":{"lat":52.197957151813746,"lng":0.1301417231559432},"zoom":18,"path":[{"lat":52.17929377243817,"lng":0.14041900634765625},{"lat":52.17939903379436,"lng":0.14471054077148438},{"lat":52.19071317679521,"lng":0.13715744018554688},{"lat":52.195974588058064,"lng":0.13192176818847656},{"lat":52.19907852861959,"lng":0.12917518615722656},{"lat":52.19734245298547,"lng":0.1267719268798828}],"finish_index":4,"name":"Hills Road IN","checked":false,"vehicles":{},"box":{"north":52.19907852861959,"south":52.17929377243817,"east":0.14471054077148438,"west":0.1267719268798828}}'));
-bounds_cache.push(JSON.parse('{"center":{"lat":52.21132533651944,"lng":0.0969279289245284},"zoom":15,"path":[{"lat":52.212783911038585,"lng":0.08480072021484375},{"lat":52.214335321429296,"lng":0.08514404296875},{"lat":52.212257996914616,"lng":0.10570049285888672},{"lat":52.21065392038191,"lng":0.10548591613769531}],"finish_index":2,"name":"Madingley Road IN"}'));
-bounds_cache.push(JSON.parse('{"center":{"lat":52.2120353340221,"lng":0.09216432571407918},"zoom":15,"path":[{"lat":52.21065392038191,"lng":0.1052713394165039},{"lat":52.21228429276869,"lng":0.10535717010498047},{"lat":52.21386201552824,"lng":0.08419990539550781},{"lat":52.21281020658135,"lng":0.08368492126464844}],"finish_index":2,"name":"Madingley Road OUT"}'));
-bounds_cache.push(JSON.parse('{"center":{"lat":52.200542498481255,"lng":0.1292002677917159},"zoom":15,"path":[{"lat":52.201475385236485,"lng":0.12256622314453125},{"lat":52.20352691291383,"lng":0.1272439956665039},{"lat":52.195530680537125,"lng":0.1363849639892578},{"lat":52.190716465371736,"lng":0.13153553009033203}],"finish_index":2,"name":"Cam Test"}'));
+                                            "zoom":13,\
+                                            "path":[{"lat":52.18181339776096,"lng":-0.00102996826171875},\
+                                                    {"lat":52.190127806299266,"lng":-0.006008148193359375},\
+                                                    {"lat":52.1878125575784,"lng":-0.019397735595703125},\
+                                                    {"lat":52.178339830038674,"lng":-0.01682281494140625}],\
+                                            "finish_index":2,\
+                                            "name":"TOFT",\
+                                            "checked":false,\
+                                            "vehicles":{},\
+                                            "box":{"north":52.190127806299266,\
+                                                    "south":52.178339830038674,\
+                                                    "east":-0.00102996826171875,\
+                                                    "west":-0.019397735595703125}}'));
+
 
 // ***********************************************************************************
 // ***********************************************************************************
@@ -191,9 +211,14 @@ function init()
       // script to run when Vertx EventBus is ready
       eb.onopen = function() {
 
-        // set a handler to receive a "console_out" message
+        // set a handler to receive a "rita_out" message
         eb.registerHandler('rita_out', function(error, message) {
-          write_console1('rita_out: feed received');// + message.body);
+          write_console1('rita_out: ' + message.body + '<br/>');
+        });
+
+        // set a handler to receive a "rita_feed" message
+        eb.registerHandler('rita_feed', function(error, message) {
+          map_feed(message.body);
         });
       }
 
@@ -227,10 +252,10 @@ function init()
 
     //debug - here's where rita #1 polls for its data
     //get_data();
-    if (UPDATE)
-    {
-        timer = setInterval(get_data, update_time); // call get_data every 15 seconds
-    }
+    //if (UPDATE)
+    //{
+    //    timer = setInterval(get_data, update_time); // call get_data every 15 seconds
+    //}
 }
 
 // initialize the data structure to store the drawn and loaded bounds
@@ -261,13 +286,25 @@ function initMap() {
             ]
         }];
 
-	map = new google.maps.Map(map_element, {
+    map = new google.maps.Map(map_element, {
 	  zoom: 13,
       center: new google.maps.LatLng(MAPCENTER.lat, MAPCENTER.lng),
 	  mapTypeId: google.maps.MapTypeId.ROADMAP,
       draggableCursor:'crosshair',
       styles: mapStyles
 	});
+
+    google.maps.event.addListener(map, "bounds_changed", function() {
+     // send the new bounds back to your server
+
+     var m = map.getBounds();
+     map_bounds.w = m.getSouthWest().lng();
+     map_bounds.e = m.getNorthEast().lng();
+     map_bounds.s = m.getSouthWest().lat();
+     map_bounds.n = m.getNorthEast().lat();
+     
+     //alert("map bounds: "+JSON.stringify(map_bounds));
+    });
 
     infowindow = new google.maps.InfoWindow();
 
@@ -1621,6 +1658,42 @@ function bounds_completed(bounds_index, vehicle_id)
 //
 // MAP UPDATE
 //
+
+// draw the vehicle positions from the rita_feed onto the map
+function map_feed(feed)
+{
+    for (var i=0; i< markers.length; i++)
+    {
+        markers[i].setMap(null);
+    }
+    markers = [];
+
+    var positions = feed.entities;
+
+    var marker_count = 0;
+    for (var i=0; i < positions.length; i++)
+    {
+        var lat = positions[i].latitude;
+        var lng = positions[i].longitude;
+        if (lat < map_bounds.n && lat > map_bounds.s && lng > map_bounds.w && lng < map_bounds.e)
+        {
+        marker_count++;        
+            var marker = new google.maps.Marker({
+                position: { lat: lat, lng: lng },
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 4,
+                    strokeColor: 'green'
+                },
+                map: map
+            });
+
+            markers.push(marker);
+        }
+    }
+    write_console1('markers: '+marker_count);
+}
+                                             
 // Draw the positions on the map, with infowindow open if appropriate
 function update_map()
 {
@@ -1749,7 +1822,7 @@ function debug()
   <h1>TFC Realtime Analysis Tool <span id='heading'></span></h1>
 <div id="status">Initializing...</div>
   
-<table style="width: 100%; height: 75%">
+<table style="width: 100%; height: 60%">
     <tr>
     <td style="vertical-align: top">
         <div id="toolbar">
@@ -1777,7 +1850,7 @@ function debug()
     <tr>
     <td style="width: 50%; vertical-align: top">
         <div id="console1">
-		<h2>Messages</h2>
+		<h4>Messages</h4>
         </div>
     </td>
     <td style="width: 50%; vertical-align: top">

@@ -190,7 +190,10 @@ public class Rita extends AbstractVerticle {
     //debug rita_in/out EB names should be in config()
     PermittedOptions inbound_permitted = new PermittedOptions().setAddress("rita_in");
     BridgeOptions bridge_options = new BridgeOptions();
+    // add outbound address for user messages
     bridge_options.addOutboundPermitted( new PermittedOptions().setAddress("rita_out") );
+    // add outbound address for feed messages
+    bridge_options.addOutboundPermitted( new PermittedOptions().setAddress("rita_feed") );
 
     bridge_options.addInboundPermitted(inbound_permitted);
 
@@ -209,6 +212,7 @@ public class Rita extends AbstractVerticle {
 
     http_server.requestHandler(router::accept).listen(HTTP_PORT);
 
+    //debug hardcoded to "rita_in" should be in config()
     // create listener for eventbus 'console_in' messages
     eb.consumer("rita_in", message -> {
           System.out.println("Rita_in: "+message.body());
@@ -218,9 +222,13 @@ public class Rita extends AbstractVerticle {
     //debug also hardcoded "rita_out"
     // create listener for eventbus FeedPlayer messages
     // and send them to the browser via rita_out
-    eb.consumer("tfc.feedplayer.B", message -> {
-            eb.send("rita_out", message.body());
-      });
+    if (FEEDPLAYER_ADDRESS != null)
+        {
+            eb.consumer(FEEDPLAYER_ADDRESS, message -> {
+                    eb.send("rita_feed", message.body());
+                    eb.send("rita_out", "feed received from "+FEEDPLAYER_ADDRESS);
+              });
+        }
 
   } // end start()
 
@@ -228,8 +236,10 @@ public class Rita extends AbstractVerticle {
     private boolean get_config()
     {
         // config() values needed by all TFC modules are:
-        //   tfc.module_id - unique module reference to be used by this verticle
-        //   eb.system_status - String eventbus address for system status messages
+        // module.name e.g. "rita"
+        // module.id e.g. "A"
+        // eb.system_status - String eventbus address for system status messages
+        // eb.manager - evenbus address to subscribe to for system management messages
 
         MODULE_NAME = config().getString("module.name"); // "rita"
         if (MODULE_NAME==null)
