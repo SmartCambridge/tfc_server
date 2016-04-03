@@ -1,4 +1,5 @@
-# RITA: Realtime Intelligent Traffic Analysis
+#![Smart Cambridge logo](images/smart_cambridge_logo.jpg)
+RITA: Realtime Intelligent Traffic Analysis
 
 # Part of the Smart Cambridge programme.
 
