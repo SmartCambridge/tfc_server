@@ -35,7 +35,7 @@ The system will:
 ## Summary of system modules
 *For more detail see the readme in each module directory*
 
-### FeedHandler (see [FeedHandler README](src/main/java/uk/ac/cam/tfc_server/feedhandler/README.md))
+### FeedHandler (see [FeedHandler README](src/main/java/uk/ac/cam/tfc_server/feedhandler))
 
 Receives the realtime batched of vehicle position data (currently as GTFS format binary data as
 an http POST every 30 seconds) and parses/publishes the data as a 'json' message on the Vertx eventbus.
