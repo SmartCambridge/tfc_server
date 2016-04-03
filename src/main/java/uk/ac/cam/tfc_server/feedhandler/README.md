@@ -11,11 +11,12 @@ position records.
 
 To preserve the data, FeedHandler immediately writes this binary data to the
 file system in three places:
-- a local cache directory as YYYY/MM/DD/<filename>.bin
-- a binary archive directory as YYYY/MM/DD/<filename>.bin
+- a local cache directory as YYYY/MM/DD/&lt;filename&gt;.bin
+- a binary archive directory as YYYY/MM/DD/&lt;filename&gt;.bin
 - as a file in a "monitor" directory so it is available to trigger
-other linux processes via inotifywait, as <filename.bin>, *deleting any
+other linux processes via inotifywait, as &lt;filename.bin&gt;, *deleting any
 prior .bin files in that directory*
+The filename is &lt;UTC TIMESTAMP&gt;\_YYYY-DD-MM-hh-mm-ss.bin
 
 FeedHandler then parses the binary data (using the Google GTFS/protobuf library)
 and 'publishes' the data to the eventbus as Json.
