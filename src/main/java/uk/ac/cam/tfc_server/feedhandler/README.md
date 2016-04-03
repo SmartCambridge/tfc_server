@@ -1,5 +1,33 @@
+# FeedHandler
 
-GTFS Data format from Google
+FeedHandler is part of the RITA Realtime Intelligent Traffic Analysis platform,
+supported by the Smart Cambridge programme.
+
+## Overview
+
+FeedHandler provides a http server that listens for http POSTs of
+binary GTFS-realtime format data, which contain batches of vehicle
+position records.
+
+To preserve the data, FeedHandler immediately writes this binary data to the
+file system in three places:
+- a local cache directory as YYYY/MM/DD/<filename>.bin
+- a binary archive directory as YYYY/MM/DD/<filename>.bin
+- as a file in a "monitor" directory so it is available to trigger
+other linux processes via inotifywait, as <filename.bin>, *deleting any
+prior .bin files in that directory*
+
+FeedHandler then parses the binary data (using the Google GTFS/protobuf library)
+and 'publishes' the data to the eventbus as Json.
+
+FeedHandler receives its configuration parameters (e.g. the eventbus address to
+use for the feed messages) in its [Vertx](vertx.io) config().
+
+FeedHandler also publishes regular (every 10 seconds) 'status=UP' messages to
+the 'system_status' eventbus address to be interpreted by the Console.
+
+
+## GTFS Data format from Google
 
 https://developers.google.com/transit/gtfs-realtime/reference
 
