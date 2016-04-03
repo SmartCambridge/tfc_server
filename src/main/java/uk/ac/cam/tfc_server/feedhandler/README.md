@@ -14,9 +14,13 @@ file system in three places:
 - a local cache directory as YYYY/MM/DD/&lt;filename&gt;.bin
 - a binary archive directory as YYYY/MM/DD/&lt;filename&gt;.bin
 - as a file in a "monitor" directory so it is available to trigger
-other linux processes via inotifywait, as &lt;filename.bin&gt;, *deleting any
+other linux processes via inotifywait, as &lt;filename&gt;.bin, *deleting any
 prior .bin files in that directory*
-The filename is &lt;UTC TIMESTAMP&gt;\_YYYY-DD-MM-hh-mm-ss.bin
+
+The filename is &lt;UTC TIMESTAMP&gt;\_YYYY-DD-MM-hh-mm-ss.bin where hh-mm-ss
+is LOCAL time. The UTC timestamp provides a guaranteed ordering of the feeds
+while the local time is often more useful for relative analysis (e.g.
+congestion tends to correlate with local time, not UTC.
 
 FeedHandler then parses the binary data (using the Google GTFS/protobuf library)
 and 'publishes' the data to the eventbus as Json.
