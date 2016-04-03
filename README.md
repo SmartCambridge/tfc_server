@@ -1,5 +1,4 @@
-#![Smart Cambridge logo](images/smart_cambridge_logo.jpg)
-RITA: Realtime Intelligent Traffic Analysis
+#![Smart Cambridge logo](images/smart_cambridge_logo.jpg) RITA: Realtime Intelligent Traffic Analysis
 
 # Part of the Smart Cambridge programme.
 
@@ -36,7 +35,7 @@ The system will:
 ## Summary of system modules
 *For more detail see the readme in each module directory*
 
-### FeedHandler
+### FeedHandler (see [FeedHandler README](src/main/java/uk/ac/cam/tfc_server/feedhandler/README.md))
 
 Receives the realtime batched of vehicle position data (currently as GTFS format binary data as
 an http POST every 30 seconds) and parses/publishes the data as a 'json' message on the Vertx eventbus.
