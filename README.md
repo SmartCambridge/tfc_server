@@ -58,7 +58,7 @@ also transmit general log messages to the console.
 It is intended to add a command-line in the console, to provide convenient web-based administration of
 some aspects of the system.
 
-### Zone
+### Zone (see [Zone README](src/main/java/uk/ac/cam/tfc_server/zone))
 
 A Zone is provided with configuration parameters defining the geographic area of interest (as a
 general polygon) and is assumes to have a 'start line' and a 'finish line'.  The Zone subscribes
