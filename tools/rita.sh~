@@ -1,3 +1,0 @@
-#!/bin/bash
-CLUSTER_PORT=10090
-java -jar target/tfc_server-1.0-SNAPSHOT-fat.jar -cluster -cluster-port 10099 -conf src/main/conf/tfc_server.conf
