@@ -61,10 +61,11 @@ public class Rita extends AbstractVerticle {
   private String WEBROOT; // from config()
     
     //debug - these may come from user commands
-    private ArrayList<String> FEEDPLAYERS; // from config()
-    private ArrayList<String> ZONEMANAGERS; // from config()
+    private ArrayList<String> FEEDPLAYERS; // optional from config()
+    private ArrayList<String> ZONEMANAGERS; // optional from config()
 
     private String ZONE_ADDRESS; // optional from config()
+    private String ZONE_FEED; // optional from config()
     private String FEEDPLAYER_ADDRESS; // optional from config()
     
   private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
@@ -124,9 +125,12 @@ public class Rita extends AbstractVerticle {
                 {
                     conf.put("zonemanager.zone.address", ZONE_ADDRESS);
                 }
-            if (FEEDPLAYER_ADDRESS != null)
+            if (ZONE_FEED != null)
                 {
-                    conf.put("zonemanager.zone.feed", FEEDPLAYER_ADDRESS);
+                    // note if FeedPlayers are also started, this will usually be
+                    // the same as FEEDPLAYER_ADDRESS so the Zones listen to the
+                    // FeeddPlayers
+                    conf.put("zonemanager.zone.feed", ZONE_FEED);
                 }
             zonemanager_options.setConfig(conf);
             vertx.deployVerticle("service:uk.ac.cam.tfc_server.zonemanager."+zonemanager_id,
@@ -226,10 +230,26 @@ public class Rita extends AbstractVerticle {
         {
             eb.consumer(FEEDPLAYER_ADDRESS, message -> {
                     eb.send("rita_feed", message.body());
-                    eb.send("rita_out", "feed received from "+FEEDPLAYER_ADDRESS);
+                    //eb.send("rita_out", "feed received from "+FEEDPLAYER_ADDRESS);
+              });
+        }
+    else if (ZONE_FEED != null)
+        {
+            eb.consumer(ZONE_FEED, message -> {
+                    eb.send("rita_feed", message.body());
+                    //eb.send("rita_out", "feed received from "+FEEDPLAYER_ADDRESS);
               });
         }
 
+    // Subscribe to the messages coming from the Zones
+    //debug we're only simply sending the messages to the browser to appear in log window
+    if (ZONE_ADDRESS != null)
+        {
+            eb.consumer(ZONE_ADDRESS, message -> {
+                    eb.send("rita_out", message.body());
+                });
+        }
+                
   } // end start()
 
     // Load initialization global constants defining this Zone from config()
@@ -249,32 +269,52 @@ public class Rita extends AbstractVerticle {
         
         MODULE_ID = config().getString("module.id"); // A, B, ...
 
+        // common system status reporting address, e.g. for UP messages
+        // picked up by Console
         EB_SYSTEM_STATUS = config().getString("eb.system_status");
+        
+        // system control address - commands are broadcast on this
         EB_MANAGER = config().getString("eb.manager");
 
+        // eventbus address for this Rita to publish its messages to
         RITA_ADDRESS = config().getString(MODULE_NAME+".address");
 
+        // port for user browser access to this Rita
         HTTP_PORT = config().getInteger(MODULE_NAME+".http.port");
 
+        // where the built-in webserver will find static files
         WEBROOT = config().getString(MODULE_NAME+".webroot");
-        //debug test for bad config
-        
+        //debug we should properly test for bad config
+
+        // get list of FeedPlayers to start on startup
         FEEDPLAYERS = new ArrayList<String>();
         JsonArray feedplayer_list = config().getJsonArray(MODULE_NAME+".feedplayers");
-        for (int i=0; i<feedplayer_list.size(); i++)
+        if (feedplayer_list != null)
             {
-                FEEDPLAYERS.add(feedplayer_list.getString(i));
-            }
-        
-        ZONEMANAGERS = new ArrayList<String>();
-        JsonArray zonemanager_list = config().getJsonArray(MODULE_NAME+".zonemanagers");
-        for (int i=0; i<zonemanager_list.size(); i++)
-            {
-                ZONEMANAGERS.add(zonemanager_list.getString(i));
+                for (int i=0; i<feedplayer_list.size(); i++)
+                    {
+                        FEEDPLAYERS.add(feedplayer_list.getString(i));
+                    }
             }
 
+        // get list of ZoneManager id's to start on startup
+        ZONEMANAGERS = new ArrayList<String>();
+        JsonArray zonemanager_list = config().getJsonArray(MODULE_NAME+".zonemanagers");
+        if (zonemanager_list != null)
+            {
+                for (int i=0; i<zonemanager_list.size(); i++)
+                    {
+                        ZONEMANAGERS.add(zonemanager_list.getString(i));
+                    }
+            }
+
+        // the eventbus address for the Zones to publish their messages to
         ZONE_ADDRESS = config().getString(MODULE_NAME+".zone.address");
-        
+
+        // the eventbus address for the Zones to subscribe to
+        ZONE_FEED = config().getString(MODULE_NAME+".zone.feed");
+
+        // note if we start FeedPlayers, ZONE_FEED will typically be FEEDPLAYER_ADDRESS
         FEEDPLAYER_ADDRESS = config().getString(MODULE_NAME+".feedplayer.address");
         
         return true;

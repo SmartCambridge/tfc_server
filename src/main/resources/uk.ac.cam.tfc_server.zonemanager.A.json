@@ -10,8 +10,9 @@
 
             "eb.system_status": "system_status",
             "eb.console_out":   "console_out",
+            "eb.manager":       "tfc.manager",
 
-            "eb.zonemanager":   "tfc.zonemanager.A",
+            "zonemanager.address":   "tfc.zonemanager.A",
 
             "zonemanager.name": "ZoneManager-A",
             "zonemanager.start": [ 

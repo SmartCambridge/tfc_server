@@ -5,7 +5,7 @@
     <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
     <script src="//cdn.jsdelivr.net/sockjs/1.0.3/sockjs.min.js"></script>
     <script src='vertx-eventbus.js'></script>
-	<title>TFC RITA 0.53</title>
+	<title>TFC RITA 0.54</title>
 <!--
 RELEASE INFO:
 2016-04-01 0.52 html/js ported to Rita NG, now served by vertx
@@ -77,7 +77,7 @@ var GET_DATA_WEBDIR = 'http://people.ds.cam.ac.uk/ijl20/tfc/web_day/'; // direct
   // Constant address of server-side eventbus bridge
   // Provided by Rita.java
   //debug - should be provided by server
-  var CONSOLE_EVENTBUS_HTTP = 'http://carrier.csi.cam.ac.uk:8084/eb';
+  var CONSOLE_EVENTBUS_HTTP = 'http://carrier.csi.cam.ac.uk:8082/eb';
 
 var GET_DATA_WEBSTART = 1000; // arbitrary web filename to start demo with
 var REALTIME_POLLING_INTERVAL = 15000; // ms between polls for realtime data
@@ -1691,7 +1691,7 @@ function map_feed(feed)
             markers.push(marker);
         }
     }
-    write_console1('markers: '+marker_count);
+    //write_console1('markers: '+marker_count);
 }
                                              
 // Draw the positions on the map, with infowindow open if appropriate
@@ -1848,12 +1848,12 @@ function debug()
 </table>
 <table style="width: 100%;">
     <tr>
-    <td style="width: 50%; vertical-align: top">
+    <td style="width: 70%; vertical-align: top">
         <div id="console1">
 		<h4>Messages</h4>
         </div>
     </td>
-    <td style="width: 50%; vertical-align: top">
+    <td style="width: 30%; vertical-align: top">
         <div id="console2">
 		<h4>Timed entries/exits</h4>
 		</div>

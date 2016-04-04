@@ -60,10 +60,6 @@ public class Zone extends AbstractVerticle {
     private String EB_SYSTEM_STATUS;  // config eb.system_status
     private String EB_MANAGER;        // config eb.manager
 
-    // These values are updated on receipt of EB_MANAGER config commands
-    //private String ZONE_FEED;         // EB_MANAGER config zone.feed (Zone SUBSCRIBES to this)
-    //private String ZONE_ADDRESS;      // EB_MANAGER config zone.address
-    
     private Box box;
     
 
@@ -79,7 +75,7 @@ public class Zone extends AbstractVerticle {
     
   private EventBus eb = null;
   private String tfc_data_zone = null;
-
+    //debug we will need one of these for each monitoring instance
   private HashMap<String, Vehicle> vehicles; // dictionary to store vehicle status updated from feed
 
 
@@ -106,14 +102,6 @@ public class Zone extends AbstractVerticle {
     
     eb = vertx.eventBus();
 
-    //tfc_data_zone = System.getenv(ENV_VAR_ZONE_PATH);
-    //if (tfc_data_zone == null)
-    // {
-    //  System.err.println("Zone: " +ENV_VAR_ZONE_PATH + " environment var not set -- aborting Zone startup");
-    //  vertx.close();
-    //  return;
-    //}
-
     // **********  Define the data structure for updated vehicle data  ***********************
 
     vehicles = new HashMap<String, Vehicle>();
@@ -121,6 +109,7 @@ public class Zone extends AbstractVerticle {
 
     // **********  Set up connection to EventBus  ********************************************
     // set up a handler for manager messages
+    /*
     eb.consumer(EB_MANAGER, eb_message -> {
             //debug must test for module.name and module.id
 
@@ -129,7 +118,7 @@ public class Zone extends AbstractVerticle {
                     System.err.println("Zone: " + MODULE_NAME + "." + MODULE_ID + " manager bad message");
                 }
     });
-
+    */
 
     //debug !!- this is a hack - should come from eventbus EB_MANAGER
     //... if (zone.feed in config(), then start processing immediately
@@ -139,17 +128,7 @@ public class Zone extends AbstractVerticle {
         {
             monitor_feed(ZONE_FEED, ZONE_ADDRESS);
         }
-    /*
-    JsonObject subscribe = new JsonObject();
-    subscribe.put("zone.address", "tfc.zone.test");
-    subscribe.put("zone.feed", "tfc.feedplayer.B");
-    JsonObject manager_msg = new JsonObject();
-    manager_msg.put("subscribe", subscribe);
-    if (!manager( manager_msg ))
-        {
-            System.err.println("Zone: "+MODULE_ID+" manager bad message");
-        }
-    */
+
     // send periodic "system_status" messages
     vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> {
       eb.publish(EB_SYSTEM_STATUS,
@@ -173,6 +152,8 @@ public class Zone extends AbstractVerticle {
         //   eb.manager - eventbus address for manager messages
         
         // Expected config() values defining this Zone are:
+        //   zone.feed (optional) address to subscribe for position feed
+        //   zone.address (optional) address for publishing zone update messages
         //   zone.name - String
         //   zone.id   - String
         //   zone.path - Position[]
@@ -203,7 +184,7 @@ public class Zone extends AbstractVerticle {
         
         FINISH_INDEX = config().getInteger("zone.finish_index");
 
-        System.out.println("Zone: " + MODULE_NAME + "." + MODULE_ID + " get_config(): ZONE_NAME is "+String.valueOf(ZONE_NAME));
+        //System.out.println("Zone: "+MODULE_NAME+"."+MODULE_ID+" get_config(): ZONE_NAME is "+String.valueOf(ZONE_NAME));
         
         return true;
     }
@@ -455,17 +436,16 @@ public class Zone extends AbstractVerticle {
         String filename = feed_message.getString("filename");
         String filepath = feed_message.getString("filepath");
 
-        System.out.println("Zone: "+MODULE_NAME+"."+MODULE_ID+" ("+ String.valueOf(entities.size()) + " records): " + filename);
+        //System.out.println("Zone: "+MODULE_NAME+"."+MODULE_ID+" ("+ String.valueOf(entities.size()) + "): " + filename);
 
         for (int i = 0; i < entities.size(); i++)
             {
               JsonObject position_record = entities.getJsonObject(i);
-              update_vehicle(position_record);
+              update_vehicle(position_record, ZONE_ADDRESS);
             }
 
         //System.out.println("Zone "+ String.valueOf(vehicles.size()) + " records in vehicles HashMap)");
         //debug
-        return;
         /*
 
         FileSystem fs = vertx.fileSystem();
@@ -506,7 +486,7 @@ public class Zone extends AbstractVerticle {
     }
 
     // Update the vehicles[vehicle_id] record with this feed entry
-    private void update_vehicle(JsonObject position_record)
+    private void update_vehicle(JsonObject position_record, String ZONE_ADDRESS)
     {
       String vehicle_id = position_record.getString("vehicle_id");
       Vehicle v = vehicles.get(vehicle_id);
@@ -529,7 +509,6 @@ public class Zone extends AbstractVerticle {
       //****************************************************************************************************
       if (v.within && !v.prev_within)
           {
-              //System.out.println("Zone: vehicle_id("+vehicle_id+") entered zone "+ZONE_NAME);
               // Did vehicle cross start line?
               Intersect i = start_line(v);
               if (i.success)
@@ -539,12 +518,16 @@ public class Zone extends AbstractVerticle {
                       // Set start timestamp to timestamp at Intersection with startline
                       v.start_ts = i.position.ts;
                       
-                      System.out.println("Zone: "+MODULE_NAME+"."+MODULE_ID+
-                                         " vehicle_id("+vehicle_id+") clean start at "+ts_to_time_str(i.position.ts));
+                      String msg = "Zone: ,"+MODULE_ID+",vehicle_id("+vehicle_id+
+                                         ") clean start at "+ts_to_time_str(i.position.ts);
+                      System.out.println(msg);
+                      //vertx.eventBus().publish(ZONE_ADDRESS, msg);
+                      
                   }
               else
                   {
-                      System.out.println("Zone: "+MODULE_NAME+"."+MODULE_ID+" vehicle_id("+vehicle_id+") early entry");
+                      System.out.println("Zone: ,"+MODULE_ID+",vehicle_id("+vehicle_id+
+                                         ") early entry at "+ts_to_time_str(v.position.ts));
                   }
           }
       if (v.within && v.prev_within)
@@ -571,7 +554,7 @@ public class Zone extends AbstractVerticle {
 
                           // Build console string and output
                           // e.g. 2016-03-16 15:19:08,Cam Test,315,no_route,00:00:29,0.58,COMPLETED,15:11:41,15:18:55,00:07:14
-                          String completed_log = "Zone: "+MODULE_NAME+"."+MODULE_ID + " ";
+                          String completed_log = "Zone: ,"+MODULE_ID+",vehicle_id("+vehicle_id+"),";
                           completed_log += ts_to_datetime_str(v.position.ts) + ",";
                           completed_log += "COMPLETED,";
                           completed_log += v.vehicle_id + ",";
@@ -581,18 +564,20 @@ public class Zone extends AbstractVerticle {
                           completed_log += duration_to_time_str(duration);
 
                           System.out.println(completed_log);
+                          //debug this message should be formatted JSON
+                          vertx.eventBus().publish(ZONE_ADDRESS, completed_log);
                         }
                       else
                         {
                           // output clean exit message
-                          System.out.println("Zone: "+MODULE_NAME+"."+MODULE_ID+
-                                         " vehicle_id("+vehicle_id+") clean exit (no start) at "+ts_to_time_str(finish_ts));
+                          System.out.println("Zone: ,"+MODULE_ID+",vehicle_id("+vehicle_id+
+                                             ") clean exit (no start) at "+ts_to_time_str(finish_ts));
                         }
                   }
               else
                   {
-                      System.out.println("Zone: "+MODULE_NAME+"."+MODULE_ID+
-                                         " vehicle_id("+vehicle_id+") early exit");
+                      System.out.println("Zone: ,"+MODULE_ID+",vehicle_id("+vehicle_id+
+                                         ") early exit at "+ts_to_time_str(v.position.ts));
                   }
               
               // Reset the Zone start time for this vehicle

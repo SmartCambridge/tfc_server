@@ -68,7 +68,6 @@ public class ZoneManager extends AbstractVerticle {
     eb = vertx.eventBus();
 
     //debug -- zone.address and zone.feed should come from manager messages
-    DeploymentOptions zone_options = new DeploymentOptions();
     JsonObject conf = new JsonObject();
     if (ZONE_ADDRESS != null)
         {
@@ -78,11 +77,14 @@ public class ZoneManager extends AbstractVerticle {
         {
             conf.put("zone.feed", ZONE_FEED);
         }
-    zone_options.setConfig(conf);
 
     for (int i=0; i<START_ZONES.size(); i++)
         {
+            DeploymentOptions zone_options = new DeploymentOptions();
+            zone_options.setConfig(conf);
             final String zone_id = START_ZONES.get(i);
+            //debug
+            System.out.println("ZoneManager starting service zone."+zone_id+" with "+conf.toString());
 
             vertx.deployVerticle("service:uk.ac.cam.tfc_server.zone."+zone_id,
                                  zone_options,
@@ -94,6 +96,7 @@ public class ZoneManager extends AbstractVerticle {
                         fut.fail(res.cause());
                     }
                 });
+
         }
 
     // send periodic "system_status" messages
