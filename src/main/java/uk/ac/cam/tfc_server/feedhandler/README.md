@@ -36,7 +36,7 @@ the 'system_status' eventbus address to be interpreted by the Console.
 
 https://developers.google.com/transit/gtfs-realtime/reference
 
-
+```
 header (FeedHeader)
     gtfs_realtime_version (String)
     incrementality (incrementality)
@@ -95,5 +95,53 @@ entity (FeedEntity) (repeated)
         occupancy_status (OccupancyStatus)
 
     alert (Alert)
+```
 
-    
+The actual real-time position data received in the system in Cambridge contains a
+small subset of these fields, and frankly the Google GTFS protobuf format is a
+pain in the ass for most subsequent processing of the data.  For this reason
+FeedHandler does archive the binary GTFS data exactly as received (so nothing is lost)
+but the data is internally transmitted on the eventbus in a simplified format (see below).
+
+## FeedHandler eventbus message format
+
+Given the simplicity of the actual data received in the current system (in Cambridge),
+FeedHandler flattens the subset of the received GTFS binary data into the following
+Json format:
+
+```
+{  "filename":"1459761031_2016-04-04-10-10-31",
+   "filepath":"2016/04/04",
+   "timestamp":1459761030,
+   "entities":[
+        {  "received_timestamp":1459761031,
+           "vehicle_id":"13",
+           "label":"SCFensOVD-15657",
+           "latitude":52.307323,
+           "longitude":-0.01364167,
+           "bearing":92.0,
+           "timestamp":1459761023
+        },
+        ...
+   ]
+}
+```
+In the (real) example above, the positions record batch was written to a file called
+"2016/04/04/1459761031_2016-04-04-10-10-31.bin" by FeedHandler. The Unix timestamp is
+in UTC, while the 2016/04/04 and 10-10-31 is local time.
+
+Note that the batch feed has a "timestamp", from the original source, while the "filename"
+refers to the time the batch feed was received by FeedHandler.
+
+Each 'entity' is a position record for an individual vehicle which FeedHandler flattens
+somewhat. For the 'entity', "timestamp" is that sent in the original GTFS data, i.e. the
+time the data was transmitted by the vehicle. FeedHandler adds the "received_timestamp"
+matching that of the batch feed, for convenience of processing individual position
+records (because often to minimise errors you need to know whether a position record
+is too old to be trusted).
+
+Modules such as FeedCSV take the entire batch feed and store it in another format. In this
+case it is helpful for the FeedCSV module to store the parsed data using the same filename
+as FeedHandler used in its binary archive, so the files match up easily for future
+analysis.
+
