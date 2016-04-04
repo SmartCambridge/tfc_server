@@ -1,4 +1,4 @@
-# FeedHandler
+## FeedHandler
 
 FeedHandler is part of the RITA Realtime Intelligent Traffic Analysis platform,
 supported by the Smart Cambridge programme.
@@ -110,11 +110,23 @@ FeedHandler flattens the subset of the received GTFS binary data into the follow
 Json format:
 
 ```
-{  "filename":"1459761031_2016-04-04-10-10-31",
+{  "filename":"1459762951_2016-04-04-10-42-31",
    "filepath":"2016/04/04",
-   "timestamp":1459761030,
+   "timestamp":1459762950,
    "entities":[
-        {  "received_timestamp":1459761031,
+        {   "received_timestamp":1459762951,
+            "vehicle_id":"17",
+            "label":"WP-WD411 Y173",
+            "latitude":52.24946,
+            "longitude":-0.11835587,
+            "bearing":330.0,
+            "timestamp":1459762922,
+            "trip_id":"1103251-20160329-22000909",
+            "route_id":"WP-1A",
+            "current_stop_sequence":17,
+            "stop_id":"10190"
+        },
+        {  "received_timestamp":1459762951,
            "vehicle_id":"13",
            "label":"SCFensOVD-15657",
            "latitude":52.307323,
@@ -127,8 +139,11 @@ Json format:
 }
 ```
 In the (real) example above, the positions record batch was written to a file called
-"2016/04/04/1459761031_2016-04-04-10-10-31.bin" by FeedHandler. The Unix timestamp is
-in UTC, while the 2016/04/04 and 10-10-31 is local time.
+"2016/04/04/1459762951_2016-04-04-10-42-31.bin" by FeedHandler. The Unix timestamp is
+in UTC, while the 2016/04/04 and 10-42-31 is local time.
+
+A second 'entity' (i.e. position record) is included, showing that some fields may
+be omitted.
 
 Note that the batch feed has a "timestamp", from the original source, while the "filename"
 refers to the time the batch feed was received by FeedHandler.
