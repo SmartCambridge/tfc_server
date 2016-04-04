@@ -1,4 +1,4 @@
-#![Smart Cambridge logo](images/smart_cambridge_logo.jpg) RITA: Realtime Intelligent Traffic Analysis
+##![Smart Cambridge logo](images/smart_cambridge_logo.jpg) RITA: Realtime Intelligent Traffic Analysis
 
 # Part of the Smart Cambridge programme.
 
@@ -42,13 +42,13 @@ an http POST every 30 seconds) and parses/publishes the data as a 'json' message
 
 FeedHandler also archives each post of binary data as a timestamped file in the server filesystem.
 
-### FeedPlayer
+### FeedPlayer (see [FeedPlayer README](src/main/java/uk/ac/cam/tfc_server/feedplayer))
 
 FeedPlayer can read the archived posts of historical binary data, and publish that at a user-selected
 frequency on the Vertx eventbus. This facilitates the use of the system for analysis of historical
 data.
 
-### Console
+### Console (see [Console README](src/main/java/uk/ac/cam/tfc_server/console))
 
 Designed to be used by admin users, the Console presents a user webpage reporting status.
 Each module in the system reports its 'up' status regularly on the Vertx eventbus, and the console
@@ -68,19 +68,19 @@ the finish line.  A typical Zone will be a segment of road, or a polygon coverin
 a bus route along multiple roads. The Zone sends update messages when vehicles are found to
 be moving more slowly that usual across the zone.
 
-### ZoneManager
+### ZoneManager (see [ZoneManager README](src/main/java/uk/ac/cam/tfc_server/zonemanager))
 
 A ZoneManager is able to dynamically start multiple Zones, all listening to the same FeedManager or
 FeedPlayer, and reporting their updates to a common 'zone update' address.
 
-### FeedCSV
+### FeedCSV (see [FeedCSV README](src/main/java/uk/ac/cam/tfc_server/feedcsv))
 
 A FeedCSV module subscribes to a FeedHandler or FeedPlayer feed, and writes the vehicle position data
 as CSV (comma-delimited ascii text) files in the server filesystem. The idea is simply that this may be
 a more convenient or longer-term viable format for the archive of vehicle position data
 than the originally received GTFS-format binary data (protobuf).
 
-### Rita
+### Rita (see [Rita README](src/main/java/uk/ac/cam/tfc_server/rita))
 
 Rita is the module providing the agent that acts on behalf of the general web *user*, e.g. it can
 subscribe to the FeedHandler and show the position of vehicles on a map, or can display the
@@ -124,6 +124,8 @@ relevant to that vehicle. Not sure...
 
 It is possible we should have an agent-per-bus-stop, listening to appropriate messages and updating the
 status of that stop and its timetable.
+
+---
 
 Author: Ian Lewis - ijl20@cam.ac.uk
 
