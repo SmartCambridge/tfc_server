@@ -2,7 +2,8 @@
 
 # Part of the Smart Cambridge programme.
 
-*This is a work-in-progress, not all features below are complete, see Summary of system modules below*
+*This is a work-in-progress, not all features below are complete, see Summary of system modules below and the
+[TODO](TODO.md) list*
 
 ## Overview
 
