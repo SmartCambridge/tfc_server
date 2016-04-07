@@ -601,10 +601,17 @@ public class Zone extends AbstractVerticle {
       return fmt.format(ts_date);
     }
 
+    // convert duration in SECONDS to hh:mm:ss
     private String duration_to_time_str(Long d)
     {
-        LocalTime d_time = LocalTime.ofSecondOfDay(d);
-        return d_time.toString();
+        if (d >= 24 * 60 * 60)
+            {
+                System.err.println("Zone: "+MODULE_ID+" ERROR duration "+d+" > 24 hours");
+            }
+        String d_time = LocalTime.ofSecondOfDay(d).toString();
+
+        // d_time is either "HH:mm" or "HH:mm:ss" so pad ":00" if needed
+        return d_time.length() == 5 ? d_time + ":00" : d_time ;
     }
 
   private void write_file(FileSystem fs, Buffer buf, String file_path)
