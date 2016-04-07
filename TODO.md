@@ -11,6 +11,7 @@
 - [ ] allow the creating of 'batch' jobs, e.g. generating FeedCSV data from a FeedPlayer, or creating
 and archiving Zone messages. This has a requirement that the system can operate synchronously to
 rapidle step through the data.
+- [ ] limit repeating messages (like feed reports) to only using a fixed number of lines
 
 ### FeedComposer
 
