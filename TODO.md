@@ -17,7 +17,7 @@ rapidle step through the data.
 
 - [ ] design / build FeedComposer agent to create custom feeds
 
-### FeedHandler
+### FeedHandler [src/main/java/uk/ac/cam/tfc_server/feedhandler](src/main/java/uk/ac/cam/tfc_server/feedhandler)
 
 - [ ] implement dynamic spawning and closing of FeedHandlers
 
@@ -25,7 +25,7 @@ rapidle step through the data.
 
 - [ ] provide manager agent that can spawn FeedHandlers, FeedPlayers and FeedComposers
 
-### FeedPlayer
+### FeedPlayer [src/main/java/uk/ac/cam/tfc_server/feedplayer](src/main/java/uk/ac/cam/tfc_server/feedplayer)
 
 - [ ] allow dynamic spawning of FeedPlayers according to user requirements
 
@@ -36,6 +36,7 @@ rapidle step through the data.
 - [ ] User web realtime display of zone transit times as x-y plot
 - [ ] Support user selection of prior day replay
 - [ ] Support user subscription to alerts
+- [ ] Allow user to dynamically create new zones
 
 ### Route
 
@@ -61,7 +62,7 @@ rapidle step through the data.
 
 - [ ] archive / write Zone messages to the filesystem
 
-### ZoneManager
+### ZoneManager [src/main/java/uk/ac/cam/tfc_server/zonemanager](src/main/java/uk/ac/cam/tfc_server/zonemanager)
 
 - [ ] implement dynamic start / close of ZoneManagers
 
