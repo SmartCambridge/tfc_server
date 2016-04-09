@@ -1041,52 +1041,6 @@ function window_content(position)
                 + '</p>';
 }
 
-
-// given position strings from data.csv, create 'positions' object
-// as of Oct 2015 the fields in data.csv are:
-//      timestamp,id,label,route_id,trip_id,latitude,longitude,bearing,current_stop_sequence,stop_id
-// which will be stored as:
-//      positions['id'] = { timestamp: T, id: I, label: L ... }
-function parse_positions(position_strings)
-{
-    // strip of the first record and parse as the position record (csv) key names
-    var position_keys = position_strings[0].split(',');
-    
-    // COPY all previous_positions into positions
-    positions = JSON.parse(JSON.stringify(previous_positions));
-    
-    // UPDATE 'positions' adding all new positions (and overwriting previous where appropriate)
-    for (var i=1; i<position_strings.length; i++)
-    {
-        // split current position string into an array of constituent fields
-        var position_key_strings = position_strings[i].split(',');
-        // map those fields to attributes in a position object
-        var position = {};
-        // create position record from each string value
-        for (var key_index=0; key_index<position_keys.length; key_index++)
-        {
-            if (position_key_strings[key_index])
-            {
-                position[position_keys[key_index]] = position_key_strings[key_index];
-            }
-        }
-        // ignore position records that have no 'id' field (although they all seem to have this field)
-        if (position.hasOwnProperty('id') && position.hasOwnProperty('timestamp'))
-        {
-            // note we create new 'position' entry for current vehicle
-            // but propagate forward the existing 'status'
-            var status = { color: 'gray' };
-            if ( positions[position.id] && positions[position.id].status )
-            {
-                status = positions[position.id].status;
-            }
-            positions[position.id] = position;
-            positions[position.id].status = status;
-            positions[position.id].status.route_id = positions[position.id].route_id ? positions[position.id].route_id : 'no_route';
-        }
-    }    
-}
-
 // ********************************************************************************************************************
 // ********************************************************************************************************************
 // process_positions()
@@ -1139,10 +1093,14 @@ function test_positions(positions, feed_timestamp)
             if (p.timestamp > maxtime) maxtime = p.timestamp;
 
             // Check this position record against each of the bounds
-            for (var bounds_index = 0; bounds_index < bounds.length; bounds_index++)
-            {
-                test_bounds(bounds_index, p);
-            }
+            // on if we have a 'previous' position
+            if (previous_positions.hasOwnProperty(p.vehicle_id))
+                {
+                    for (var bounds_index = 0; bounds_index < bounds.length; bounds_index++)
+                    {
+                        test_bounds(bounds_index, p);
+                    }
+                }
         }
     }
         // update page status line and heading
@@ -1160,8 +1118,7 @@ function test_bounds(bounds_index, p)
 {
     // check position relative to BOUNDS
     if (bounds[bounds_index].checked &&
-        bounds[bounds_index].path.length > 2 &&
-        previous_positions.hasOwnProperty(p.vehicle_id))
+        bounds[bounds_index].path.length > 2)
     {
         var was_in_bounds = bounds[bounds_index].vehicles[p.vehicle_id] &&
                             bounds[bounds_index].vehicles[p.vehicle_id].in_bounds;
@@ -1193,11 +1150,14 @@ function bounds_entered(bounds_index, p)
     // see if this bus crossed start line
     var start_line = [ bounds[bounds_index].path[0], bounds[bounds_index].path[1] ];
     var vehicle_path = [ { lat: previous_positions[p.vehicle_id].latitude,
-                           lng: previous_positions[p.vehicle_id].latitude },
+                           lng: previous_positions[p.vehicle_id].longitude },
                          { lat: p.latitude, lng: p.longitude } ];
     var timestamp_delta = p.timestamp - previous_positions[p.vehicle_id].timestamp;
     
     var start_intersect = intersect(vehicle_path, start_line);
+
+    //console.log(JSON.stringify(vehicle_path)+'..'+JSON.stringify(start_line)+'='+start_intersect.success);
+    
     // initialize bounds vehicle entry
     bounds[bounds_index].vehicles[p.vehicle_id].start_intersect = start_intersect ;
     if ( start_intersect.success )
@@ -1208,6 +1168,8 @@ function bounds_entered(bounds_index, p)
         
         bounds[bounds_index].vehicles[p.vehicle_id].start_timestamp = previous_positions[p.vehicle_id].timestamp + 
                                                             timestamp_delta * start_intersect.progress;
+        //console.log('started '+p.vehicle_id+' '+format_time(new Date(bounds[bounds_index].vehicles[p.vehicle_id].start_timestamp*1000)));
+        
         bounds_start(bounds_index, p);
     } else {
         // EARLY ENTRY
@@ -1232,7 +1194,7 @@ function bounds_exitted(bounds_index, p)
     var finish_line = finish_path(bounds_index);
 
     var vehicle_path = [ { lat: previous_positions[p.vehicle_id].latitude,
-                           lng: previous_positions[p.vehicle_id].latitude },
+                           lng: previous_positions[p.vehicle_id].longitude },
                          { lat: p.latitude, lng: p.longitude } ];
     var timestamp_delta = p.timestamp - previous_positions[p.vehicle_id].timestamp;
     p.status.color = 'gray';
@@ -1291,19 +1253,19 @@ function bounds_start(bounds_index, p)
     write_console1( format_time(new Date(p.timestamp * 1000)) + 
                 ' ' + bounds[bounds_index].name + ', ' +
                 ' Bus <a href="#" onclick="user_track_id(' + "'" + p.vehicle_id + "'" + ')">' +
-                vehicle_id + '</a>' +
+                p.vehicle_id + '</a>' +
                 ', route: ' + (p.route_id ? p.route_id : 'no_route') + 
                     ' (' +
                     format_time(new Date(timestamp_delta * 1000)) +
                     ' x ' + bounds[bounds_index].vehicles[p.vehicle_id].start_intersect.progress.toFixed(2) +
                     ')' +
                 ', <font color="green">' + 'STARTED' + 
-                ' ' + format_time(new Date(bounds[bounds_index].vehicles[p.vehicle_id].start_timestamp)) +
+                ' ' + format_time(new Date(bounds[bounds_index].vehicles[p.vehicle_id].start_timestamp*1000)) +
                 '</font>' +
                 '<br/>');
 	
     // draw entry vector
-    polyline_entry[vehicle_id] = new google.maps.Polyline({
+    polyline_entry[p.vehicle_id] = new google.maps.Polyline({
         path: [ { lat: previous_positions[p.vehicle_id].latitude, lng: previous_positions[p.vehicle_id].longitude },
                 { lat: p.latitude, lng: p.longitude }],
         geodesic: false,
@@ -1329,9 +1291,9 @@ function bounds_completed(bounds_index, p)
                     ',' + bounds[bounds_index].vehicles[p.vehicle_id].finish_intersect.progress.toFixed(2) +
                     ',<font color="green">' +
                     'COMPLETED' +
-                    ',' + format_time(new Date(bounds[bounds_index].vehicles[p.vehicle_id].start_timestamp)) +
-                    ',' + format_time(new Date(bounds[bounds_index].vehicles[p.vehicle_id].finish_timestamp)) +
-                    ',' + format_time(new Date(bounds[bounds_index].vehicles[p.vehicle_id].duration)) +
+                    ',' + format_time(new Date(bounds[bounds_index].vehicles[p.vehicle_id].start_timestamp*1000)) +
+                    ',' + format_time(new Date(bounds[bounds_index].vehicles[p.vehicle_id].finish_timestamp*1000)) +
+                    ',' + format_time(new Date(bounds[bounds_index].vehicles[p.vehicle_id].duration*1000)) +
                     '</font>' + 
                     '<br/>';
                     
@@ -1339,7 +1301,7 @@ function bounds_completed(bounds_index, p)
     write_console2(op);
 
     // draw exit vector
-    polyline_exit[vehicle_id] = new google.maps.Polyline({
+    polyline_exit[p.vehicle_id] = new google.maps.Polyline({
         path: [ { lat: previous_positions[p.vehicle_id].latitude, lng: previous_positions[p.vehicle_id].longitude },
                 { lat: p.latitude, lng: p.longitude }],
         geodesic: false,
@@ -1469,8 +1431,8 @@ function write_console2(msg)
 
 function debug()
 {
-    alert(bounds.length);
-    return;
+//    alert(bounds.length);
+//    return;
     // ,,,,{"success":false}
     var A = {lat:52.1982955933,lng:0.12819583714};            // previous_positions[p.vehicle_id].status.position
     var B = {lat:52.1980247498,lng:0.128483206034};           // status.position
