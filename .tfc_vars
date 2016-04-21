@@ -8,7 +8,7 @@
 #export TFC_DATA_HTML=/mnt/dsfiles/IJL20/public_html/tfc
 #export TFC_LOG=/home/ijl20/tfc/log
 #export TFC_DATA_MONITOR=/home/ijl20/tfc/data_monitor
-#export TFC_HOME=/home/ijl20/tfc# PRODUCTION
+#export TFC_HOME=/home/ijl20/tfc
 #
 # DEVELOPMENT
 #
