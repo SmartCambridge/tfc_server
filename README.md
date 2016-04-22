@@ -9,7 +9,7 @@
 
 This system, written in Java / [Vertx](https://vertx.io) is designed to receive 'real-time' vehicle
 position feeds, do analysis on those position updates in real-time, and provide both web-based information
-pages and also send messages based on user subscriptions. The system intended to accomodate other 'sensor'
+pages and also send messages based on user subscriptions. The system is intended to accomodate other 'sensor'
 data as that becomes available.
 
 ![Rita Platform Overview](images/rita_platform_overview.png)
