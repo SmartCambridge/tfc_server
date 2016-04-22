@@ -9,7 +9,10 @@
 
 This system, written in Java / [Vertx](https://vertx.io) is designed to receive 'real-time' vehicle
 position feeds, do analysis on those position updates in real-time, and provide both web-based information
-pages and also send messages based on user subscriptions.
+pages and also send messages based on user subscriptions. The system intended to accomodate other 'sensor'
+data as that becomes available.
+
+![Rita Platform Overview](images/rita_platform_overview.png)
 
 In terms of system design, the platform is notable mainly in that:
 - An asynchronous message-passing paradigm is at the core of the platform, i.e.
@@ -32,6 +35,24 @@ The system will:
 - show the impact of any congestion on arrival times within a chosen bus route
 - show the status of predicted bus arrivals at any bus stop
 - allow the user to subscribe to messages that will warn of poor service on any route or zone.
+
+## System Architecture Overview
+
+The system is composed of Vertx modules (i.e. Verticles) that communicate via a clustered EventBus. Each module
+is intended to represent an agent in the system. A FeedHandler can accept data via any custom means (currently http) and then
+broadcast that realtime data via the EventBus, a Zone module can subscribe to these vehicle position events, generate its
+own status update messages such as congestion alerts, and broadcast its own messages back onto the EventBus for other
+modules to receive.
+
+![Basic Rita Architecture](images/basic_rita_architecture.png)
+
+So Rita is *modular* and there is no particular limit on the number of modules that can be concurrently supported. A production
+implementation is expected to have hundreds of zones and routes being monitored simultaneously.
+
+![Rita System Structure](images/rita_system_structure.png)
+
+The use of Vertx and the clustered EventBus allows Rita modules to be run in multiple instances on a single server, and
+also across multiple distributed servers. This also allows the realtime data to be archived simultaneously in multiple locations.
 
 ## Summary of system modules
 *For more detail see the readme in each module directory*
