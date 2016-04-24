@@ -4,7 +4,7 @@ package uk.ac.cam.tfc_server.zone;
 // *************************************************************************************************
 // *************************************************************************************************
 // Zone.java
-// Version 0.06
+// Version 0.07
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
@@ -573,11 +573,13 @@ public class Zone extends AbstractVerticle {
 
                           // Build console string and output
                           // e.g. 2016-03-16 15:19:08,Cam Test,315,no_route,00:00:29,0.58,COMPLETED,15:11:41,15:18:55,00:07:14
-                          String completed_log = "Zone: ,"+MODULE_ID+",vehicle_id("+vehicle_id+"),";
-                          completed_log += ts_to_datetime_str(v.position.ts) + ",";
+                          String completed_log = "Zone: ,"+MODULE_ID+",";
                           completed_log += "COMPLETED,";
-                          completed_log += v.vehicle_id + ",";
+                          completed_log += v.vehicle_id+",";
                           completed_log += v.route_id + ",";
+                          completed_log += finish_ts+",";
+                          completed_log += duration+",";
+                          completed_log += ts_to_datetime_str(v.position.ts) + ",";
                           completed_log += ts_to_time_str(v.start_ts) + ",";
                           completed_log += ts_to_time_str(finish_ts) + ","; // finish time
                           completed_log += duration_to_time_str(duration);
