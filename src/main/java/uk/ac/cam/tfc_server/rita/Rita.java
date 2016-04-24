@@ -183,15 +183,15 @@ public class Rita extends AbstractVerticle {
 
     // create handler for browser socket 
 
-    SockJSHandlerOptions options = new SockJSHandlerOptions().setHeartbeatInterval(2000);
+    //SockJSHandlerOptions options = new SockJSHandlerOptions().setHeartbeatInterval(2000);
 
-    SockJSHandler wsHandler = SockJSHandler.create(vertx, options);
+    //SockJSHandler wsHandler = SockJSHandler.create(vertx, options);
 
-    wsHandler.socketHandler( ws -> {
-         ws.handler(ws::write);
-      });
+    //wsHandler.socketHandler( ws -> {
+    //     ws.handler(ws::write);
+    //  });
 
-    router.route("/ws/*").handler(wsHandler);
+    //router.route("/ws/*").handler(wsHandler);
 
     // create handler for embedded page
 
@@ -304,7 +304,7 @@ public class Rita extends AbstractVerticle {
         EB_MANAGER = config().getString("eb.manager");
         if (EB_MANAGER==null)
             {
-                System.err.println("Zone: no eb.manager in config()");
+                System.err.println("Rita: no eb.manager in config()");
                 return false;
             }
 
@@ -352,31 +352,5 @@ public class Rita extends AbstractVerticle {
         return true;
     }
 
-    private JsonObject make_zone_config()
-    {
-        // config given to Zone starts with original system config
-        JsonObject zone_config = config();
-
-        zone_config.put("module.name", "zone");
-        
-        String zone_id =  config().getString("zone.cam_test.id");
-        
-        zone_config.put("zone.id", zone_id);
-        
-        zone_config.put("module.id", zone_id);
-        
-        zone_config.put("zone.name", config().getString("zone.cam_test.name"));
-
-        zone_config.put("zone.path", config().getJsonArray("zone.cam_test.path"));
-        
-        zone_config.put("zone.center", config().getJsonObject("zone.cam_test.center"));
-
-        zone_config.put("zone.zoom", config().getInteger("zone.cam_test.zoom"));
-
-        zone_config.put("zone.finish_index", config().getInteger("zone.cam_test.finish_index"));
-
-        return zone_config;
-    }
-    
     
 } // end class Rita

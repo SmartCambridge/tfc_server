@@ -8,14 +8,38 @@
 	<title>TFC ZONE 0.1</title>
 <!--
 RELEASE INFO:
-2016-04-07 0.1 initial draft based on rita.html
+2016-04-24 0.1 initial draft based on rita.html
 
 -->	
 <style type="text/css">
+   font-family: Tahoma, Verdana, Segoe, sans-serif;
+   
 </style>
 
-<script src="js/rita.js"></script>
+<!-- RITA core -->
+<script type="text/javascript">
+//debug - should be provided by server
+var CONSOLE_EVENTBUS_HTTP = 'http://carrier.csi.cam.ac.uk:8082/eb';
 
+function rita_init()
+{
+    // initialize eventbus to connect to Rita.java on server
+    eb = new EventBus(CONSOLE_EVENTBUS_HTTP);
+
+    // script to run when Vertx EventBus is ready
+    eb.onopen = function() {
+
+        // set a handler to receive a "rita_out" message
+        eb.registerHandler('rita_out', function(error, message) {
+          write_console1('rita_out: ' + message.body + '<br/>');
+        });
+
+    }
+}
+
+</script>
+
+<!-- Zone -->
 <script type="text/javascript">
 
   var zone_id;
@@ -26,6 +50,15 @@ function init()
     zone_id = "cam_test";
   
     alert("init");
+  
+    rita_init();
+  
+}
+  
+function write_console1(msg)
+{
+    var c = document.getElementById('console1');
+    c.innerHTML += msg;
 }
 
 </script>
@@ -34,46 +67,12 @@ function init()
 
 <body onload='init()'>
   
-  <h1>RITA Zone <span id='heading'></span></h1>
+  <h1><img src="images/smart_cambridge_logo.jpg">RITA Zone <span id='heading'></span></h1>
 <div id="status">Initializing...</div>
   
-<table style="width: 100%; height: 60%">
-    <tr>
-    <td style="vertical-align: top">
-        <div id="toolbar">
-            <label><input id="update" type="checkbox" onclick="user_update()">Update</label>
-            <form action="">
-                <input type="radio" name="realtime" onclick="user_realtime(this)" value="realtime">Realtime<br/>
-                <input type="radio" name="realtime" checked onclick="user_realtime(this)" value="day">Day
-                <input type="text" value="2015-11-13" size="10"/>
-            </form>
-
-            <button onclick="user_clear_bounds(0)">Clear current bounds</button>
-            <button onclick="user_save_bounds(0)">Save current bounds</button>
-            <button onclick="user_clear_tracking()">Clear tracked buses</button>
-            <button onclick="draw_box(0)">DEBUG draw box</button>
-            <button onclick="debug()">DEBUG</button>
-        </div>
-        <div id="saves"></div>
-    </td>
-    <td style="width: 100%; vertical-align: top;">
-        <div id="map"></div>
-    </td>
-    </tr>
-</table>
-<table style="width: 100%;">
-    <tr>
-    <td style="width: 70%; vertical-align: top">
-        <div id="console1">
+<button onclick="debug()">DEBUG</button>
+<div id="console1">
 		<h4>Messages</h4>
-        </div>
-    </td>
-    <td style="width: 30%; vertical-align: top">
-        <div id="console2">
-		<h4>Timed entries/exits</h4>
-		</div>
-    </td>
-    </tr>
-</table>
+</div>
 </body>
 </html>
