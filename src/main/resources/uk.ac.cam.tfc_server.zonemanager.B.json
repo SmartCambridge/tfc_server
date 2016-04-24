@@ -8,12 +8,6 @@
             "module.name":      "zonemanager",
             "module.id":        "B",
 
-            "eb.system_status": "system_status",
-            "eb.console_out":   "console_out",
-            "eb.manager":       "tfc.manager",
-
-            "zonemanager.address":   "tfc.zonemanager.B",
-
             "zonemanager.name": "ZoneManager-B",
             "zonemanager.start": [ 
                   "cam_test"

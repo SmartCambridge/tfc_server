@@ -6,9 +6,6 @@
         "module.name":      "zone",
         "module.id":        "cam_test",
 
-        "eb.system_status": "system_status",
-        "eb.manager":       "tfc.manager",
-
         "zone.name":        "Cam Test",
         "zone.id":          "cam_test",
         "zone.path":        [{"lat":52.202067912425456,"lng":0.12299642039579634},

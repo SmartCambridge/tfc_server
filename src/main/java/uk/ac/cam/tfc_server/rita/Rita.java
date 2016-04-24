@@ -97,11 +97,19 @@ public class Rita extends AbstractVerticle {
             //debug -- also should get start commands from eb.zonemanager.X
             DeploymentOptions feedplayer_options = new DeploymentOptions();
             JsonObject conf = new JsonObject();
+            if (EB_SYSTEM_STATUS != null)
+                {
+                    conf.put("eb.system_status", EB_SYSTEM_STATUS);
+                }
+            if (EB_MANAGER != null)
+                {
+                    conf.put("eb.manager", EB_MANAGER);
+                }
             if (FEEDPLAYER_ADDRESS != null)
                 {
                     conf.put("feedplayer.address", FEEDPLAYER_ADDRESS);
-                    feedplayer_options.setConfig(conf);
                 }
+            feedplayer_options.setConfig(conf);
             vertx.deployVerticle("service:uk.ac.cam.tfc_server.feedplayer."+feedplayer_id,
                                  feedplayer_options,
                                  res -> {
@@ -121,6 +129,14 @@ public class Rita extends AbstractVerticle {
             //debug -- also should get start commands from eb.zonemanager.X
             DeploymentOptions zonemanager_options = new DeploymentOptions();
             JsonObject conf = new JsonObject();
+            if (EB_SYSTEM_STATUS != null)
+                {
+                    conf.put("eb.system_status", EB_SYSTEM_STATUS);
+                }
+            if (EB_MANAGER != null)
+                {
+                    conf.put("eb.manager", EB_MANAGER);
+                }
             if (ZONE_ADDRESS != null)
                 {
                     conf.put("zonemanager.zone.address", ZONE_ADDRESS);
@@ -264,17 +280,33 @@ public class Rita extends AbstractVerticle {
         MODULE_NAME = config().getString("module.name"); // "rita"
         if (MODULE_NAME==null)
             {
+                System.err.println("Rita: no module.name in config()");
                 return false;
             }
         
         MODULE_ID = config().getString("module.id"); // A, B, ...
+        if (MODULE_ID==null)
+            {
+                System.err.println("Rita: no module.id in config()");
+                return false;
+            }
 
         // common system status reporting address, e.g. for UP messages
         // picked up by Console
         EB_SYSTEM_STATUS = config().getString("eb.system_status");
-        
+        if (EB_SYSTEM_STATUS==null)
+            {
+                System.err.println("Rita: no eb.system_status in config()");
+                return false;
+            }
+
         // system control address - commands are broadcast on this
         EB_MANAGER = config().getString("eb.manager");
+        if (EB_MANAGER==null)
+            {
+                System.err.println("Zone: no eb.manager in config()");
+                return false;
+            }
 
         // eventbus address for this Rita to publish its messages to
         RITA_ADDRESS = config().getString(MODULE_NAME+".address");

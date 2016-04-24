@@ -161,14 +161,33 @@ public class Zone extends AbstractVerticle {
         //   zone.zoom - int
         //   zone.finish_index - int
         
-        MODULE_NAME = config().getString("module.name");
+        MODULE_NAME = config().getString("module.name"); // "zonemanager"
+        if (MODULE_NAME==null)
+            {
+                System.err.println("Zone: no module.name in config()");
+                return false;
+            }
         
-        MODULE_ID = config().getString("module.id");
-        if (MODULE_ID==null) return false;
+        MODULE_ID = config().getString("module.id"); // A, B, ...
+        if (MODULE_ID==null)
+            {
+                System.err.println("Zone: no module.id in config()");
+                return false;
+            }
 
         EB_SYSTEM_STATUS = config().getString("eb.system_status");
+        if (EB_SYSTEM_STATUS==null)
+            {
+                System.err.println("Zone: no eb.system_status in config()");
+                return false;
+            }
 
         EB_MANAGER = config().getString("eb.manager");
+        if (EB_MANAGER==null)
+            {
+                System.err.println("Zone: no eb.manager in config()");
+                return false;
+            }
 
         ZONE_NAME = config().getString("zone.name");
 

@@ -36,6 +36,7 @@ import java.util.ArrayList;
 public class ZoneManager extends AbstractVerticle {
 
   private String EB_SYSTEM_STATUS; // from config()
+  private String EB_MANAGER; // from config()
   private String MODULE_NAME; // from config()
   private String MODULE_ID; // from config()
   private ArrayList<String> START_ZONES; // from config()
@@ -50,8 +51,6 @@ public class ZoneManager extends AbstractVerticle {
 
   private EventBus eb = null;
 
-  private JsonObject zone_config; // Vertx config for Zone
-    
   @Override
   public void start(Future<Void> fut) throws Exception {
 
@@ -68,23 +67,31 @@ public class ZoneManager extends AbstractVerticle {
     eb = vertx.eventBus();
 
     //debug -- zone.address and zone.feed should come from manager messages
-    JsonObject conf = new JsonObject();
+    JsonObject zone_conf = new JsonObject();
+    if (EB_SYSTEM_STATUS != null)
+        {
+            zone_conf.put("eb.system_status", EB_SYSTEM_STATUS);
+        }
+    if (EB_MANAGER != null)
+        {
+            zone_conf.put("eb.manager", EB_MANAGER);
+        }
     if (ZONE_ADDRESS != null)
         {
-            conf.put("zone.address", ZONE_ADDRESS);
+            zone_conf.put("zone.address", ZONE_ADDRESS);
         }
     if (ZONE_FEED != null)
         {
-            conf.put("zone.feed", ZONE_FEED);
+            zone_conf.put("zone.feed", ZONE_FEED);
         }
 
     for (int i=0; i<START_ZONES.size(); i++)
         {
             DeploymentOptions zone_options = new DeploymentOptions();
-            zone_options.setConfig(conf);
+            zone_options.setConfig(zone_conf);
             final String zone_id = START_ZONES.get(i);
             //debug
-            System.out.println("ZoneManager starting service zone."+zone_id+" with "+conf.toString());
+            System.out.println("ZoneManager starting service zone."+zone_id+" with "+zone_conf.toString());
 
             vertx.deployVerticle("service:uk.ac.cam.tfc_server.zone."+zone_id,
                                  zone_options,
@@ -122,12 +129,30 @@ public class ZoneManager extends AbstractVerticle {
         MODULE_NAME = config().getString("module.name"); // "zonemanager"
         if (MODULE_NAME==null)
             {
+                System.err.println("ZoneManager: no module.name in config()");
                 return false;
             }
         
         MODULE_ID = config().getString("module.id"); // A, B, ...
+        if (MODULE_ID==null)
+            {
+                System.err.println("ZoneManager: no module.id in config()");
+                return false;
+            }
 
         EB_SYSTEM_STATUS = config().getString("eb.system_status");
+        if (EB_SYSTEM_STATUS==null)
+            {
+                System.err.println("ZoneManager: no eb.system_status in config()");
+                return false;
+            }
+
+        EB_MANAGER = config().getString("eb.manager");
+        if (EB_MANAGER==null)
+            {
+                System.err.println("ZoneManager: no eb.manager in config()");
+                return false;
+            }
 
         //debug test for bad config
 
@@ -139,37 +164,20 @@ public class ZoneManager extends AbstractVerticle {
             }
 
         ZONE_ADDRESS = config().getString(MODULE_NAME+".zone.address");
+        if (ZONE_ADDRESS==null)
+            {
+                System.err.println("ZoneManager: no "+MODULE_NAME+".zone.address in config()");
+                return false;
+            }
 
         ZONE_FEED = config().getString(MODULE_NAME+".zone.feed");
+        if (ZONE_FEED==null)
+            {
+                System.err.println("ZoneManager: no "+MODULE_NAME+".zone.feed in config()");
+                return false;
+            }
         
         return true;
     }
-
-    private JsonObject make_zone_config()
-    {
-        // config given to Zone starts with original system config
-        JsonObject zone_config = config();
-
-        zone_config.put("module.name", "zone");
-        
-        String zone_id =  config().getString("zone.cam_test.id");
-        
-        zone_config.put("zone.id", zone_id);
-        
-        zone_config.put("module.id", zone_id);
-        
-        zone_config.put("zone.name", config().getString("zone.cam_test.name"));
-
-        zone_config.put("zone.path", config().getJsonArray("zone.cam_test.path"));
-        
-        zone_config.put("zone.center", config().getJsonObject("zone.cam_test.center"));
-
-        zone_config.put("zone.zoom", config().getInteger("zone.cam_test.zoom"));
-
-        zone_config.put("zone.finish_index", config().getInteger("zone.cam_test.finish_index"));
-
-        return zone_config;
-    }
-    
     
 } // end class ZoneManager
