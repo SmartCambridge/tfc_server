@@ -8,8 +8,8 @@
             "module.name":           "feedhandler",
             "module.id":             "A",
 
-            "eb.system_status":      "system_status",
-            "eb.console_out":        "console_out",
+            "eb.system_status":      "tfc.system_status",
+            "eb.console_out":        "tfc.console_out",
             "eb.manager":            "tfc.manager",
               
             "feedhandler.address" :   "tfc.feedhandler.A",

@@ -15,13 +15,37 @@ package uk.ac.cam.tfc_server.feedhandler;
 // Data is currently received as a POST every 30 seconds for approx 1200 vehicles
 //
 // FeedHandler will WRITE the raw binary post data into:
-//   $TFC_DATA_MONITOR/<filename>
-//   $TFC_DATA_BIN/YYYY/MM/DD/<filename>
-//   $TFC_DATA_CACHE/YYYY/MM-DD/<filename>
+//   TFC_DATA_MONITOR/<filename>
+//   TFC_DATA_BIN/YYYY/MM/DD/<filename>
+//   TFC_DATA_CACHE/YYYY/MM-DD/<filename>
 // where <filename> = <UTC TIMESTAMP>_YYYY-MM-DD-hh-mm-ss.bin
-// and any prior '.bin' files in $TFC_DATA_MONITOR will be deleted
+// and any prior '.bin' files in TFC_DATA_MONITOR will be deleted
 //
-// FeedHandler will publish the feed data as a JSON string on eventbus "feed_vehicle"
+// Config values are read from provided vertx config() json file, e.g.
+/*
+{
+    "main":    "uk.ac.cam.tfc_server.feedhandler.FeedHandler",
+    "options":
+        { "config":
+                {
+
+                    "module.name":           "feedhandler",
+                    "module.id":             "A",
+
+                    "eb.system_status":      "tfc.system_status",
+                    "eb.console_out":        "tfc.console_out",
+                    "eb.manager":            "tfc.manager",
+
+                    "feedhandler.address" :   "tfc.feedhandler.A",
+                    "feedhandler.http.port" : 8080,
+                    "feedhandler.tfc_data_bin":     "/home/ijl20/tfc_server_data/data_bin",
+                    "feedhandler.tfc_data_cache":   "/home/ijl20/tfc_server_data/data_cache",
+                    "feedhandler.tfc_data_monitor": "/home/ijl20/tfc_server_data/data_monitor"
+                }
+        }
+}
+*/
+// FeedHandler will publish the feed data as a JSON string on eventbus.
 //
 // *************************************************************************************************
 // *************************************************************************************************
@@ -43,6 +67,7 @@ import java.io.*;
 import java.time.*;
 import java.time.format.*;
 import java.util.*;
+//import java.lang.*;
 
 import com.google.transit.realtime.GtfsRealtime.FeedMessage;
 import com.google.transit.realtime.GtfsRealtime.FeedHeader;
@@ -83,7 +108,7 @@ public class FeedHandler extends AbstractVerticle {
     // load Zone initialization values from config()
     if (!get_config())
           {
-              System.err.println("FeedHandler: "+ MODULE_ID + " failed to load initial config()");
+              log_err("FeedHandler: "+ MODULE_ID + " failed to load initial config()");
               vertx.close();
               return;
           }
@@ -108,8 +133,8 @@ public class FeedHandler extends AbstractVerticle {
                   process_gtfs(body_data);
                 }
                 catch (Exception ex) {
-                  System.err.println("process_gtfs Exception");
-                  System.err.println(ex.getMessage());
+                  log_err("process_gtfs Exception");
+                  log_err(ex.getMessage());
                 }
                 request.response().end("");
                     // here you can access the 
@@ -156,7 +181,7 @@ public class FeedHandler extends AbstractVerticle {
         MODULE_NAME = config().getString("module.name");
         if (MODULE_NAME == null)
             {
-                System.err.println("FeedHandler: config() not set");
+                log_err("FeedHandler: config() not set");
                 return false;
             }
         
@@ -170,45 +195,59 @@ public class FeedHandler extends AbstractVerticle {
         FEEDHANDLER_ADDRESS = config().getString(MODULE_NAME+".address");
         if (FEEDHANDLER_ADDRESS == null)
             {
-                System.err.println("FeedHandler: "+MODULE_ID+" "+MODULE_NAME+".address config() not set");
+                log_err("FeedHandler: "+MODULE_ID+" "+MODULE_NAME+".address config() not set");
                 return false;
             }
 
         HTTP_PORT = config().getInteger(MODULE_NAME+".http.port",0);
         if (HTTP_PORT == 0)
         {
-          System.err.println("tfc_data_cache config() var not set -- aborting feedhandler startup");
+          log_err("tfc_data_cache config() var not set -- aborting feedhandler startup");
           return false;
         }
 
         TFC_DATA_CACHE = config().getString(MODULE_NAME+".tfc_data_cache");
         if (TFC_DATA_CACHE == null)
         {
-          System.err.println("tfc_data_cache config() var not set -- aborting feedhandler startup");
+          log_err("tfc_data_cache config() var not set -- aborting feedhandler startup");
           return false;
         }
 
         TFC_DATA_BIN = config().getString(MODULE_NAME+".tfc_data_bin");
         if (TFC_DATA_BIN == null)
         {
-          System.err.println("tfc_data_bin config() var not set -- aborting feedhandler startup");
+          log_err("tfc_data_bin config() var not set -- aborting feedhandler startup");
           return false;
         }
 
         TFC_DATA_MONITOR = config().getString(MODULE_NAME+".tfc_data_monitor");
         if (TFC_DATA_MONITOR == null)
         {
-          System.err.println("tfc_data_monitor config() var not set -- aborting feedhandler startup");
+          log_err("tfc_data_monitor config() var not set -- aborting feedhandler startup");
           return false;
         }
         
         return true;
     }
+
+    // get current local time as "YYYY-MM-DD-hh-mm-ss"
+  private String local_datetime_string()
+    {
+        LocalDateTime local_time = LocalDateTime.now();
+        return local_time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss"));
+    }
+
+    // print msg to stderr prepended with local time
+  private void log_err(String msg)
+    {
+        System.err.println(local_datetime_string()+" "+msg);
+    }
     
-    // process the POST gtfs binary data
-    private void process_gtfs(Buffer buf) throws Exception {
+  // process the POST gtfs binary data
+  private void process_gtfs(Buffer buf) throws Exception {
 
     LocalDateTime local_time = LocalDateTime.now();
+    
     String day = local_time.format(DateTimeFormatter.ofPattern("dd"));
     String month = local_time.format(DateTimeFormatter.ofPattern("MM"));
     String year = local_time.format(DateTimeFormatter.ofPattern("yyyy"));
@@ -245,7 +284,7 @@ public class FeedHandler extends AbstractVerticle {
                                 }
                             else
                                 {
-                                    System.err.println("FeedHandler error creating path "+bin_path);
+                                    log_err("FeedHandler error creating path "+bin_path);
                                 }
                         });
                 }
@@ -273,7 +312,7 @@ public class FeedHandler extends AbstractVerticle {
                                 }
                             else
                                 {
-                                    System.err.println("FeedHandler error creating path "+cache_path);
+                                    log_err("FeedHandler error creating path "+cache_path);
                                 }
                         });
                 }
@@ -291,7 +330,7 @@ public class FeedHandler extends AbstractVerticle {
                                             fs.delete(f, delete_result -> {
                                                     if (!delete_result.succeeded())
                                                         {
-                                                          System.err.println("FeedHandler error tfc_data_monitor delete: "+f);
+                                                          log_err("FeedHandler error tfc_data_monitor delete: "+f);
                                                         }
                                                 });
                                         }
@@ -299,8 +338,8 @@ public class FeedHandler extends AbstractVerticle {
                                 }
                             else
                                 {
-                                    System.err.println("FeedHandler error reading tfc_data_monitor path: "+TFC_DATA_MONITOR);
-                                    System.err.println(monitor_result.cause());
+                                    log_err("FeedHandler error reading tfc_data_monitor path: "+TFC_DATA_MONITOR);
+                                    log_err(monitor_result.cause().getMessage());
                                 }
     });
 
@@ -320,7 +359,7 @@ public class FeedHandler extends AbstractVerticle {
       if (result.succeeded()) {
         System.out.println("File "+file_path+" written");
       } else {
-        System.err.println("FeedHandler write_file error ..." + result.cause());
+        log_err("FeedHandler write_file error ..." + result.cause());
       }
     });
   } // end write_file
@@ -409,7 +448,7 @@ public class FeedHandler extends AbstractVerticle {
                 } // end try
             catch (Exception e)
                 {
-                    System.err.println("Feedhandler exception parsing position record");
+                    log_err("Feedhandler exception parsing position record");
                 }
         }
 
