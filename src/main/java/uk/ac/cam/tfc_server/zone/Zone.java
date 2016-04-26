@@ -38,6 +38,7 @@ import java.time.LocalTime; // for timestamp duration conversion to HH:mm:ss
 import java.util.TimeZone;
 
 import uk.ac.cam.tfc_server.util.Position;
+import uk.ac.cam.tfc_server.util.Constants;
 
 // ********************************************************************************************
 // ********************************************************************************************
@@ -62,10 +63,7 @@ public class Zone extends AbstractVerticle {
 
     private Box box;
     
-
-  // Previous env vars
-    //debug
-  private final String ENV_VAR_ZONE_PATH = "TFC_DATA_ZONE"; // Linux var containing filepath root for csv files
+    //private final String ENV_VAR_ZONE_PATH = "TFC_DATA_ZONE"; // Linux var containing filepath root for csv files
 
   private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
   private final int SYSTEM_STATUS_AMBER_SECONDS = 15; // delay before flagging system as AMBER
@@ -248,6 +246,8 @@ public class Zone extends AbstractVerticle {
         return true;
     }
 
+    // Subscribe to ZONE_FEED position messages, and publish zone messages to ZONE_ADDRESS.
+    // Called in start()
     private void monitor_feed(String ZONE_FEED, String ZONE_ADDRESS)
     {
               System.out.println("Zone: " + MODULE_NAME + "." + MODULE_ID +  " subscribing to "+ ZONE_FEED);
@@ -568,7 +568,6 @@ public class Zone extends AbstractVerticle {
                       if (v.start_ts>0L)
                         {
                           // exit completion message
-                          //debug here is where we will add a new Zon eventbus broadcast message
                           Long duration = finish_ts - v.start_ts; // time taken to transit this Zone
 
                           // Build console string and output
@@ -585,8 +584,28 @@ public class Zone extends AbstractVerticle {
                           completed_log += duration_to_time_str(duration);
 
                           System.out.println(completed_log);
-                          //debug this message should be formatted JSON
-                          vertx.eventBus().publish(ZONE_ADDRESS, completed_log);
+
+                          // ****************************************
+                          // Send Zone event message to ZONE_ADDRESS
+                          // ****************************************
+
+                          JsonObject msg = new JsonObject();
+
+                          msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
+                          msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
+                          msg.put("msg_type", Constants.ZONE_COMPLETION);
+                          msg.put("vehicle_id", v.vehicle_id);
+                          msg.put("route_id", v.route_id);
+                          msg.put("finish_ts", finish_ts);
+                          msg.put("duration", duration);
+                          //debug ! need to add confidence value in ZONE_COMPLETED eb msg e.g. duration of entry and exit vectors
+                          
+                          vertx.eventBus().publish(ZONE_ADDRESS, msg);
+                          
+                          // ****************************************
+                          // Zone message sent
+                          // ****************************************
+                          
                         }
                       else
                         {
