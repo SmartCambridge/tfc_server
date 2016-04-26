@@ -6,7 +6,7 @@
     <script src="//cdn.jsdelivr.net/sockjs/1.0.3/sockjs.min.js"></script>
     <script src='vertx-eventbus.js'></script>
     <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
-<title>TFC ZONE 0.1</title>
+<title>RITA Zone 0.3</title>
 <!--
 RELEASE INFO:
 2016-04-24 0.1 initial draft based on rita.html
@@ -21,10 +21,10 @@ img {
    vertical-align: middle;
 }
 
-.chart {
+/* .chart {
     width: 600px;
     height: 350px;
-}
+} */
 
 </style>
 
@@ -43,9 +43,8 @@ function rita_init()
 
         // set a handler to receive a "rita_out" message
         eb.registerHandler('rita_out', function(error, message) {
-          write_console1('rita_out: ' + message.body + '<br/>');
+          write_console1('rita_out: ' + JSON.stringify(message.body) + '<br/>');
         });
-
     }
 }
 
@@ -61,7 +60,7 @@ function init()
     
     zone_id = "cam_test";
   
-//    alert("init");
+    //alert("rita_data.length="+rita_data.length);
   
     rita_init();
 
@@ -70,32 +69,109 @@ function init()
 
 function draw_chart()
 {
-    //Width and height
-    var w = 500;
-    var h = 100;
+    //debug
+    // rita_data is preloaded array of objects:
+    // { "duration":105,
+    //   "module_id":"madingley_road_in",
+    //   "route_id":"SCCM-X5",
+    //   "finish_ts":1457676998,
+    //   "msg_type":"zone_completion",
+    //   "module_name":"zone",
+    //   "vehicle_id":"14376"
+    // }
 
-    var dataset = [
-        [5, 20], [480, 90], [250, 50], [100, 33], [330, 95],
-        [410, 12], [475, 44], [25, 67], [85, 21], [220, 88]
-      ];
+    var margin = {top: 20, right: 20, bottom: 30, left: 40},
+        width = 960 - margin.left - margin.right,
+        height = 500 - margin.top - margin.bottom;
 
-    //Create SVG element
-    var svg = d3.select("#chart")
-    .append("svg")
-    .attr("width", w)
-    .attr("height", h);
+    /*
+     * value accessor - returns the value to encode for a given data object.
+     * scale - maps value to a visual display encoding, such as a pixel position.
+     * map function - maps from data value to display value
+     * axis - sets up axis
+     */
 
-    svg.selectAll("circle")
-       .data(dataset)
-       .enter()
-       .append("circle")
-       .attr("cx", function(d) {
-    return d[0];
-       })
-       .attr("cy", function(d) {
-    return d[1];
-       })
-       .attr("r", 5);
+    // setup x
+    var xValue = function(d) { return d.finish_ts;}, // data -> value
+        xScale = d3.scale.linear().range([0, width]), // value -> display
+        xMap = function(d) { return xScale(xValue(d));}, // data -> display
+        xAxis = d3.svg.axis().scale(xScale).orient("bottom");
+
+    // setup y
+    var yValue = function(d) { return d.duration;}, // data -> value
+        yScale = d3.scale.linear().range([height, 0]), // value -> display
+        yMap = function(d) { return yScale(yValue(d));}, // data -> display
+        yAxis = d3.svg.axis().scale(yScale).orient("left");
+
+    // setup fill color
+    var cValue = function(d) { return d.route_id + " " + d.vehicle_id;},
+        color = d3.scale.category10();
+
+    // add the graph canvas to the body of the webpage
+    var svg = d3.select("#chart").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    // add the tooltip area to the webpage
+    var tooltip = d3.select("#chart").append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
+
+
+      // don't want dots overlapping axis, so add in buffer to data domain
+      xScale.domain([d3.min(rita_data, xValue)-1, d3.max(rita_data, xValue)+1]);
+      yScale.domain([d3.min(rita_data, yValue)-1, d3.max(rita_data, yValue)+1]);
+
+      // x-axis
+      svg.append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + height + ")")
+          .call(xAxis)
+        .append("text")
+          .attr("class", "label")
+          .attr("x", width)
+          .attr("y", -6)
+          .style("text-anchor", "end")
+          .text("Time of day");
+
+      // y-axis
+      svg.append("g")
+          .attr("class", "y axis")
+          .call(yAxis)
+        .append("text")
+          .attr("class", "label")
+          .attr("transform", "rotate(-90)")
+          .attr("y", 6)
+          .attr("dy", ".71em")
+          .style("text-anchor", "end")
+          .text("Journey time");
+
+      // draw dots
+      svg.selectAll(".dot")
+          .data(rita_data)
+        .enter().append("circle")
+          .attr("class", "dot")
+          .attr("r", 3.5)
+          .attr("cx", xMap)
+          .attr("cy", yMap)
+          .style("fill", function(d) { return color(cValue(d));})
+          .on("mouseover", function(d) {
+              tooltip.transition()
+                   .duration(200)
+                   .style("opacity", .9);
+              tooltip.html(d.vehicle_id + "<br/> (" + xValue(d)
+            + ", " + yValue(d) + ")")
+                   .style("left", (d3.event.pageX + 5) + "px")
+                   .style("top", (d3.event.pageY - 28) + "px");
+          })
+          .on("mouseout", function(d) {
+              tooltip.transition()
+                   .duration(500)
+                   .style("opacity", 0);
+          });
+
 }
 
 function write_console1(msg)
@@ -121,5 +197,297 @@ function write_console1(msg)
 <div id="console1">
 		<h4>Messages</h4>
 </div>
+
+<script>
+
+var rita_data = new Array();
+
+rita_data.push({"duration":105,"module_id":"madingley_road_in","route_id":"SCCM-X5","finish_ts":1457676998,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14376"});
+rita_data.push({"duration":105,"module_id":"madingley_road_in","route_id":"","finish_ts":1457677001,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"410"});
+rita_data.push({"duration":108,"module_id":"madingley_road_in","route_id":"","finish_ts":1457678876,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"311"});
+rita_data.push({"duration":114,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457678871,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14116"});
+rita_data.push({"duration":116,"module_id":"madingley_road_in","route_id":"","finish_ts":1457679847,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3057"});
+rita_data.push({"duration":111,"module_id":"madingley_road_in","route_id":"","finish_ts":1457680105,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"304"});
+rita_data.push({"duration":119,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457680100,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14109"});
+rita_data.push({"duration":105,"module_id":"madingley_road_in","route_id":"","finish_ts":1457680646,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3054"});
+rita_data.push({"duration":116,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457680644,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14092"});
+rita_data.push({"duration":104,"module_id":"madingley_road_in","route_id":"","finish_ts":1457680957,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3056"});
+rita_data.push({"duration":102,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457680958,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14094"});
+rita_data.push({"duration":123,"module_id":"madingley_road_in","route_id":"","finish_ts":1457681693,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3050"});
+rita_data.push({"duration":121,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457681689,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14088"});
+rita_data.push({"duration":108,"module_id":"madingley_road_in","route_id":"SCCM-X5","finish_ts":1457681886,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14371"});
+rita_data.push({"duration":120,"module_id":"madingley_road_in","route_id":"","finish_ts":1457681908,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"400"});
+rita_data.push({"duration":111,"module_id":"madingley_road_in","route_id":"","finish_ts":1457681891,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"414"});
+rita_data.push({"duration":127,"module_id":"madingley_road_in","route_id":"SCCM-X5","finish_ts":1457681908,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14380"});
+rita_data.push({"duration":169,"module_id":"madingley_road_in","route_id":"","finish_ts":1457681965,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"309"});
+rita_data.push({"duration":179,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457681964,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14114"});
+rita_data.push({"duration":154,"module_id":"madingley_road_in","route_id":"","finish_ts":1457682357,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3052"});
+rita_data.push({"duration":120,"module_id":"madingley_road_in","route_id":"WP-2","finish_ts":1457682805,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"707"});
+rita_data.push({"duration":150,"module_id":"madingley_road_in","route_id":"","finish_ts":1457682866,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3053"});
+rita_data.push({"duration":156,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457682868,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14091"});
+rita_data.push({"duration":178,"module_id":"madingley_road_in","route_id":"","finish_ts":1457683029,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"302"});
+rita_data.push({"duration":265,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457683111,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14107"});
+rita_data.push({"duration":139,"module_id":"madingley_road_in","route_id":"","finish_ts":1457683386,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3051"});
+rita_data.push({"duration":141,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457683385,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14089"});
+rita_data.push({"duration":161,"module_id":"madingley_road_in","route_id":"SCCM-X5","finish_ts":1457683458,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14365"});
+rita_data.push({"duration":149,"module_id":"madingley_road_in","route_id":"","finish_ts":1457683445,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"397"});
+rita_data.push({"duration":146,"module_id":"madingley_road_in","route_id":"","finish_ts":1457684031,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3057"});
+rita_data.push({"duration":132,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457684310,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14154"});
+rita_data.push({"duration":142,"module_id":"madingley_road_in","route_id":"","finish_ts":1457684323,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"349"});
+rita_data.push({"duration":185,"module_id":"madingley_road_in","route_id":"","finish_ts":1457684816,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3054"});
+rita_data.push({"duration":181,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457684811,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14092"});
+rita_data.push({"duration":141,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457685171,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14094"});
+rita_data.push({"duration":130,"module_id":"madingley_road_in","route_id":"","finish_ts":1457685170,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3056"});
+rita_data.push({"duration":197,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457685389,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14116"});
+rita_data.push({"duration":203,"module_id":"madingley_road_in","route_id":"","finish_ts":1457685404,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"311"});
+rita_data.push({"duration":152,"module_id":"madingley_road_in","route_id":"","finish_ts":1457685625,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"416"});
+rita_data.push({"duration":136,"module_id":"madingley_road_in","route_id":"","finish_ts":1457685840,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3050"});
+rita_data.push({"duration":234,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457685929,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14088"});
+rita_data.push({"duration":147,"module_id":"madingley_road_in","route_id":"","finish_ts":1457686171,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"304"});
+rita_data.push({"duration":145,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457686166,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14109"});
+rita_data.push({"duration":211,"module_id":"madingley_road_in","route_id":"","finish_ts":1457686543,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3052"});
+rita_data.push({"duration":134,"module_id":"madingley_road_in","route_id":"","finish_ts":1457687013,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3053"});
+rita_data.push({"duration":137,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457687015,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14091"});
+rita_data.push({"duration":129,"module_id":"madingley_road_in","route_id":"","finish_ts":1457687642,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3051"});
+rita_data.push({"duration":118,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457687628,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14089"});
+rita_data.push({"duration":131,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457687649,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14114"});
+rita_data.push({"duration":124,"module_id":"madingley_road_in","route_id":"","finish_ts":1457687646,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"309"});
+rita_data.push({"duration":164,"module_id":"madingley_road_in","route_id":"SCCM-X5","finish_ts":1457687773,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14360"});
+rita_data.push({"duration":128,"module_id":"madingley_road_in","route_id":"","finish_ts":1457688180,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3057"});
+rita_data.push({"duration":149,"module_id":"madingley_road_in","route_id":"","finish_ts":1457688951,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"302"});
+rita_data.push({"duration":150,"module_id":"madingley_road_in","route_id":"","finish_ts":1457688957,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3054"});
+rita_data.push({"duration":148,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457688950,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14092"});
+rita_data.push({"duration":155,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457688957,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14107"});
+rita_data.push({"duration":141,"module_id":"madingley_road_in","route_id":"","finish_ts":1457689038,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"401"});
+rita_data.push({"duration":139,"module_id":"madingley_road_in","route_id":"SCCM-X5","finish_ts":1457689035,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14368"});
+rita_data.push({"duration":104,"module_id":"madingley_road_in","route_id":"","finish_ts":1457689348,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3056"});
+rita_data.push({"duration":109,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457689350,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14094"});
+rita_data.push({"duration":107,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457689596,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14304"});
+rita_data.push({"duration":120,"module_id":"madingley_road_in","route_id":"","finish_ts":1457689601,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"385"});
+rita_data.push({"duration":176,"module_id":"madingley_road_in","route_id":"","finish_ts":1457689791,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"349"});
+rita_data.push({"duration":181,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457689798,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14154"});
+rita_data.push({"duration":122,"module_id":"madingley_road_in","route_id":"","finish_ts":1457690053,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3050"});
+rita_data.push({"duration":123,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457690051,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14088"});
+rita_data.push({"duration":132,"module_id":"madingley_road_in","route_id":"","finish_ts":1457690584,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3052"});
+rita_data.push({"duration":169,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457690622,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14090"});
+rita_data.push({"duration":108,"module_id":"madingley_road_in","route_id":"SCCM-X5","finish_ts":1457690710,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14372"});
+rita_data.push({"duration":106,"module_id":"madingley_road_in","route_id":"","finish_ts":1457690710,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"402"});
+rita_data.push({"duration":109,"module_id":"madingley_road_in","route_id":"","finish_ts":1457691035,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"311"});
+rita_data.push({"duration":113,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457691038,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14116"});
+rita_data.push({"duration":133,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457691189,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14091"});
+rita_data.push({"duration":128,"module_id":"madingley_road_in","route_id":"","finish_ts":1457691190,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3053"});
+rita_data.push({"duration":132,"module_id":"madingley_road_in","route_id":"","finish_ts":1457691785,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3051"});
+rita_data.push({"duration":130,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457691782,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14089"});
+rita_data.push({"duration":115,"module_id":"madingley_road_in","route_id":"","finish_ts":1457692079,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"304"});
+rita_data.push({"duration":113,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457692077,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14109"});
+rita_data.push({"duration":119,"module_id":"madingley_road_in","route_id":"","finish_ts":1457692476,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3057"});
+rita_data.push({"duration":148,"module_id":"madingley_road_in","route_id":"","finish_ts":1457693005,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3054"});
+rita_data.push({"duration":147,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457692997,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14092"});
+rita_data.push({"duration":160,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457693434,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14114"});
+rita_data.push({"duration":159,"module_id":"madingley_road_in","route_id":"","finish_ts":1457693447,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"309"});
+rita_data.push({"duration":111,"module_id":"madingley_road_in","route_id":"","finish_ts":1457693556,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3056"});
+rita_data.push({"duration":115,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457693559,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14094"});
+rita_data.push({"duration":127,"module_id":"madingley_road_in","route_id":"","finish_ts":1457694199,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3050"});
+rita_data.push({"duration":123,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457694193,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14088"});
+rita_data.push({"duration":126,"module_id":"madingley_road_in","route_id":"","finish_ts":1457694418,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"302"});
+rita_data.push({"duration":139,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457694430,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14107"});
+rita_data.push({"duration":117,"module_id":"madingley_road_in","route_id":"","finish_ts":1457694797,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3052"});
+rita_data.push({"duration":100,"module_id":"madingley_road_in","route_id":"","finish_ts":1457694550,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"407"});
+rita_data.push({"duration":127,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457694807,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14090"});
+rita_data.push({"duration":128,"module_id":"madingley_road_in","route_id":"SCCM-Tour","finish_ts":1457695358,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14044"});
+rita_data.push({"duration":110,"module_id":"madingley_road_in","route_id":"","finish_ts":1457695379,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3053"});
+rita_data.push({"duration":128,"module_id":"madingley_road_in","route_id":"","finish_ts":1457695372,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3559"});
+rita_data.push({"duration":130,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457695387,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14091"});
+rita_data.push({"duration":114,"module_id":"madingley_road_in","route_id":"","finish_ts":1457695831,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"349"});
+rita_data.push({"duration":116,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457695828,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14154"});
+rita_data.push({"duration":132,"module_id":"madingley_road_in","route_id":"","finish_ts":1457695993,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3051"});
+rita_data.push({"duration":134,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457695994,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14089"});
+rita_data.push({"duration":120,"module_id":"madingley_road_in","route_id":"","finish_ts":1457696485,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"399"});
+rita_data.push({"duration":122,"module_id":"madingley_road_in","route_id":"SCCM-X5","finish_ts":1457696488,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14370"});
+rita_data.push({"duration":114,"module_id":"madingley_road_in","route_id":"","finish_ts":1457696594,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3057"});
+rita_data.push({"duration":123,"module_id":"madingley_road_in","route_id":"","finish_ts":1457696905,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"311"});
+rita_data.push({"duration":125,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457696904,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14116"});
+rita_data.push({"duration":125,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457697189,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14092"});
+rita_data.push({"duration":119,"module_id":"madingley_road_in","route_id":"","finish_ts":1457697191,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3054"});
+rita_data.push({"duration":135,"module_id":"madingley_road_in","route_id":"","finish_ts":1457697786,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"398"});
+rita_data.push({"duration":133,"module_id":"madingley_road_in","route_id":"SCCM-X5","finish_ts":1457697781,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14364"});
+rita_data.push({"duration":128,"module_id":"madingley_road_in","route_id":"","finish_ts":1457697808,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3056"});
+rita_data.push({"duration":125,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457697811,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14094"});
+rita_data.push({"duration":188,"module_id":"madingley_road_in","route_id":"","finish_ts":1457698172,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"304"});
+rita_data.push({"duration":187,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457698170,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14109"});
+rita_data.push({"duration":126,"module_id":"madingley_road_in","route_id":"","finish_ts":1457698407,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3050"});
+rita_data.push({"duration":158,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457698435,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14088"});
+rita_data.push({"duration":108,"module_id":"madingley_road_in","route_id":"","finish_ts":1457698892,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3052"});
+rita_data.push({"duration":141,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457698922,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14090"});
+rita_data.push({"duration":112,"module_id":"madingley_road_in","route_id":"","finish_ts":1457699287,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"404"});
+rita_data.push({"duration":112,"module_id":"madingley_road_in","route_id":"SCCM-X5","finish_ts":1457699287,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14378"});
+rita_data.push({"duration":108,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457699354,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14114"});
+rita_data.push({"duration":112,"module_id":"madingley_road_in","route_id":"","finish_ts":1457699364,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"309"});
+rita_data.push({"duration":129,"module_id":"madingley_road_in","route_id":"","finish_ts":1457699673,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3053"});
+rita_data.push({"duration":155,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457699693,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14091"});
+rita_data.push({"duration":120,"module_id":"madingley_road_in","route_id":"","finish_ts":1457700184,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3051"});
+rita_data.push({"duration":136,"module_id":"madingley_road_in","route_id":"SCCM-Tour","finish_ts":1457700177,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14044"});
+rita_data.push({"duration":122,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457700183,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14089"});
+rita_data.push({"duration":225,"module_id":"madingley_road_in","route_id":"","finish_ts":1457700727,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"302"});
+rita_data.push({"duration":146,"module_id":"madingley_road_in","route_id":"","finish_ts":1457700867,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3057"});
+rita_data.push({"duration":201,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457700709,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14107"});
+rita_data.push({"duration":119,"module_id":"madingley_road_in","route_id":"","finish_ts":1457701408,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3054"});
+rita_data.push({"duration":116,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457701402,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14092"});
+rita_data.push({"duration":105,"module_id":"madingley_road_in","route_id":"","finish_ts":1457701707,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"418"});
+rita_data.push({"duration":117,"module_id":"madingley_road_in","route_id":"SCCM-X5","finish_ts":1457701703,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14373"});
+rita_data.push({"duration":138,"module_id":"madingley_road_in","route_id":"","finish_ts":1457701743,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"349"});
+rita_data.push({"duration":134,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457701739,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14154"});
+rita_data.push({"duration":126,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457702134,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14094"});
+rita_data.push({"duration":132,"module_id":"madingley_road_in","route_id":"","finish_ts":1457702138,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3056"});
+rita_data.push({"duration":123,"module_id":"madingley_road_in","route_id":"","finish_ts":1457702659,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3050"});
+rita_data.push({"duration":130,"module_id":"madingley_road_in","route_id":"","finish_ts":1457702664,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3083"});
+rita_data.push({"duration":117,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457702654,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14088"});
+rita_data.push({"duration":115,"module_id":"madingley_road_in","route_id":"","finish_ts":1457702793,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"311"});
+rita_data.push({"duration":128,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457702792,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14116"});
+rita_data.push({"duration":103,"module_id":"madingley_road_in","route_id":"","finish_ts":1457703142,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3052"});
+rita_data.push({"duration":127,"module_id":"madingley_road_in","route_id":"","finish_ts":1457703538,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"415"});
+rita_data.push({"duration":118,"module_id":"madingley_road_in","route_id":"SCCM-X5","finish_ts":1457703524,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14361"});
+rita_data.push({"duration":137,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457703806,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14091"});
+rita_data.push({"duration":146,"module_id":"madingley_road_in","route_id":"","finish_ts":1457703817,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3053"});
+rita_data.push({"duration":132,"module_id":"madingley_road_in","route_id":"","finish_ts":1457704202,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"304"});
+rita_data.push({"duration":134,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457704199,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14109"});
+rita_data.push({"duration":138,"module_id":"madingley_road_in","route_id":"","finish_ts":1457704412,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3051"});
+rita_data.push({"duration":139,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457704407,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14089"});
+rita_data.push({"duration":140,"module_id":"madingley_road_in","route_id":"","finish_ts":1457704776,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"409"});
+rita_data.push({"duration":143,"module_id":"madingley_road_in","route_id":"SCCM-X5","finish_ts":1457704773,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14375"});
+rita_data.push({"duration":107,"module_id":"madingley_road_in","route_id":"","finish_ts":1457704949,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3057"});
+rita_data.push({"duration":133,"module_id":"madingley_road_in","route_id":"","finish_ts":1457704946,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3559"});
+rita_data.push({"duration":111,"module_id":"madingley_road_in","route_id":"SCCM-Tour","finish_ts":1457704934,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14044"});
+rita_data.push({"duration":143,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457705469,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14114"});
+rita_data.push({"duration":137,"module_id":"madingley_road_in","route_id":"","finish_ts":1457705472,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"309"});
+rita_data.push({"duration":149,"module_id":"madingley_road_in","route_id":"","finish_ts":1457705578,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3054"});
+rita_data.push({"duration":126,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457705574,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14092"});
+rita_data.push({"duration":117,"module_id":"madingley_road_in","route_id":"","finish_ts":1457706217,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3056"});
+rita_data.push({"duration":131,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457706218,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14094"});
+rita_data.push({"duration":148,"module_id":"madingley_road_in","route_id":"","finish_ts":1457706470,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"302"});
+rita_data.push({"duration":143,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457706460,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14107"});
+rita_data.push({"duration":125,"module_id":"madingley_road_in","route_id":"","finish_ts":1457706633,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"410"});
+rita_data.push({"duration":121,"module_id":"madingley_road_in","route_id":"SCCM-X5","finish_ts":1457706628,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14376"});
+rita_data.push({"duration":127,"module_id":"madingley_road_in","route_id":"","finish_ts":1457706804,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3050"});
+rita_data.push({"duration":132,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457706805,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14088"});
+rita_data.push({"duration":137,"module_id":"madingley_road_in","route_id":"","finish_ts":1457707359,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3052"});
+rita_data.push({"duration":135,"module_id":"madingley_road_in","route_id":"","finish_ts":1457707427,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3083"});
+rita_data.push({"duration":163,"module_id":"madingley_road_in","route_id":"","finish_ts":1457707738,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"349"});
+rita_data.push({"duration":165,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457707742,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14154"});
+rita_data.push({"duration":123,"module_id":"madingley_road_in","route_id":"","finish_ts":1457708001,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3053"});
+rita_data.push({"duration":124,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457708000,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14091"});
+rita_data.push({"duration":104,"module_id":"madingley_road_in","route_id":"SCCM-X5","finish_ts":1457708341,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14374"});
+rita_data.push({"duration":114,"module_id":"madingley_road_in","route_id":"","finish_ts":1457708580,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3051"});
+rita_data.push({"duration":118,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457708570,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14089"});
+rita_data.push({"duration":134,"module_id":"madingley_road_in","route_id":"","finish_ts":1457708748,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"311"});
+rita_data.push({"duration":113,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457708736,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14116"});
+rita_data.push({"duration":158,"module_id":"madingley_road_in","route_id":"","finish_ts":1457709328,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3057"});
+rita_data.push({"duration":159,"module_id":"madingley_road_in","route_id":"","finish_ts":1457709893,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3054"});
+rita_data.push({"duration":130,"module_id":"madingley_road_in","route_id":"","finish_ts":1457709928,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3559"});
+rita_data.push({"duration":131,"module_id":"madingley_road_in","route_id":"SCCM-Tour","finish_ts":1457709921,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14044"});
+rita_data.push({"duration":177,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457709899,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14092"});
+rita_data.push({"duration":127,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457710083,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14109"});
+rita_data.push({"duration":119,"module_id":"madingley_road_in","route_id":"","finish_ts":1457710090,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"304"});
+rita_data.push({"duration":127,"module_id":"madingley_road_in","route_id":"","finish_ts":1457710375,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3056"});
+rita_data.push({"duration":120,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457710369,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14094"});
+rita_data.push({"duration":125,"module_id":"madingley_road_in","route_id":"SCCM-X5","finish_ts":1457710651,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14371"});
+rita_data.push({"duration":131,"module_id":"madingley_road_in","route_id":"","finish_ts":1457711304,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3050"});
+rita_data.push({"duration":139,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457711299,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14088"});
+rita_data.push({"duration":159,"module_id":"madingley_road_in","route_id":"","finish_ts":1457711692,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"309"});
+rita_data.push({"duration":164,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457711683,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14114"});
+rita_data.push({"duration":107,"module_id":"madingley_road_in","route_id":"","finish_ts":1457712115,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3053"});
+rita_data.push({"duration":108,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457712112,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14091"});
+rita_data.push({"duration":169,"module_id":"madingley_road_in","route_id":"","finish_ts":1457712366,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3083"});
+rita_data.push({"duration":164,"module_id":"madingley_road_in","route_id":"","finish_ts":1457712507,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"302"});
+rita_data.push({"duration":179,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457712510,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14107"});
+rita_data.push({"duration":139,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457712852,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14089"});
+rita_data.push({"duration":141,"module_id":"madingley_road_in","route_id":"","finish_ts":1457712866,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3051"});
+rita_data.push({"duration":123,"module_id":"madingley_road_in","route_id":"SCCM-X5","finish_ts":1457713170,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14365"});
+rita_data.push({"duration":157,"module_id":"madingley_road_in","route_id":"","finish_ts":1457713197,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"397"});
+rita_data.push({"duration":204,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457713930,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14154"});
+rita_data.push({"duration":226,"module_id":"madingley_road_in","route_id":"","finish_ts":1457713949,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"349"});
+rita_data.push({"duration":131,"module_id":"madingley_road_in","route_id":"","finish_ts":1457714397,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3054"});
+rita_data.push({"duration":130,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457714396,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14092"});
+rita_data.push({"duration":121,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457714740,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14094"});
+rita_data.push({"duration":121,"module_id":"madingley_road_in","route_id":"","finish_ts":1457714747,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3056"});
+rita_data.push({"duration":161,"module_id":"madingley_road_in","route_id":"","finish_ts":1457714792,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"311"});
+rita_data.push({"duration":159,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457714786,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14116"});
+rita_data.push({"duration":124,"module_id":"madingley_road_in","route_id":"","finish_ts":1457715128,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"416"});
+rita_data.push({"duration":121,"module_id":"madingley_road_in","route_id":"","finish_ts":1457715918,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"400"});
+rita_data.push({"duration":117,"module_id":"madingley_road_in","route_id":"SCCM-X5","finish_ts":1457715911,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14380"});
+rita_data.push({"duration":146,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457716031,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14088"});
+rita_data.push({"duration":153,"module_id":"madingley_road_in","route_id":"","finish_ts":1457716046,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3050"});
+rita_data.push({"duration":200,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457716090,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14109"});
+rita_data.push({"duration":199,"module_id":"madingley_road_in","route_id":"","finish_ts":1457716096,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"304"});
+rita_data.push({"duration":124,"module_id":"madingley_road_in","route_id":"","finish_ts":1457716195,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3052"});
+rita_data.push({"duration":129,"module_id":"madingley_road_in","route_id":"","finish_ts":1457716193,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3559"});
+rita_data.push({"duration":129,"module_id":"madingley_road_in","route_id":"SCCM-Tour","finish_ts":1457716183,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14044"});
+rita_data.push({"duration":124,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457716190,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14090"});
+rita_data.push({"duration":136,"module_id":"madingley_road_in","route_id":"","finish_ts":1457716650,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3053"});
+rita_data.push({"duration":142,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457716653,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14091"});
+rita_data.push({"duration":190,"module_id":"madingley_road_in","route_id":"","finish_ts":1457716918,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"414"});
+rita_data.push({"duration":203,"module_id":"madingley_road_in","route_id":"SCCM-X5","finish_ts":1457716928,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14360"});
+rita_data.push({"duration":132,"module_id":"madingley_road_in","route_id":"","finish_ts":1457717394,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3051"});
+rita_data.push({"duration":141,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457717400,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14089"});
+rita_data.push({"duration":166,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457717613,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14114"});
+rita_data.push({"duration":174,"module_id":"madingley_road_in","route_id":"","finish_ts":1457717622,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"309"});
+rita_data.push({"duration":138,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457717832,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14304"});
+rita_data.push({"duration":137,"module_id":"madingley_road_in","route_id":"","finish_ts":1457717839,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"385"});
+rita_data.push({"duration":118,"module_id":"madingley_road_in","route_id":"","finish_ts":1457718286,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3057"});
+rita_data.push({"duration":164,"module_id":"madingley_road_in","route_id":"","finish_ts":1457718757,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"302"});
+rita_data.push({"duration":143,"module_id":"madingley_road_in","route_id":"","finish_ts":1457718934,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"401"});
+rita_data.push({"duration":148,"module_id":"madingley_road_in","route_id":"SCCM-X5","finish_ts":1457718929,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14368"});
+rita_data.push({"duration":136,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457719114,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14092"});
+rita_data.push({"duration":127,"module_id":"madingley_road_in","route_id":"","finish_ts":1457719116,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3054"});
+rita_data.push({"duration":112,"module_id":"madingley_road_in","route_id":"","finish_ts":1457719466,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3056"});
+rita_data.push({"duration":119,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457719462,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14094"});
+rita_data.push({"duration":100,"module_id":"madingley_road_in","route_id":"","finish_ts":1457719737,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3017"});
+rita_data.push({"duration":110,"module_id":"madingley_road_in","route_id":"","finish_ts":1457719800,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"402"});
+rita_data.push({"duration":113,"module_id":"madingley_road_in","route_id":"SCCM-X5","finish_ts":1457719796,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14372"});
+rita_data.push({"duration":134,"module_id":"madingley_road_in","route_id":"","finish_ts":1457719894,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"385"});
+rita_data.push({"duration":169,"module_id":"madingley_road_in","route_id":"SCCM-26","finish_ts":1457719804,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14052"});
+rita_data.push({"duration":114,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457719897,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14088"});
+rita_data.push({"duration":122,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457719885,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14304"});
+rita_data.push({"duration":125,"module_id":"madingley_road_in","route_id":"","finish_ts":1457719910,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3050"});
+rita_data.push({"duration":151,"module_id":"madingley_road_in","route_id":"","finish_ts":1457720059,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"349"});
+rita_data.push({"duration":144,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457720048,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14154"});
+rita_data.push({"duration":123,"module_id":"madingley_road_in","route_id":"","finish_ts":1457720227,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3052"});
+rita_data.push({"duration":129,"module_id":"madingley_road_in","route_id":"","finish_ts":1457720427,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3053"});
+rita_data.push({"duration":136,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457720434,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14091"});
+rita_data.push({"duration":237,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457721050,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14116"});
+rita_data.push({"duration":258,"module_id":"madingley_road_in","route_id":"","finish_ts":1457721077,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"311"});
+rita_data.push({"duration":116,"module_id":"madingley_road_in","route_id":"SCCM-18","finish_ts":1457721344,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14051"});
+rita_data.push({"duration":116,"module_id":"madingley_road_in","route_id":"","finish_ts":1457721348,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3016"});
+rita_data.push({"duration":124,"module_id":"madingley_road_in","route_id":"","finish_ts":1457722109,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3051"});
+rita_data.push({"duration":152,"module_id":"madingley_road_in","route_id":"","finish_ts":1457722240,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3057"});
+rita_data.push({"duration":174,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457722375,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14109"});
+rita_data.push({"duration":175,"module_id":"madingley_road_in","route_id":"","finish_ts":1457722391,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"304"});
+rita_data.push({"duration":109,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457723030,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14094"});
+rita_data.push({"duration":118,"module_id":"madingley_road_in","route_id":"","finish_ts":1457723042,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3056"});
+rita_data.push({"duration":157,"module_id":"madingley_road_in","route_id":"","finish_ts":1457723184,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"309"});
+rita_data.push({"duration":139,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457723166,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14114"});
+rita_data.push({"duration":128,"module_id":"madingley_road_in","route_id":"","finish_ts":1457724368,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3052"});
+rita_data.push({"duration":115,"module_id":"madingley_road_in","route_id":"","finish_ts":1457724529,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"302"});
+rita_data.push({"duration":118,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457724533,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14107"});
+rita_data.push({"duration":112,"module_id":"madingley_road_in","route_id":"","finish_ts":1457725301,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"399"});
+rita_data.push({"duration":108,"module_id":"madingley_road_in","route_id":"SCCM-X5","finish_ts":1457725290,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14370"});
+rita_data.push({"duration":146,"module_id":"madingley_road_in","route_id":"","finish_ts":1457725793,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"311"});
+rita_data.push({"duration":142,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457725790,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14116"});
+rita_data.push({"duration":107,"module_id":"madingley_road_in","route_id":"","finish_ts":1457725893,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"389"});
+rita_data.push({"duration":119,"module_id":"madingley_road_in","route_id":"","finish_ts":1457726076,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"398"});
+rita_data.push({"duration":134,"module_id":"madingley_road_in","route_id":"","finish_ts":1457726063,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3057"});
+rita_data.push({"duration":111,"module_id":"madingley_road_in","route_id":"SCCM-X5","finish_ts":1457726061,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14364"});
+rita_data.push({"duration":138,"module_id":"madingley_road_in","route_id":"","finish_ts":1457726476,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3056"});
+rita_data.push({"duration":147,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457726477,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14094"});
+rita_data.push({"duration":115,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457726887,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14302"});
+rita_data.push({"duration":120,"module_id":"madingley_road_in","route_id":"","finish_ts":1457726894,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"387"});
+rita_data.push({"duration":124,"module_id":"madingley_road_in","route_id":"","finish_ts":1457727739,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3052"});
+rita_data.push({"duration":149,"module_id":"madingley_road_in","route_id":"SCCM-PR1","finish_ts":1457727752,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14090"});
+rita_data.push({"duration":91,"module_id":"madingley_road_in","route_id":"","finish_ts":1457728954,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"3057"});
+rita_data.push({"duration":152,"module_id":"madingley_road_in","route_id":"","finish_ts":1457729557,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"312"});
+rita_data.push({"duration":151,"module_id":"madingley_road_in","route_id":"SCCM-4","finish_ts":1457729552,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14117"});
+rita_data.push({"duration":138,"module_id":"madingley_road_in","route_id":"SCCM-X5","finish_ts":1457729958,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"14373"});
+rita_data.push({"duration":129,"module_id":"madingley_road_in","route_id":"","finish_ts":1457729963,"msg_type":"zone_completion","module_name":"zone","vehicle_id":"418"});
+</script>
 </body>
 </html>
