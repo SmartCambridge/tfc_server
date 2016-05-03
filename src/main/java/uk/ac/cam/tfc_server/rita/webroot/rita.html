@@ -49,6 +49,10 @@ body {
     height: 100%;
 }
 
+.header_img {
+    vertical-align: middle;
+}
+
 #position_text {
     display: block;
 }
@@ -73,8 +77,8 @@ body {
 </head>
 
 <body onload='init()'>
+  <h1><img class="header_img" src="images/smart_cambridge_logo.jpg">Rita <span id='heading'></span></h1>
   
-  <h1>TFC Realtime Analysis Tool <span id='heading'></span></h1>
 <div id="status">Initializing...</div>
   
 <table style="width: 100%; height: 60%">
@@ -101,19 +105,8 @@ body {
     </td>
     </tr>
 </table>
-<table style="width: 100%;">
-    <tr>
-    <td style="width: 70%; vertical-align: top">
-        <div id="console1">
-		<h4>Messages</h4>
-        </div>
-    </td>
-    <td style="width: 30%; vertical-align: top">
-        <div id="console2">
-		<h4>Timed entries/exits</h4>
-		</div>
-    </td>
-    </tr>
-</table>
+<div id="console1">
+		<h4>Rita Messages</h4>
+</div>
 </body>
 </html>

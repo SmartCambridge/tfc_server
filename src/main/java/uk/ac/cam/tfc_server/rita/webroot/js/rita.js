@@ -138,7 +138,7 @@ function init()
 
         // set a handler to receive a "rita_out" message
         eb.registerHandler('rita_out', function(error, message) {
-          write_console1('rita_out: ' + message.body + '<br/>');
+          write_console1(format_time(new Date())+ " " + JSON.stringify(message.body) + '<br/>');
         });
 
         // set a handler to receive a "rita_feed" message
@@ -1104,13 +1104,14 @@ function test_positions(positions, feed_timestamp)
         }
     }
         // update page status line and heading
-    var mindate_string = format_datetime(new Date(mintime*1000));
-    var maxdate_string = format_datetime(new Date(maxtime*1000));
+    var mindate_string = format_time(new Date(mintime*1000));
+    var maxdate_string = format_time(new Date(maxtime*1000));
     
-    document.getElementById('heading').innerHTML = '{'+mindate_string+'}..{'+maxdate_string+'}';
-    document.getElementById('status').innerHTML = ' data received ' + 
+    //document.getElementById('heading').innerHTML = '{'+mindate_string+'}..{'+maxdate_string+'}';
+    document.getElementById('status').innerHTML = ' Realtime data received at ' + 
                                 format_datetime(new Date()) + 
-                                ' for ' + positions_count+' positions ('+aged_count+' aged 2+ mins)';    
+                                ' for ' + positions_count+' positions ' +
+                                '{'+mindate_string+'}..{'+maxdate_string+'}';;    
 }
 
 // check the current position record 'p' against bounds[bounds_index]
@@ -1298,7 +1299,7 @@ function bounds_completed(bounds_index, p)
                     '<br/>';
                     
     write_console1(op);
-    write_console2(op);
+    //write_console2(op);
 
     // draw exit vector
     polyline_exit[p.vehicle_id] = new google.maps.Polyline({

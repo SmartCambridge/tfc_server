@@ -47,21 +47,33 @@ import java.time.*;
 import java.time.format.*;
 
 public class Console extends AbstractVerticle {
-  private final int HTTP_PORT = 8081;
+  private int HTTP_PORT; // from config()
+  private String EB_SYSTEM_STATUS; // from config()
+  private String EB_MANAGER; // from config()
+  private String MODULE_NAME; // from config()
+  private String MODULE_ID; // from config()
+  private String WEBROOT; // from config()
+    
   private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
+  private final int SYSTEM_STATUS_AMBER_SECONDS = 15;
+  private final int SYSTEM_STATUS_RED_SECONDS = 25;
+
   private EventBus eb = null;
     
   @Override
   public void start(Future<Void> fut) throws Exception {
 
-    boolean ok = true; // simple boolean to flag an abort during startup
+    if (!get_config())
+        {
+            System.err.println("Console: problem loading config");
+            vertx.close();
+            return;
+        }
 
-    System.out.println("Console started! ");
+    System.out.println("Console starting as "+MODULE_NAME+"."+MODULE_ID);
 
     eb = vertx.eventBus();
     
-    if (ok)
-    {
       HttpServer http_server = vertx.createHttpServer();
 
       Router router = Router.router(vertx);
@@ -85,7 +97,7 @@ public class Console extends AbstractVerticle {
         HttpServerResponse response = routingContext.response();
         response.putHeader("content-type", "text/html");
 
-        response.end("<h1>TFC Console</h1><p>Vertx-Web!</p>");
+        response.end("<h1>TFC Console."+MODULE_ID+"</h1><p>Vertx-Web!</p>");
       });
 
       // create handler for eventbus bridge
@@ -106,7 +118,7 @@ public class Console extends AbstractVerticle {
       // create handler for static pages
       
       StaticHandler static_handler = StaticHandler.create();
-      static_handler.setWebRoot("webroot");
+      static_handler.setWebRoot(WEBROOT);
       static_handler.setCachingEnabled(false);
       router.route(HttpMethod.GET, "/*").handler( static_handler );
 
@@ -114,36 +126,78 @@ public class Console extends AbstractVerticle {
       
       http_server.requestHandler(router::accept).listen(HTTP_PORT);
 
-      // create listener for eventbus 'feed_vehicle' messages
-      eb.consumer("feed_vehicle", message -> {
-              JsonObject feed_message = new JsonObject(message.body().toString());
-              System.out.println("Console feed_vehicle message #records: "+
-                                 String.valueOf(feed_message.getJsonArray("entities").size()));
-              //debug - sending system_status message on behalf of feedhandler
-              eb.publish("system_status", "{ \"module_name\": \"feedhandler\", \"status\": \"UP\" }");
-              handle_feed(feed_message);
-          });
-
       // create listener for eventbus 'console_in' messages
       eb.consumer("console_in", message -> {
               System.out.println("Console_in: "+message.body());
           });
 
       // create listener for eventbus 'system_status' messages
-      eb.consumer("system_status", message -> {
+      eb.consumer(EB_SYSTEM_STATUS, message -> {
               System.out.println("system_status: "+message.body());
               eb.publish("console_out_system_status", message.body());
           });
-
-      // send periodic "system_status" messages
+    
+    // send periodic "system_status" messages
       vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> {
-              System.out.println("Sending system_status UP");
-              // publish { "module_name": "console", "status": "UP" } on address "system_status"
-              eb.publish("system_status", "{ \"module_name\": \"console\", \"status\": \"UP\" }");
-          });
-    } // end if (ok)
+        eb.publish(EB_SYSTEM_STATUS,
+                 "{ \"module_name\": \""+MODULE_NAME+"\"," +
+                   "\"module_id\": \""+MODULE_ID+"\"," +
+                   "\"status\": \"UP\"," +
+                   "\"status_amber_seconds\": "+String.valueOf( SYSTEM_STATUS_AMBER_SECONDS ) + "," +
+                   "\"status_red_seconds\": "+String.valueOf( SYSTEM_STATUS_RED_SECONDS ) +
+                 "}" );
+      });
+
   } // end start()
 
+    // Load initialization global constants defining this module from config()
+    private boolean get_config()
+    {
+        // config() values needed by all TFC modules are:
+        // module.name e.g. "console"
+        // module.id e.g. "A"
+        // eb.system_status - String eventbus address for system status messages
+        // eb.manager - evenbus address to subscribe to for system management messages
+
+        MODULE_NAME = config().getString("module.name"); // "console"
+        if (MODULE_NAME==null)
+            {
+                System.err.println("Console: no module.name in config()");
+                return false;
+            }
+        
+        MODULE_ID = config().getString("module.id"); // A, B, ...
+        if (MODULE_ID==null)
+            {
+                System.err.println("Console: no module.id in config()");
+                return false;
+            }
+
+        // common system status reporting address, e.g. for UP messages
+        // picked up by Console
+        EB_SYSTEM_STATUS = config().getString("eb.system_status");
+        if (EB_SYSTEM_STATUS==null)
+            {
+                System.err.println("Console: no eb.system_status in config()");
+                return false;
+            }
+
+        // system control address - commands are broadcast on this
+        EB_MANAGER = config().getString("eb.manager");
+        if (EB_MANAGER==null)
+            {
+                System.err.println("Console: no eb.manager in config()");
+                return false;
+            }
+
+        // port for user browser access to this Rita
+        HTTP_PORT = config().getInteger(MODULE_NAME+".http.port");
+
+        // where the built-in webserver will find static files
+        WEBROOT = config().getString(MODULE_NAME+".webroot");
+        return true;
+    }
+    
     // process the POST gtfs binary data
   private void serve_page(HttpServerRequest request)
     {

@@ -268,7 +268,7 @@ public class Rita extends AbstractVerticle {
                 
   } // end start()
 
-    // Load initialization global constants defining this Zone from config()
+    // Load initialization global constants defining this module from config()
     private boolean get_config()
     {
         // config() values needed by all TFC modules are:
