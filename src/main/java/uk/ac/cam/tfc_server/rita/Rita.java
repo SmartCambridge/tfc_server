@@ -9,12 +9,12 @@ package uk.ac.cam.tfc_server.rita;
 // Based on user requests via the http UI, RITA will spawn feedplayers and zones, to
 // display the analysis in real time on the user browser.
 //
-// Version 0.03
+// Version 0.04
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
 //
-// Provides an HTTP server that serves the system administrator, to view eventbus events etc
+// Provides an HTTP server that serves the end user
 //
 // *************************************************************************************************
 // *************************************************************************************************
@@ -44,6 +44,7 @@ import io.vertx.ext.web.handler.sockjs.BridgeOptions;
 import io.vertx.ext.web.handler.sockjs.PermittedOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import io.vertx.ext.web.handler.sockjs.SockJSHandlerOptions;
+import io.vertx.ext.web.handler.sockjs.SockJSSocket;
 
 import java.io.*;
 import java.time.*;
@@ -52,13 +53,13 @@ import java.util.*;
 
 public class Rita extends AbstractVerticle {
 
-  private int HTTP_PORT; // from config()
-  private String RITA_ADDRESS; // from config()
-  private String EB_SYSTEM_STATUS; // from config()
-  private String EB_MANAGER; // from config()
-  private String MODULE_NAME; // from config()
-  private String MODULE_ID; // from config()
-  private String WEBROOT; // from config()
+    private int HTTP_PORT; // from config()
+    private String RITA_ADDRESS; // from config()
+    private String EB_SYSTEM_STATUS; // from config()
+    private String EB_MANAGER; // from config()
+    private String MODULE_NAME; // from config()
+    private String MODULE_ID; // from config()
+    private String WEBROOT; // from config()
     
     //debug - these may come from user commands
     private ArrayList<String> FEEDPLAYERS; // optional from config()
@@ -67,13 +68,17 @@ public class Rita extends AbstractVerticle {
     private String ZONE_ADDRESS; // optional from config()
     private String ZONE_FEED; // optional from config()
     private String FEEDPLAYER_ADDRESS; // optional from config()
-    
-  private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
-  private final int SYSTEM_STATUS_AMBER_SECONDS = 15;
-  private final int SYSTEM_STATUS_RED_SECONDS = 25;
-    
-  private EventBus eb = null;
 
+    private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
+    private final int SYSTEM_STATUS_AMBER_SECONDS = 15;
+    private final int SYSTEM_STATUS_RED_SECONDS = 25;
+
+    // Vertx event bus
+    private EventBus eb = null;
+
+    // data structure to hold socket info of each connected user
+    private SockInfo sock_info = new SockInfo();
+    
   @Override
   public void start(Future<Void> fut) throws Exception {
 
@@ -181,26 +186,43 @@ public class Rita extends AbstractVerticle {
 
     Router router = Router.router(vertx);
 
+    // *********************************
     // create handler for browser socket 
+    // *********************************
 
-    //SockJSHandlerOptions options = new SockJSHandlerOptions().setHeartbeatInterval(2000);
+    SockJSHandlerOptions sock_options = new SockJSHandlerOptions().setHeartbeatInterval(2000);
 
-    //SockJSHandler wsHandler = SockJSHandler.create(vertx, options);
+    SockJSHandler sock_handler = SockJSHandler.create(vertx, sock_options);
 
-    //wsHandler.socketHandler( ws -> {
-    //     ws.handler(ws::write);
-    //  });
+    //debug sock function is just simple echo...
+    sock_handler.socketHandler( sock -> {
+            // sock.handler(sock::write);
+            
+            // Rita received new socket connection
+            System.out.println("Rita."+MODULE_ID+": sock connection received");
+            
+            // Assign a handler funtion to receive data if send
+            sock.handler( buf -> {
+               System.out.println("Rita."+MODULE_ID+": sock received '"+buf+"'");
+               //debug sock support hacked for just one client with ref=1
+               sock_info.add(sock, 1);
+                });
 
-    //router.route("/ws/*").handler(wsHandler);
+            sock.endHandler( (Void v) -> {
+                    System.out.println("Rita."+MODULE_ID+": sock closed");
+                });
+      });
+
+    router.route("/ws/*").handler(sock_handler);
 
     // create handler for embedded page
 
     router.route("/home").handler( routingContext -> {
 
-    HttpServerResponse response = routingContext.response();
-    response.putHeader("content-type", "text/html");
+        HttpServerResponse response = routingContext.response();
+        response.putHeader("content-type", "text/html");
 
-    response.end("<h1>TFC Rita</h1><p>Vertx-Web!</p>");
+        response.end("<h1>TFC Rita</h1><p>Vertx-Web!</p>");
     });
 
     // create handler for eventbus bridge
@@ -245,14 +267,15 @@ public class Rita extends AbstractVerticle {
     if (FEEDPLAYER_ADDRESS != null)
         {
             eb.consumer(FEEDPLAYER_ADDRESS, message -> {
-                    eb.send("rita_feed", message.body());
+                    //debug! this rita is currently publishing messages to ALL http clients
+                    eb.publish("rita_feed", message.body());
                     //eb.send("rita_out", "feed received from "+FEEDPLAYER_ADDRESS);
               });
         }
     else if (ZONE_FEED != null)
         {
             eb.consumer(ZONE_FEED, message -> {
-                    eb.send("rita_feed", message.body());
+                    eb.publish("rita_feed", message.body());
                     //eb.send("rita_out", "feed received from "+FEEDPLAYER_ADDRESS);
               });
         }
@@ -262,7 +285,15 @@ public class Rita extends AbstractVerticle {
     if (ZONE_ADDRESS != null)
         {
             eb.consumer(ZONE_ADDRESS, message -> {
-                    eb.send("rita_out", message.body());
+                    eb.publish("rita_out", message.body());
+                    //debug we're using a single hardcoded socket ref
+                    //debug will need to iterate through sockets in sock_info
+                    //debug not yet handling socket close
+                    SockJSSocket sock = sock_info.get(1);
+                    if (sock != null)
+                        {
+                            sock.write(Buffer.buffer(message.body().toString()));
+                        }
                 });
         }
                 
@@ -354,3 +385,38 @@ public class Rita extends AbstractVerticle {
 
     
 } // end class Rita
+
+class SockInfo {
+
+    class SockData {
+        public SockJSSocket sock;
+        public int sock_ref; //debug sock reference should be session id
+    }
+
+    private ArrayList<SockData> sock_data;
+
+    SockInfo () {
+        sock_data = new ArrayList<SockData>();
+    }
+
+    public void add(SockJSSocket sock, int ref)
+    {
+        // create new entry for sock_data
+        SockData entry = new SockData();
+        entry.sock = sock;
+        entry.sock_ref = ref;
+
+        // push this entry onto the array
+        sock_data.add(entry);
+    }
+
+    public SockJSSocket get(int ref)
+    {
+        if (sock_data.size()>0)
+            {
+                return sock_data.get(0).sock;
+            }
+        return null;
+    }
+            
+}

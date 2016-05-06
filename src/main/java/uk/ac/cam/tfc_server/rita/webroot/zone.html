@@ -102,8 +102,8 @@ var CHART_DOT_RADIUS = 5; // size of dots on scatterplot
 
 function init()
 {
-    
-    zone_id = "cam_test";
+    //debug zone_id should come from user
+    zone_id = "madingley_road_in";
   
     //alert("rita_data.length="+rita_data.length);
   
@@ -117,7 +117,14 @@ function init()
         //debug zone event messages are currently hardcoded to arrive via rita_out
         eb.registerHandler('rita_out', function(error, message) {
           //debug we should test type of msg (e.g. zone update) and handle accordingly
-          handle_zone_update(message.body);
+          write_console1('rita_out: ' + JSON.stringify(message.body) + '<br/>');
+          if (message.body.msg_type=="zone_completion")
+          {
+            if (message.body.module_id==zone_id)
+            {
+              handle_zone_update(message.body);
+            }
+          }
         });
 
     }
@@ -133,7 +140,6 @@ function init()
 
 function handle_zone_update(msg)
 {
-    write_console1('rita_out: ' + JSON.stringify(msg) + '<br/>');
 // debug
 //return;
     rita_data.push(msg);
@@ -293,6 +299,14 @@ function write_console1(msg)
     c.innerHTML += msg;
 }
 
+//debug zone.html should be configured to display selected zones
+// User has triggered zone select dropdown
+function zone_selected()
+{
+    zone_id = document.getElementById('zone_select').value.split(",")[0];
+    alert(zone_id);
+}
+
 </script>
 
 </head>
@@ -303,6 +317,17 @@ function write_console1(msg)
 <div id="status">Initializing...</div>
   
 <button onclick="debug()">DEBUG</button>
+
+<select id="zone_select" onchange="zone_selected()">
+  <option value="madingley_road_in,madingley_road_out" selected>Madingley Road</option>
+  <option value="hills_road_in,hills_road_out">Hills Road</option>
+  <option value="newmarket_road_in,newmarket_road_out">Newmarket Road</option>
+  <option value="huntingdon_road_in,huntingdon_road_out">Huntingdon Road</option>
+  <option value="trumpington_road_in,trumpington_road_out">Trumpington Road</option>
+  <option value="milton_road_in,milton_road_out">Milton Road</option>
+  <option value="the_backs_south,the_backs_north">The Backs</option>
+  
+</select>
 
 <div class="chart" id="chart">
 </div>

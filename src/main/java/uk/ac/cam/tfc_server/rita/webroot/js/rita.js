@@ -1035,7 +1035,7 @@ function window_content(position)
 {
     var route_id = position.route_id ? position.route_id : 'no_route' ;
 	
-    return '<p><a href="#" onclick="user_track_id('+"'"+position.id+"'"+')">'+position.id +'</a><br/>'
+    return '<p><a href="#" onclick="user_track_id('+"'"+position.vehicle_id+"'"+')">'+position.vehicle_id +'</a><br/>'
 				+ '<a href="#" onclick="user_track_route_id('+"'"+route_id+"'"+')">'+route_id +'</a><br/>'
                 + format_datetime(new Date(position.timestamp * 1000))
                 + '</p>';
