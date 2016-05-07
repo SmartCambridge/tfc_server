@@ -9,7 +9,6 @@ package uk.ac.cam.tfc_server.rita;
 // Based on user requests via the http UI, RITA will spawn feedplayers and zones, to
 // display the analysis in real time on the user browser.
 //
-// Version 0.04
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
@@ -45,6 +44,7 @@ import io.vertx.ext.web.handler.sockjs.PermittedOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import io.vertx.ext.web.handler.sockjs.SockJSHandlerOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSSocket;
+import io.vertx.ext.web.Session;
 
 import java.io.*;
 import java.time.*;
@@ -77,10 +77,11 @@ public class Rita extends AbstractVerticle {
     private EventBus eb = null;
 
     // data structure to hold socket info of each connected user
-    private SockInfo sock_info = new SockInfo();
+    private SockInfo sock_info;
     
-  @Override
-  public void start(Future<Void> fut) throws Exception {
+    @Override
+    public void start(Future<Void> fut) throws Exception
+    {
 
     // Get src/main/conf/tfc_server.conf config values for module
     if (!get_config())
@@ -92,9 +93,12 @@ public class Rita extends AbstractVerticle {
 
     System.out.println("Rita starting as "+MODULE_NAME+"."+MODULE_ID);
 
+    // initialize object to hold socket connection data for each connected session
+    sock_info = new SockInfo(MODULE_ID);
+    
     eb = vertx.eventBus();
 
-    //debug
+    //debug also need to spawn modules based on messages from client browser
     // get test config options for FeedPlayers from conf file given to Rita
     for (int i=0; i<FEEDPLAYERS.size(); i++)
         {
@@ -127,7 +131,7 @@ public class Rita extends AbstractVerticle {
                 });
         }
     
-    //debug
+    //debug currently only spawning zonemanagers at startup - should support browser client messages
     for (int i=0; i<ZONEMANAGERS.size(); i++)
         {
             final String zonemanager_id = ZONEMANAGERS.get(i);
@@ -150,7 +154,7 @@ public class Rita extends AbstractVerticle {
                 {
                     // note if FeedPlayers are also started, this will usually be
                     // the same as FEEDPLAYER_ADDRESS so the Zones listen to the
-                    // FeeddPlayers
+                    // FeedPlayers
                     conf.put("zonemanager.zone.feed", ZONE_FEED);
                 }
             zonemanager_options.setConfig(conf);
@@ -179,7 +183,7 @@ public class Rita extends AbstractVerticle {
 
     // *************************************************************************************
     // *************************************************************************************
-    // *********** Start Rita web server (incl EventBus Bridge)                 ************
+    // *********** Start Rita web server (incl Socket and EventBus Bridge)      ************
     // *************************************************************************************
     // *************************************************************************************
     HttpServer http_server = vertx.createHttpServer();
@@ -194,28 +198,29 @@ public class Rita extends AbstractVerticle {
 
     SockJSHandler sock_handler = SockJSHandler.create(vertx, sock_options);
 
-    //debug sock function is just simple echo...
     sock_handler.socketHandler( sock -> {
-            // sock.handler(sock::write);
-            
             // Rita received new socket connection
-            System.out.println("Rita."+MODULE_ID+": sock connection received");
+            System.out.println("Rita."+MODULE_ID+": sock connection received with "+sock.writeHandlerID());
             
             // Assign a handler funtion to receive data if send
             sock.handler( buf -> {
                System.out.println("Rita."+MODULE_ID+": sock received '"+buf+"'");
-               //debug sock support hacked for just one client with ref=1
-               sock_info.add(sock, 1);
+               sock_info.add(sock, buf);
                 });
 
             sock.endHandler( (Void v) -> {
-                    System.out.println("Rita."+MODULE_ID+": sock closed");
+                    System.out.println("Rita."+MODULE_ID+": sock closed "+sock.writeHandlerID());
+                    //debug! we're not removing closed sockets from sock_info
+                    //sock_info.remove(sock.webSession().id());
+                    sock.close();
                 });
       });
 
     router.route("/ws/*").handler(sock_handler);
 
+    // ********************************
     // create handler for embedded page
+    // ********************************
 
     router.route("/home").handler( routingContext -> {
 
@@ -225,7 +230,9 @@ public class Rita extends AbstractVerticle {
         response.end("<h1>TFC Rita</h1><p>Vertx-Web!</p>");
     });
 
+    // **********************************
     // create handler for eventbus bridge
+    // **********************************
 
     SockJSHandler ebHandler = SockJSHandler.create(vertx);
 
@@ -243,17 +250,26 @@ public class Rita extends AbstractVerticle {
 
     router.route("/eb/*").handler(ebHandler);
 
+    // ********************************
     // create handler for static pages
+    // ********************************
 
     StaticHandler static_handler = StaticHandler.create();
     static_handler.setWebRoot(WEBROOT);
     static_handler.setCachingEnabled(false);
     router.route(HttpMethod.GET, "/*").handler( static_handler );
 
+    // ********************************
     // connect router to http_server
+    // ********************************
 
     http_server.requestHandler(router::accept).listen(HTTP_PORT);
 
+
+    // *************************************
+    // Set up handlers for eventbus messages    
+    // *************************************
+    
     //debug hardcoded to "rita_in" should be in config()
     // create listener for eventbus 'console_in' messages
     eb.consumer("rita_in", message -> {
@@ -286,19 +302,46 @@ public class Rita extends AbstractVerticle {
         {
             eb.consumer(ZONE_ADDRESS, message -> {
                     eb.publish("rita_out", message.body());
-                    //debug we're using a single hardcoded socket ref
-                    //debug will need to iterate through sockets in sock_info
-                    //debug not yet handling socket close
-                    SockJSSocket sock = sock_info.get(1);
-                    if (sock != null)
-                        {
-                            sock.write(Buffer.buffer(message.body().toString()));
-                        }
+                    send_user_messages(message.body().toString());
                 });
         }
                 
-  } // end start()
+    } // end start()
 
+    // For a given Zone completion message
+    // if the zone matches the zone_id in a user subscription
+    // then forward the message on that socket
+    private void send_user_messages(String msg)
+    {
+        //debug we're using a single hardcoded socket ref
+        //debug will need to iterate through sockets in sock_info
+        //debug not yet handling socket close
+
+        JsonObject msg_jo = new JsonObject(msg);
+        String msg_zone_id= msg_jo.getString("module_id");
+                
+        // for each client socket entry in sock_info
+        //   if sock_data is not null
+        //     for each zone_id in subscription on that socket
+        //       if zone_id == zone_id in Zone msg
+        //         then forward the message on this socket
+        for (String UUID: sock_info.keys())
+            {
+                SockData sock_data = sock_info.get(UUID);
+                
+                if (sock_data != null)
+                    {
+                        for (String zone_id: sock_data.zone_ids)
+                            {
+                                if (zone_id.equals(msg_zone_id))
+                                    {
+                                        sock_data.sock.write(Buffer.buffer(msg));
+                                    }
+                            }
+                    }
+            }
+    }
+    
     // Load initialization global constants defining this module from config()
     private boolean get_config()
     {
@@ -386,37 +429,77 @@ public class Rita extends AbstractVerticle {
     
 } // end class Rita
 
+// Data for each socket connection
+// session_id is in sock.webSession().id()
+class SockData {
+        public SockJSSocket sock;
+        public ArrayList<String> zone_ids;
+}
+
+// Object to store data for all current socket connections
 class SockInfo {
 
-    class SockData {
-        public SockJSSocket sock;
-        public int sock_ref; //debug sock reference should be session id
+    private Hashtable<String,SockData> sock_table;
+
+    // for error messages we will include MODULE_ID from Rita class
+    private String MODULE_ID;
+
+    // initialize new SockInfo object
+    SockInfo (String rita_module_id) {
+        MODULE_ID = rita_module_id;
+        sock_table = new Hashtable<String,SockData>();
     }
 
-    private ArrayList<SockData> sock_data;
-
-    SockInfo () {
-        sock_data = new ArrayList<SockData>();
-    }
-
-    public void add(SockJSSocket sock, int ref)
+    // Add new connection to known list, with zone_ids in buf
+    public void add(SockJSSocket sock, Buffer buf)
     {
+        if (sock == null)
+            {
+                System.err.println("Rita."+MODULE_ID+": SockInfo.add() called with sock==null");
+                return;
+            }
+
+        JsonObject connect_jo = new JsonObject(buf.toString());
         // create new entry for sock_data
         SockData entry = new SockData();
         entry.sock = sock;
-        entry.sock_ref = ref;
+        
+        entry.zone_ids = new ArrayList<String>();
 
+        JsonArray zones_ja = connect_jo.getJsonArray("zone_ids");
+        for (int i=0; i<zones_ja.size(); i++)
+            {
+                entry.zone_ids.add(zones_ja.getString(i));
+            }
+        System.out.println("Rita."+MODULE_ID+": SockInfo.add "+connect_jo.getString("UUID")+ " " +entry.zone_ids.toString());
         // push this entry onto the array
-        sock_data.add(entry);
+        //debug sock_table entry hardcoded to 'foo' - should use UUID
+        sock_table.put(connect_jo.getString("UUID"),entry);
     }
 
-    public SockJSSocket get(int ref)
+    public SockData get(String UUID)
     {
-        if (sock_data.size()>0)
+        // retrieve data for current socket, if it exists
+        SockData sock_data = sock_table.get(UUID);
+        
+        if (sock_data != null)
             {
-                return sock_data.get(0).sock;
+                return sock_data;
             }
         return null;
     }
-            
+
+    public void remove(String UUID)
+    {
+        SockData sock_data = sock_table.remove(UUID);
+        if (sock_data == null)
+            {
+                System.err.println("Rita."+MODULE_ID+": SockInfo.remove non-existent session_id "+UUID);
+            }
+    }
+
+    public Set<String> keys()
+    {
+        return sock_table.keySet();
+    }
 }

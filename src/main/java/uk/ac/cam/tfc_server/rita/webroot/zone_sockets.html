@@ -19,10 +19,11 @@
     <script src="//cdn.jsdelivr.net/sockjs/1.0.3/sockjs.min.js"></script>
     <script src='vertx-eventbus.js'></script>
     <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
-<title>Rita::Zone 0.5</title>
+    <title>Rita::Zone 0.6</title>
 <!--
 RELEASE INFO:
 
+2016-05-07 using SockJS to receive update messages
 2016-05-02 using clever 'd3' library to render real-time journey time plot
 2016-04-24 0.1 initial draft based on rita.html
 
@@ -74,8 +75,8 @@ img {
 
 // Set base URL of web server
 var RITA_HTTP =  window.location.protocol + '//' +
-                             window.location.hostname +
-                             ':' + window.location.port;
+                 window.location.hostname +
+                 ':' + window.location.port;
 
 // Extend base URL for eventbus address
 var CONSOLE_EVENTBUS_HTTP =  RITA_HTTP + '/eb';
@@ -179,7 +180,8 @@ function init_sock()
 
 function send_sock() {
    console.log('sending...');
-   sock.send('test');
+   //debug hardcoded data subscription to send via server socket connection
+   sock.send(JSON.stringify({ UUID: '4F59988DD3', zone_ids: ['madingley_road_in'] }));
 }
 
 function close_sock() {

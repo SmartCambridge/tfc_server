@@ -11,7 +11,8 @@
             "zonemanager.name": "ZoneManager-Backs-Sth",
             "zonemanager.start": [ 
                   "the_backs_south",
-                  "madingley_road_in"
+                  "madingley_road_in",
+                  "histon_road_in"
               ]
           }
         }
