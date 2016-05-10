@@ -537,16 +537,51 @@ public class Zone extends AbstractVerticle {
                       // Set start timestamp to timestamp at Intersection with startline
                       v.start_ts = i.position.ts;
                       
-                      String msg = "Zone: ,"+MODULE_ID+",vehicle_id("+vehicle_id+
-                                         ") clean start at "+ts_to_time_str(i.position.ts);
-                      System.out.println(msg);
-                      //vertx.eventBus().publish(ZONE_ADDRESS, msg);
+                      System.out.println( "Zone: ,"+MODULE_ID+",vehicle_id("+vehicle_id+
+                                          ") clean start at "+ts_to_time_str(i.position.ts));
+
+                      // ****************************************
+                      // Send Zone event message to ZONE_ADDRESS
+                      // ****************************************
+
+                      JsonObject msg = new JsonObject();
+
+                      msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
+                      msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
+                      msg.put("msg_type", Constants.ZONE_START);
+                      msg.put("vehicle_id", v.vehicle_id);
+                      msg.put("route_id", v.route_id);
+                      msg.put("ts", v.start_ts);
+
+                      // Send zone_completed message to common zone.address
+                      vertx.eventBus().publish(ZONE_ADDRESS, msg);
+                      // ****************************************
+                      // Zone message sent
+                      // ****************************************
                       
                   }
               else
                   {
                       System.out.println("Zone: ,"+MODULE_ID+",vehicle_id("+vehicle_id+
                                          ") early entry at "+ts_to_time_str(v.position.ts));
+                      // ****************************************
+                      // Send Zone event message to ZONE_ADDRESS
+                      // ****************************************
+
+                      JsonObject msg = new JsonObject();
+
+                      msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
+                      msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
+                      msg.put("msg_type", Constants.ZONE_ENTRY);
+                      msg.put("vehicle_id", v.vehicle_id);
+                      msg.put("route_id", v.route_id);
+                      msg.put("ts", v.position.ts);
+
+                      // Send zone_completed message to common zone.address
+                      vertx.eventBus().publish(ZONE_ADDRESS, msg);
+                      // ****************************************
+                      // Zone message sent
+                      // ****************************************
                   }
           }
       if (v.within && v.prev_within)
@@ -596,12 +631,12 @@ public class Zone extends AbstractVerticle {
                           msg.put("msg_type", Constants.ZONE_COMPLETION);
                           msg.put("vehicle_id", v.vehicle_id);
                           msg.put("route_id", v.route_id);
-                          msg.put("finish_ts", finish_ts);
+                          msg.put("ts", finish_ts);
                           msg.put("duration", duration);
                           //debug ! need to add confidence value in ZONE_COMPLETED eb msg e.g. duration of entry and exit vectors
-                          
+
+                          // Send zone_completed message to common zone.address
                           vertx.eventBus().publish(ZONE_ADDRESS, msg);
-                          
                           // ****************************************
                           // Zone message sent
                           // ****************************************
@@ -609,15 +644,51 @@ public class Zone extends AbstractVerticle {
                         }
                       else
                         {
-                          // output clean exit message
+                          // output clean exit (no start) message
                           System.out.println("Zone: ,"+MODULE_ID+",vehicle_id("+vehicle_id+
                                              ") clean exit (no start) at "+ts_to_time_str(finish_ts));
+                          // ****************************************
+                          // Send Zone event message to ZONE_ADDRESS
+                          // ****************************************
+
+                          JsonObject msg = new JsonObject();
+
+                          msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
+                          msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
+                          msg.put("msg_type", Constants.ZONE_EXIT);
+                          msg.put("vehicle_id", v.vehicle_id);
+                          msg.put("route_id", v.route_id);
+                          msg.put("ts", finish_ts);
+
+                          // Send zone_completed message to common zone.address
+                          vertx.eventBus().publish(ZONE_ADDRESS, msg);
+                          // ****************************************
+                          // Zone message sent
+                          // ****************************************
                         }
                   }
               else
                   {
                       System.out.println("Zone: ,"+MODULE_ID+",vehicle_id("+vehicle_id+
                                          ") early exit at "+ts_to_time_str(v.position.ts));
+                      // ****************************************
+                      // Send Zone event message to ZONE_ADDRESS
+                      // ****************************************
+
+                      JsonObject msg = new JsonObject();
+
+                      msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
+                      msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
+                      msg.put("msg_type", Constants.ZONE_EXIT);
+                      msg.put("vehicle_id", v.vehicle_id);
+                      msg.put("route_id", v.route_id);
+                      msg.put("ts", v.position.ts);
+
+                      // Send zone_completed message to common zone.address
+                      vertx.eventBus().publish(ZONE_ADDRESS, msg);
+                      // ****************************************
+                      // Zone message sent
+                      // ****************************************
                   }
               
               // Reset the Zone start time for this vehicle

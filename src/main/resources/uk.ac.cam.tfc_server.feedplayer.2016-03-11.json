@@ -11,7 +11,7 @@
             "feedplayer.files":      "/home/ijl20/tfc_server_data/data_bin",
             "feedplayer.start_ts" :  1457676000,
             "feedplayer.finish_ts" : 1457726400,
-            "feedplayer.rate":       500
+            "feedplayer.rate":       50
           }
         }
 }

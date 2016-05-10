@@ -33,6 +33,8 @@ import java.time.format.*;
 
 import java.util.ArrayList;
 
+import uk.ac.cam.tfc_server.util.Constants;
+
 public class ZoneManager extends AbstractVerticle {
 
   private String EB_SYSTEM_STATUS; // from config()
@@ -70,27 +72,33 @@ public class ZoneManager extends AbstractVerticle {
     JsonObject zone_conf = new JsonObject();
     if (EB_SYSTEM_STATUS != null)
         {
+            // All zones will use this address to transmit 'status up' messages
             zone_conf.put("eb.system_status", EB_SYSTEM_STATUS);
         }
     if (EB_MANAGER != null)
         {
+            // All zones will use this address to exchange management/control messages
             zone_conf.put("eb.manager", EB_MANAGER);
-        }
-    if (ZONE_ADDRESS != null)
-        {
-            zone_conf.put("zone.address", ZONE_ADDRESS);
         }
     if (ZONE_FEED != null)
         {
+            // All zones will subscribe to this address to get vehicle position messages
             zone_conf.put("zone.feed", ZONE_FEED);
         }
 
+    // iterate through all the zones to be started
     for (int i=0; i<START_ZONES.size(); i++)
         {
+            // get zone_id for this zone
+            final String zone_id = START_ZONES.get(i);
+            // Each zone has a unique 'local' eventbus address which will be used for
+            // just this zone to send all its messages (e.g. vehicle entered, exitted, completed)
+            String ZONE_ADDRESS_LOCAL = ZONE_ADDRESS+"."+zone_id;
+            zone_conf.put("zone.address", ZONE_ADDRESS_LOCAL);
+                          
             DeploymentOptions zone_options = new DeploymentOptions();
             zone_options.setConfig(zone_conf);
-            final String zone_id = START_ZONES.get(i);
-            //debug
+            //debug debug println statement should be removed
             System.out.println("ZoneManager starting service zone."+zone_id+" with "+zone_conf.toString());
 
             vertx.deployVerticle("service:uk.ac.cam.tfc_server.zone."+zone_id,
@@ -104,6 +112,14 @@ public class ZoneManager extends AbstractVerticle {
                     }
                 });
 
+            // rebroadcast all ZONE_COMPLETION messages from this Zone to ZONE_ADDRESS
+            eb.consumer(ZONE_ADDRESS_LOCAL, msg -> {
+                    JsonObject msg_body = new JsonObject(msg.body().toString());
+                    if (msg_body.getString("msg_type").equals(Constants.ZONE_COMPLETION))
+                        {
+                            eb.publish(ZONE_ADDRESS, msg_body);
+                        }
+                });
         }
 
     // send periodic "system_status" messages
@@ -117,6 +133,7 @@ public class ZoneManager extends AbstractVerticle {
                  "}" );
       });
 
+    
   } // end start()
 
     // Load initialization global constants defining this Zone from config()

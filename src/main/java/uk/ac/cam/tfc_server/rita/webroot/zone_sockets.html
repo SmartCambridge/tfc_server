@@ -121,7 +121,7 @@ function init()
     init_eventbus();
     
     // initialize websocket connection to Rita.java
-    init_sock();
+    //init_sock();
 
     // initialize empty data structure to hold Zone messages
     rita_data = new Array();
@@ -149,10 +149,7 @@ function init_eventbus()
           write_console1('rita_out: ' + JSON.stringify(message.body) + '<br/>');
           if (message.body.msg_type=="zone_completion")
           {
-            if (message.body.module_id==zone_id)
-            {
               handle_zone_update(message.body);
-            }
           }
         });
     }
@@ -191,8 +188,7 @@ function close_sock() {
 
 function handle_zone_update(msg)
 {
-// debug
-//return;
+    console.log('chart update: '+msg.msg_type);
     rita_data.push(msg);
     draw_chart(rita_data);
           
@@ -214,7 +210,7 @@ function init_chart()
     // setup x
     chart_xScale = d3.time.scale().range([0, chart_width]); // value -> display
     chart_xAxis = d3.svg.axis().scale(chart_xScale).orient("bottom");
-    chart_xValue = function(d) { return new Date(d.finish_ts*1000);}; // data -> value
+    chart_xValue = function(d) { return new Date(d.ts*1000);}; // data -> value
     chart_xMap = function(d) { return chart_xScale(chart_xValue(d));}; // data -> display
 
     // setup fill color
@@ -280,7 +276,7 @@ function draw_chart(rita_data)
     // { "duration":105,
     //   "module_id":"madingley_road_in",
     //   "route_id":"SCCM-X5",
-    //   "finish_ts":1457676998,
+    //   "ts":1457676998,
     //   "msg_type":"zone_completion",
     //   "module_name":"zone",
     //   "vehicle_id":"14376"

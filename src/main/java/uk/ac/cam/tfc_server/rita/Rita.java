@@ -44,7 +44,6 @@ import io.vertx.ext.web.handler.sockjs.PermittedOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import io.vertx.ext.web.handler.sockjs.SockJSHandlerOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSSocket;
-import io.vertx.ext.web.Session;
 
 import java.io.*;
 import java.time.*;
@@ -213,6 +212,7 @@ public class Rita extends AbstractVerticle {
                     //debug! we're not removing closed sockets from sock_info
                     //sock_info.remove(sock.webSession().id());
                     sock.close();
+                    sock.end();
                 });
       });
 
@@ -283,7 +283,7 @@ public class Rita extends AbstractVerticle {
     if (FEEDPLAYER_ADDRESS != null)
         {
             eb.consumer(FEEDPLAYER_ADDRESS, message -> {
-                    //debug! this rita is currently publishing messages to ALL http clients
+                    //debug! this rita_feed is currently publishing messages to ALL http clients
                     eb.publish("rita_feed", message.body());
                     //eb.send("rita_out", "feed received from "+FEEDPLAYER_ADDRESS);
               });
@@ -298,9 +298,10 @@ public class Rita extends AbstractVerticle {
 
     // Subscribe to the messages coming from the Zones
     //debug we're only simply sending the messages to the browser to appear in log window
+    //debug zone_address forwarding to rita_out hardcoded for histon_road_in
     if (ZONE_ADDRESS != null)
         {
-            eb.consumer(ZONE_ADDRESS, message -> {
+            eb.consumer(ZONE_ADDRESS+"."+"histon_road_in", message -> {
                     eb.publish("rita_out", message.body());
                     send_user_messages(message.body().toString());
                 });
