@@ -38,12 +38,16 @@ import io.vertx.core.json.JsonArray;
 
 // vertx web, service proxy, sockjs eventbus bridge
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.Route;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.handler.sockjs.BridgeOptions;
 import io.vertx.ext.web.handler.sockjs.PermittedOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import io.vertx.ext.web.handler.sockjs.SockJSHandlerOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSSocket;
+
+// handlebars for static .hbs web template files
+import io.vertx.ext.web.templ.HandlebarsTemplateEngine;
 
 import java.io.*;
 import java.time.*;
@@ -249,6 +253,53 @@ public class Rita extends AbstractVerticle {
     ebHandler.bridge(bridge_options);
 
     router.route("/eb/*").handler(ebHandler);
+
+    // ***********************************
+    // create handler for zone restful api
+    // ***********************************
+
+    router.route(HttpMethod.GET, "/api/zone/:zoneid").handler( routingContext -> {
+            String zone_id = routingContext.request().getParam("zoneid");
+
+            if (zone_id == null) {
+                routingContext.response().setStatusCode(400).end();
+            } else {
+                routingContext.response()
+                       .putHeader("content-type", "text/html")
+                       .end("<h1>Zone "+zone_id+"</h1>");
+            }
+            routingContext.response().setStatusCode(200).end();
+        } );
+
+    // ***********************************
+    // create handler for zone template pages
+    // ***********************************
+
+    final HandlebarsTemplateEngine template_engine = HandlebarsTemplateEngine.create();
+    
+    router.route(HttpMethod.GET, "/zone/:zoneid").handler( ctx -> {
+            String zone_id = ctx.request().getParam("zoneid");
+
+            ctx.put("zone_id",zone_id);
+            
+            if (zone_id == null)
+            {
+                ctx.response().setStatusCode(400).end();
+            }
+            else
+            {
+                template_engine.render(ctx, "templates/zone.hbs", res -> {
+                        if (res.succeeded())
+                        {
+                            ctx.response().end(res.result());
+                        }
+                        else
+                        {
+                            ctx.fail(res.cause());
+                        }
+                    });
+            }
+        } );
 
     // ********************************
     // create handler for static pages
