@@ -79,8 +79,8 @@ public class Rita extends AbstractVerticle {
     // Vertx event bus
     private EventBus eb = null;
 
-    // data structure to hold socket info of each connected user
-    private SockInfo sock_info;
+    // data structure to hold data subscription info of each connected user
+    private ClientTable client_table;
     
     @Override
     public void start(Future<Void> fut) throws Exception
@@ -97,7 +97,7 @@ public class Rita extends AbstractVerticle {
     System.out.println("Rita starting as "+MODULE_NAME+"."+MODULE_ID);
 
     // initialize object to hold socket connection data for each connected session
-    sock_info = new SockInfo(MODULE_ID);
+    client_table = new ClientTable(MODULE_ID);
     
     eb = vertx.eventBus();
 
@@ -208,15 +208,13 @@ public class Rita extends AbstractVerticle {
             // Assign a handler funtion to receive data if send
             sock.handler( buf -> {
                System.out.println("Rita."+MODULE_ID+": sock received '"+buf+"'");
-               sock_info.add(sock, buf);
+               // Add this connection to the client table
+               // and set up consumer for eventbud messages
+               create_client_subscription(sock, buf);
                 });
 
             sock.endHandler( (Void v) -> {
                     System.out.println("Rita."+MODULE_ID+": sock closed "+sock.writeHandlerID());
-                    //debug! we're not removing closed sockets from sock_info
-                    //sock_info.remove(sock.webSession().id());
-                    sock.close();
-                    sock.end();
                 });
       });
 
@@ -265,6 +263,7 @@ public class Rita extends AbstractVerticle {
                 routingContext.response().setStatusCode(400).end();
             } else {
                 routingContext.response()
+                    //debug restful api just a stub
                        .putHeader("content-type", "text/html")
                        .end("<h1>Zone "+zone_id+"</h1>");
             }
@@ -280,7 +279,8 @@ public class Rita extends AbstractVerticle {
     router.route(HttpMethod.GET, "/zone/:zoneid").handler( ctx -> {
             String zone_id = ctx.request().getParam("zoneid");
 
-            ctx.put("zone_id",zone_id);
+            ctx.put("config_zone_id",zone_id); // pass zone_id from URL into template var
+            ctx.put("config_UUID", get_UUID());// add template var for Unique User ID
             
             if (zone_id == null)
             {
@@ -347,6 +347,7 @@ public class Rita extends AbstractVerticle {
               });
         }
 
+    /*
     // Subscribe to the messages coming from the Zones
     //debug we're only simply sending the messages to the browser to appear in log window
     //debug zone_address forwarding to rita_out hardcoded for histon_road_in
@@ -357,8 +358,31 @@ public class Rita extends AbstractVerticle {
                     send_user_messages(message.body().toString());
                 });
         }
-                
+    */          
     } // end start()
+
+    // create new client connection
+    // on receipt of 'zone_connect' message on socket
+    private void create_client_subscription(SockJSSocket sock, Buffer buf)
+    {
+        // create entry in client table
+        String UUID = client_table.add(sock, buf);
+
+        ArrayList<String> zone_ids = client_table.get(UUID).zone_ids;
+        
+        // register consumer of relevant eventbus messages
+        //debug client subscription should allow multiple zone_ids
+        System.out.println("Rita."+MODULE_ID+": subscribing client to "+zone_ids.get(0));
+        eb.consumer(ZONE_ADDRESS+"."+client_table.get(UUID).zone_ids.get(0), message -> {
+                send_client(sock, message.body().toString());
+                });
+
+    }
+
+    private void send_client(SockJSSocket sock, String msg)
+    {
+        sock.write(Buffer.buffer(msg));
+    }
 
     // For a given Zone completion message
     // if the zone matches the zone_id in a user subscription
@@ -377,17 +401,17 @@ public class Rita extends AbstractVerticle {
         //     for each zone_id in subscription on that socket
         //       if zone_id == zone_id in Zone msg
         //         then forward the message on this socket
-        for (String UUID: sock_info.keys())
+        for (String UUID: client_table.keys())
             {
-                SockData sock_data = sock_info.get(UUID);
+                ClientConfig client_config = client_table.get(UUID);
                 
-                if (sock_data != null)
+                if (client_config != null)
                     {
-                        for (String zone_id: sock_data.zone_ids)
+                        for (String zone_id: client_config.zone_ids)
                             {
                                 if (zone_id.equals(msg_zone_id))
                                     {
-                                        sock_data.sock.write(Buffer.buffer(msg));
+                                        client_config.sock.write(Buffer.buffer(msg));
                                     }
                             }
                     }
@@ -478,42 +502,48 @@ public class Rita extends AbstractVerticle {
         return true;
     }
 
-    
+    // generate a new Unique User ID for each socket connection
+    private String get_UUID()
+    {
+        return String.valueOf(System.currentTimeMillis());
+    }
 } // end class Rita
 
 // Data for each socket connection
 // session_id is in sock.webSession().id()
-class SockData {
-        public SockJSSocket sock;
-        public ArrayList<String> zone_ids;
+class ClientConfig {
+    public String UUID;         // unique ID for this connection
+    public SockJSSocket sock;   // actual socket reference
+    public ArrayList<String> zone_ids; // zone_ids relevant to this client connection
 }
 
 // Object to store data for all current socket connections
-class SockInfo {
+class ClientTable {
 
-    private Hashtable<String,SockData> sock_table;
+    private Hashtable<String,ClientConfig> client_table;
 
     // for error messages we will include MODULE_ID from Rita class
     private String MODULE_ID;
 
     // initialize new SockInfo object
-    SockInfo (String rita_module_id) {
+    ClientTable (String rita_module_id) {
         MODULE_ID = rita_module_id;
-        sock_table = new Hashtable<String,SockData>();
+        client_table = new Hashtable<String,ClientConfig>();
     }
 
     // Add new connection to known list, with zone_ids in buf
-    public void add(SockJSSocket sock, Buffer buf)
+    // returns UUID of entry added
+    public String add(SockJSSocket sock, Buffer buf)
     {
         if (sock == null)
             {
-                System.err.println("Rita."+MODULE_ID+": SockInfo.add() called with sock==null");
-                return;
+                System.err.println("Rita."+MODULE_ID+": ClientTable.add() called with sock==null");
+                return null;
             }
 
         JsonObject connect_jo = new JsonObject(buf.toString());
         // create new entry for sock_data
-        SockData entry = new SockData();
+        ClientConfig entry = new ClientConfig();
         entry.sock = sock;
         
         entry.zone_ids = new ArrayList<String>();
@@ -523,35 +553,37 @@ class SockInfo {
             {
                 entry.zone_ids.add(zones_ja.getString(i));
             }
-        System.out.println("Rita."+MODULE_ID+": SockInfo.add "+connect_jo.getString("UUID")+ " " +entry.zone_ids.toString());
+        System.out.println("Rita."+MODULE_ID+": ClientTable.add "+connect_jo.getString("UUID")+ " " +entry.zone_ids.toString());
         // push this entry onto the array
-        //debug sock_table entry hardcoded to 'foo' - should use UUID
-        sock_table.put(connect_jo.getString("UUID"),entry);
+        String UUID = connect_jo.getString("UUID");        
+        client_table.put(UUID,entry);
+        return UUID;
     }
 
-    public SockData get(String UUID)
+    public ClientConfig get(String UUID)
     {
         // retrieve data for current socket, if it exists
-        SockData sock_data = sock_table.get(UUID);
+        ClientConfig client_config = client_table.get(UUID);
         
-        if (sock_data != null)
+        if (client_config != null)
             {
-                return sock_data;
+                return client_config;
             }
+        System.err.println("Rita."+MODULE_ID+": ClientTable.get '"+UUID+"' entry not found in client_table");
         return null;
     }
 
     public void remove(String UUID)
     {
-        SockData sock_data = sock_table.remove(UUID);
-        if (sock_data == null)
+        ClientConfig client_config = client_table.remove(UUID);
+        if (client_config == null)
             {
-                System.err.println("Rita."+MODULE_ID+": SockInfo.remove non-existent session_id "+UUID);
+                System.err.println("Rita."+MODULE_ID+": ClientTable.remove non-existent session_id "+UUID);
             }
     }
 
     public Set<String> keys()
     {
-        return sock_table.keySet();
+        return client_table.keySet();
     }
 }

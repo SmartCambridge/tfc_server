@@ -74,9 +74,11 @@ img {
 
 <script type="text/javascript">
 
-var UUID = '4fd256551'; //debug need unique id issued by server
+var config_UUID = '{{config_UUID}}'; // unique id issued by server
+var config_zone_id = '{{config_zone_id}}'; // zone_id as requested in URL
 
-var zone_ids = ['madingley_road_in', 'madingley_road_out']; //debug should pick up zones from server
+//debug should allow multiple zone_id's
+var zone_ids;
 
 // Set base URL of web server
 var RITA_HTTP =  window.location.protocol + '//' +
@@ -89,7 +91,7 @@ var CONSOLE_EVENTBUS_HTTP =  RITA_HTTP + '/eb';
 // Extend base URL for websocket address
 var SOCK_HTTP = RITA_HTTP + '/ws';
 
-var sock; // websocket to connect back to server Rita.java
+var rita_sock; // websocket to connect back to server Rita.java
 
 // d3 scatterplot parameters
 var chart_svg;    // chart svg element
@@ -115,7 +117,10 @@ var CHART_DOT_RADIUS = 5; // size of dots on scatterplot
 function init()
 {
 
-    init_eventbus();
+    zone_ids = new Array();
+    zone_ids.push(config_zone_id);
+
+    //init_eventbus();
     
     // initialize websocket connection to Rita.java
     init_sock();
@@ -152,32 +157,39 @@ function init_eventbus()
 // initialise websocket connection to Rita.java
 function init_sock()
 {
-    sock = new SockJS(SOCK_HTTP);
+    rita_sock = new SockJS(SOCK_HTTP);
 
-    sock.onopen = function() {
-       console.log('opened');
+    rita_sock.onopen = function() {
+       //debug socket opened debug message to browser js console
+       console.log(' socket opened');
+       // send the zone_connect message to socket to initialize updates
+       send_sock_connect_msg();
     };
 
-    sock.onmessage = function(e) {
-       write_console1('rita sock: ' + JSON.stringify(e.data) + '<br/>');
-       console.log('message', e.data);
+    rita_sock.onmessage = function(e) {
+       write_console1('rita sock: ' + e.data + '<br/>');
+       var rita_msg = JSON.parse(e.data);
+       if (rita_msg.msg_type=="zone_completion")
+       { 
+         handle_zone_update(rita_msg);
+       }
     };
 
-    sock.onclose = function() {
-       console.log('closed');
+    rita_sock.onclose = function() {
+       //debug socket closed debug message to browser js console
+       console.log('socket closed');
     };
 
 }
 
-function send_sock() {
-   console.log('sending...');
-   //debug hardcoded data subscription to send via server socket connection
-   sock.send(JSON.stringify({ UUID: UUID, zone_ids: ['madingley_road_in'] }));
-}
+// send connect messsage to Rita socket giving subscription config
+function send_sock_connect_msg() {
+   // debug socket closed debug message to browser js console
+   console.log('sock send_sock_connect_msg...');
 
-function close_sock() {
-   console.log('closing...');
-   sock.close();
+   rita_sock.send(JSON.stringify({ msg_type: 'zone_connect',
+                                   UUID: config_UUID,
+                                   zone_ids: zone_ids }));
 }
 
 function handle_zone_update(msg)
@@ -355,24 +367,6 @@ function zone_selected()
 <body onload='init()'>
   
   <h1 class="header_title"><img src="../images/smart_cambridge_logo.jpg">Rita::Zone <span id='heading'></span></h1>
-<div id="status">Initializing...</div>
-  
-<button onclick="debug()">DEBUG</button>
-<button onclick="send_sock()">Send</button>
-<button onclick="close_sock()">Close</button>
-
-<select id="zone_select" onchange="zone_selected()">
-  <option value="madingley_road_in,madingley_road_out" selected>Madingley Road</option>
-  <option value="hills_road_in,hills_road_out">Hills Road</option>
-  <option value="newmarket_road_in,newmarket_road_out">Newmarket Road</option>
-  <option value="huntingdon_road_in,huntingdon_road_out">Huntingdon Road</option>
-  <option value="trumpington_road_in,trumpington_road_out">Trumpington Road</option>
-  <option value="milton_road_in,milton_road_out">Milton Road</option>
-  <option value="the_backs_south,the_backs_north">The Backs</option>
-  <option value="histon_road_in,histon_road_out">Histon Road</option>
-  <option value="east_road_in,east_road_out">East Road</option>
-  
-</select>
 
 <div class="chart" id="chart">
 </div>
