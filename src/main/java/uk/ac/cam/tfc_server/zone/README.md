@@ -24,3 +24,50 @@ the consecutive pair of points defining a finishline. This allows the Zone to ac
 transit times across the Zone in a particular direction (i.e. startline to finishline) and detect
 when these are abnormal.
 
+## Zone sends the following messages to zone.address:
+
+When a vehicle completes a transit of the Zone, startline..finishline:
+```
+{ "module_name":  MODULE_NAME,
+    "module_id", MODULE_ID,
+    "msg_type", Constants.ZONE_COMPLETION,
+    "vehicle_id", vehicle_id,
+    "route_id", route_id,
+    "ts", finish_ts, // this is a CALCULATED timestamp of the finishline crossing
+    "duration", duration // Zone transit journey time in seconds
+  }
+```
+
+When a vehicle exits the Zone other than via start and finish lines
+```
+  { "module_name":  MODULE_NAME,
+    "module_id", MODULE_ID,
+    "msg_type", Constants.ZONE_EXIT,
+    "vehicle_id", vehicle_id,
+    "route_id", route_id,
+    "ts", position_ts // this is the timestamp of the first point OUTSIDE the zone
+  }
+```
+
+When a vehicle enters the Zone via the start line
+```
+  { "module_name":  MODULE_NAME,
+    "module_id", MODULE_ID,
+    "msg_type", Constants.ZONE_START,
+    "vehicle_id", vehicle_id,
+    "route_id", route_id,
+    "ts", start_ts // this is the timestamp of the first point OUTSIDE the zone
+  }
+```
+
+When a vehicle enters the Zone but NOT via the start line
+```
+  { "module_name":  MODULE_NAME,
+    "module_id", MODULE_ID,
+    "msg_type", Constants.ZONE_ENTRY,
+    "vehicle_id", vehicle_id,
+    "route_id", route_id,
+    "ts", position_ts // this is the timestamp of the first point INSIDE the zone
+  }
+```
+

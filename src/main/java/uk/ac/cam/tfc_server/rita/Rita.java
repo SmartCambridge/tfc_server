@@ -54,6 +54,9 @@ import java.time.*;
 import java.time.format.*;
 import java.util.*;
 
+// other tfc_server classes
+import uk.ac.cam.tfc_server.util.Constants;
+
 public class Rita extends AbstractVerticle {
 
     private int HTTP_PORT; // from config()
@@ -347,18 +350,6 @@ public class Rita extends AbstractVerticle {
               });
         }
 
-    /*
-    // Subscribe to the messages coming from the Zones
-    //debug we're only simply sending the messages to the browser to appear in log window
-    //debug zone_address forwarding to rita_out hardcoded for histon_road_in
-    if (ZONE_ADDRESS != null)
-        {
-            eb.consumer(ZONE_ADDRESS+"."+"histon_road_in", message -> {
-                    eb.publish("rita_out", message.body());
-                    send_user_messages(message.body().toString());
-                });
-        }
-    */          
     } // end start()
 
     // create new client connection
@@ -369,14 +360,25 @@ public class Rita extends AbstractVerticle {
         String UUID = client_table.add(sock, buf);
 
         ArrayList<String> zone_ids = client_table.get(UUID).zone_ids;
+
+        String zone_id = zone_ids.get(0);
         
         // register consumer of relevant eventbus messages
         //debug client subscription should allow multiple zone_ids
-        System.out.println("Rita."+MODULE_ID+": subscribing client to "+zone_ids.get(0));
-        eb.consumer(ZONE_ADDRESS+"."+client_table.get(UUID).zone_ids.get(0), message -> {
+        System.out.println("Rita."+MODULE_ID+": subscribing client to "+zone_id);
+        eb.consumer(ZONE_ADDRESS+"."+zone_id, message -> {
                 send_client(sock, message.body().toString());
                 });
 
+        JsonObject msg = new JsonObject();
+
+        msg.put("module_name", MODULE_NAME);
+        msg.put("module_id", MODULE_ID);
+        msg.put("to_module_name", "zone");
+        msg.put("to_module_id", zone_id);
+        msg.put("msg_type", Constants.ZONE_UPDATE);
+        // request a ZONE_UPDATE from relevant zone
+        eb.publish(EB_MANAGER, msg);
     }
 
     private void send_client(SockJSSocket sock, String msg)

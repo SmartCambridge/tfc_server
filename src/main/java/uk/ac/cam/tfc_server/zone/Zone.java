@@ -4,15 +4,51 @@ package uk.ac.cam.tfc_server.zone;
 // *************************************************************************************************
 // *************************************************************************************************
 // Zone.java
-// Version 0.07
+// Version 0.08
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
 //
 // Subscribes to address ZONE_FEED and sends messages to ZONE_ADDRESS
 //
-//debug
-// Also writes zone updates to $TFC_DATA_ZONE/YYYY/MM/DD/<zone>.csv
+// Zone sends the following messages to zone.address:
+
+// When a vehicle completes a transit of the Zone, startline..finishline:
+//   { "module_name":  MODULE_NAME,
+//     "module_id", MODULE_ID,
+//     "msg_type", Constants.ZONE_COMPLETION,
+//     "vehicle_id", vehicle_id,
+//     "route_id", route_id,
+//     "ts", finish_ts, // this is a CALCULATED timestamp of the finishline crossing
+//     "duration", duration // Zone transit journey time in seconds
+//   }
+
+// When a vehicle exits the Zone other than via start and finish lines
+//   { "module_name":  MODULE_NAME,
+//     "module_id", MODULE_ID,
+//     "msg_type", Constants.ZONE_EXIT,
+//     "vehicle_id", vehicle_id,
+//     "route_id", route_id,
+//     "ts", position_ts // this is the timestamp of the first point OUTSIDE the zone
+//   }
+
+// When a vehicle enters the Zone via the start line
+//   { "module_name":  MODULE_NAME,
+//     "module_id", MODULE_ID,
+//     "msg_type", Constants.ZONE_START,
+//     "vehicle_id", vehicle_id,
+//     "route_id", route_id,
+//     "ts", start_ts // this is the timestamp of the first point OUTSIDE the zone
+//   }
+
+// When a vehicle enters the Zone but NOT via the start line
+//   { "module_name":  MODULE_NAME,
+//     "module_id", MODULE_ID,
+//     "msg_type", Constants.ZONE_ENTRY,
+//     "vehicle_id", vehicle_id,
+//     "route_id", route_id,
+//     "ts", position_ts // this is the timestamp of the first point INSIDE the zone
+//   }
 //
 // *************************************************************************************************
 // *************************************************************************************************
@@ -47,6 +83,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 // ********************************************************************************************
 // ********************************************************************************************
 // ********************************************************************************************
+
 public class Zone extends AbstractVerticle {
 
     // from config()
@@ -65,18 +102,18 @@ public class Zone extends AbstractVerticle {
     
     //private final String ENV_VAR_ZONE_PATH = "TFC_DATA_ZONE"; // Linux var containing filepath root for csv files
 
-  private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
-  private final int SYSTEM_STATUS_AMBER_SECONDS = 15; // delay before flagging system as AMBER
-  private final int SYSTEM_STATUS_RED_SECONDS = 25; // delay before flagging system as RED
+    private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
+    private final int SYSTEM_STATUS_AMBER_SECONDS = 15; // delay before flagging system as AMBER
+    private final int SYSTEM_STATUS_RED_SECONDS = 25; // delay before flagging system as RED
 
-  // Zone globals
+    // Zone globals
     
-  private EventBus eb = null;
-  private String tfc_data_zone = null;
-    //debug we will need one of these for each monitoring instance
-  private HashMap<String, Vehicle> vehicles; // dictionary to store vehicle status updated from feed
-
-
+    private EventBus eb = null;
+    private String tfc_data_zone = null;
+    //debug need a vehicles data hashmap for each monitoring instance
+    private HashMap<String, Vehicle> vehicles; // dictionary to store vehicle status updated from feed
+    private ZoneMsgBuffer zone_msg_buffer; // stores zone completion messages since start of day
+  
   // **************************************************************************************
   // Zone Verticle Startup procedure
   @Override
@@ -94,7 +131,10 @@ public class Zone extends AbstractVerticle {
       
     System.out.println("Zone: " + MODULE_NAME + "." + MODULE_ID + " started");
 
+    // create box object with boundaries of rectangle that includes this zone polygon
     box = new Box();
+
+    zone_msg_buffer = new ZoneMsgBuffer();
     
     // Initialization from config() complete
     
@@ -107,18 +147,17 @@ public class Zone extends AbstractVerticle {
 
     // **********  Set up connection to EventBus  ********************************************
     // set up a handler for manager messages
-    /*
+
     eb.consumer(EB_MANAGER, eb_message -> {
-            //debug must test for module.name and module.id
-
-            if (!manager(new JsonObject(eb_message.body().toString())))
-                {
-                    System.err.println("Zone: " + MODULE_NAME + "." + MODULE_ID + " manager bad message");
-                }
+            JsonObject msg = new JsonObject(eb_message.body().toString());
+            System.out.println("Zone."+MODULE_ID+": manager msg received "+msg.toString());
+            if (msg.getString("to_module_name").equals(MODULE_NAME) &&
+                msg.getString("to_module_id").equals(MODULE_ID))
+            {
+                manager_msg(msg);
+            }
     });
-    */
 
-    //debug !!- this is a hack - should come from eventbus EB_MANAGER
     //... if (zone.feed in config(), then start processing immediately
     String ZONE_ADDRESS = config().getString("zone.address");
     String ZONE_FEED = config().getString("zone.feed");
@@ -206,44 +245,38 @@ public class Zone extends AbstractVerticle {
         return true;
     }
     
-    // The Zone Boundary has a simplified boundary of a Box, i.e. a
-    // simple rectangle. This permits a fast check of
-    // whether a Position is outside the Zone. I.e. if
-    // a Position is outside the Box, it's outside the Zone.
-    class Box {
-        double north = -90;
-        double south = 90;
-        double east = -180;
-        double west = 180;
-
-        Box() {
-            for (int i=0; i<PATH.size(); i++)
+    // Process a manager message to this module
+    private void manager_msg(JsonObject msg)
+    {
+        if (msg.getString("msg_type").equals(Constants.ZONE_SUBSCRIBE))
             {
-                if (PATH.get(i).lat > north) north = PATH.get(i).lat;
-                if (PATH.get(i).lat < south) south = PATH.get(i).lat;
-                if (PATH.get(i).lng > east) east = PATH.get(i).lng;
-                if (PATH.get(i).lng < west) west = PATH.get(i).lng;
+                handle_subscription(msg);              
             }
-        }
+        else if (msg.getString("msg_type").equals(Constants.ZONE_UPDATE))
+            {
+                handle_update(msg);
+            }
     }
 
-
-    // Process a manager message to this module
-    private boolean manager(JsonObject message)
+    // Zone has received a ZONE_SUBSCRIBE message on the eb.manager eventbus address
+    private void handle_subscription(JsonObject msg)
     {
-        JsonObject subscribe = message.getJsonObject("subscribe");
-        if (subscribe != null)
-            {
-                // set up a subscription to a feed
-                //debug this should be added to a list of subscriptions
-              String ZONE_FEED = subscribe.getString("zone.feed");
+        // set up a subscription to a feed
+        //debug need a data structure for a list of subscriptions
+        String ZONE_FEED = msg.getString("zone.feed");
         
-              String ZONE_ADDRESS = subscribe.getString("zone.address");
+        String ZONE_ADDRESS = msg.getString("zone.address");
 
-              monitor_feed(ZONE_FEED, ZONE_ADDRESS);
-              
-            }
-        return true;
+        monitor_feed(ZONE_FEED, ZONE_ADDRESS);
+    }        
+
+
+    // Zone has received a ZONE_UPDATE message on the eb.manager eventbus address
+    // so should broadcast a message with all the completion messages for the day so far
+    private void handle_update(JsonObject msg)
+    {
+        //debug handle_update not implemented yet
+        System.out.println("Zone."+MODULE_ID+": sending Zone update");
     }
 
     // Subscribe to ZONE_FEED position messages, and publish zone messages to ZONE_ADDRESS.
@@ -259,81 +292,6 @@ public class Zone extends AbstractVerticle {
 
                   handle_feed(feed_message, ZONE_ADDRESS);
               });
-    }
-        
-    // Vehicle stores the up-to-date status of a vehicle with a given vehicle_id
-    // in the context of the current zone, e.g. is it currently within bounds
-    class Vehicle {
-        // These are attributes that come from the position record
-        public String vehicle_id;
-        public String label;
-        public String route_id;
-        public String trip_id;
-        public Position prev_position;
-        public boolean prev_within; // true if was within bounds at previous timestamp
-        public Position position;
-        public Float bearing;
-        public String stop_id;
-        public Long current_stop_sequence;
-
-        // additional attributes used within this Zone
-        public boolean init; // only true if this position has been initialized but not updated
-        public boolean within; // true if within bounds at current timestamp
-        public Long start_ts; // timestamp of successful start (otherwise 0)
-
-        // Initialize a new Vehicle object from a JSON position record
-        public Vehicle(JsonObject position_record)
-        {
-            vehicle_id = position_record.getString("vehicle_id");
-
-            label = position_record.getString("label","");
-            route_id = position_record.getString("route_id","");
-            trip_id = position_record.getString("trip_id","");
-            bearing = position_record.getFloat("bearing",0.0f);
-            stop_id = position_record.getString("stop_id","");
-            current_stop_sequence = position_record.getLong("current_stop_sequence",0L);
-
-            position = new Position();
-            position.ts = position_record.getLong("timestamp");
-            position.lat = position_record.getDouble("latitude");
-            position.lng = position_record.getDouble("longitude");
-
-            init = true; // will be reset to false when this entry is updated
-            within = false;
-            start_ts = 0L;
-
-        }
-
-        // update this existing Vehicle when a subsequent position_record has arrived
-        public void update(JsonObject position_record)
-        {
-            prev_position = position;
-            prev_within = within;
-
-            Vehicle v = new Vehicle(position_record);
-            label = v.label;
-            route_id = v.route_id;
-            trip_id = v.trip_id;
-            position = v.position;
-            bearing = v.bearing;
-            stop_id = v.stop_id;
-            current_stop_sequence = v.current_stop_sequence;
-
-            init = false;
-        }
-
-    }
-
-    // Intersect class holds the result of an intersect test
-    // Actual intersect method is in ZoneBoundary
-    class Intersect {
-        public Position position; // position is lat, long and timestamp (secs) of intersection point
-        public boolean success;
-
-        public Intersect()
-        {
-            success = false;
-        }
     }
 
     // return true if Position p is INSIDE the Zone
@@ -635,6 +593,11 @@ public class Zone extends AbstractVerticle {
                           msg.put("duration", duration);
                           //debug ! need to add confidence value in ZONE_COMPLETED eb msg e.g. duration of entry and exit vectors
 
+                          // accumulate this Completion message in the ring buffer
+                          zone_msg_buffer.add(msg);
+                          //debug debug print statement
+                          System.out.println("Zone."+MODULE_ID+": zone_msg_buffer.size()="+zone_msg_buffer.size());
+                          
                           // Send zone_completed message to common zone.address
                           vertx.eventBus().publish(ZONE_ADDRESS, msg);
                           // ****************************************
@@ -738,5 +701,163 @@ public class Zone extends AbstractVerticle {
     });
   } // end write_file
 
+    //*************************************************************************************
+    // Class Box
+    //*************************************************************************************
+    
+    // The Zone Boundary has a simplified boundary of a Box, i.e. a
+    // simple rectangle. This permits a fast check of
+    // whether a Position is outside the Zone. I.e. if
+    // a Position is outside the Box, it's outside the Zone.
+    class Box {
+        double north = -90;
+        double south = 90;
+        double east = -180;
+        double west = 180;
 
+        Box() {
+            for (int i=0; i<PATH.size(); i++)
+            {
+                if (PATH.get(i).lat > north) north = PATH.get(i).lat;
+                if (PATH.get(i).lat < south) south = PATH.get(i).lat;
+                if (PATH.get(i).lng > east) east = PATH.get(i).lng;
+                if (PATH.get(i).lng < west) west = PATH.get(i).lng;
+            }
+        }
+    }
+
+    //*************************************************************************************
+    // Class Vehicle
+    //*************************************************************************************
+    
+    // Vehicle stores the up-to-date status of a vehicle with a given vehicle_id
+    // in the context of the current zone, e.g. is it currently within bounds
+    class Vehicle {
+        // These are attributes that come from the position record
+        public String vehicle_id;
+        public String label;
+        public String route_id;
+        public String trip_id;
+        public Position prev_position;
+        public boolean prev_within; // true if was within bounds at previous timestamp
+        public Position position;
+        public Float bearing;
+        public String stop_id;
+        public Long current_stop_sequence;
+
+        // additional attributes used within this Zone
+        public boolean init; // only true if this position has been initialized but not updated
+        public boolean within; // true if within bounds at current timestamp
+        public Long start_ts; // timestamp of successful start (otherwise 0)
+
+        // Initialize a new Vehicle object from a JSON position record
+        public Vehicle(JsonObject position_record)
+        {
+            vehicle_id = position_record.getString("vehicle_id");
+
+            label = position_record.getString("label","");
+            route_id = position_record.getString("route_id","");
+            trip_id = position_record.getString("trip_id","");
+            bearing = position_record.getFloat("bearing",0.0f);
+            stop_id = position_record.getString("stop_id","");
+            current_stop_sequence = position_record.getLong("current_stop_sequence",0L);
+
+            position = new Position();
+            position.ts = position_record.getLong("timestamp");
+            position.lat = position_record.getDouble("latitude");
+            position.lng = position_record.getDouble("longitude");
+
+            init = true; // will be reset to false when this entry is updated
+            within = false;
+            start_ts = 0L;
+
+        }
+
+        // update this existing Vehicle when a subsequent position_record has arrived
+        public void update(JsonObject position_record)
+        {
+            prev_position = position;
+            prev_within = within;
+
+            Vehicle v = new Vehicle(position_record);
+            label = v.label;
+            route_id = v.route_id;
+            trip_id = v.trip_id;
+            position = v.position;
+            bearing = v.bearing;
+            stop_id = v.stop_id;
+            current_stop_sequence = v.current_stop_sequence;
+
+            init = false;
+        }
+
+    } // end class Vehicle
+    
+    //*************************************************************************************
+    // Class Intersect
+    //*************************************************************************************
+    
+    // Intersect class holds the result of an intersect test
+    // Actual intersect method is in ZoneBoundary
+    class Intersect {
+        public Position position; // position is lat, long and timestamp (secs) of intersection point
+        public boolean success;
+
+        public Intersect()
+        {
+            success = false;
+        }
+    } // end class Intersect
+
+    //*************************************************************************************
+    // Class MsgBuffer
+    //*************************************************************************************
+    
+    // Circular buffer to hold completion messages since start of day
+    // Initially buffer fills with elements from buffer[0], buffer[1] etc
+    // and when buffer[SIZE] would be reached 'full' is set to 'true' and the write index is
+    // reset to zero.
+    // So ordered complete set of entries are:
+    // full==false: buffer[0]..buffer[write_buffer-1]
+    // full==true:  buffer[write_buffer].. loop around end to buffer[write_buffer-1]
+    class ZoneMsgBuffer {
+        static final int SIZE = 20;
+        JsonArray buffer;
+
+        // initialize the object
+        public ZoneMsgBuffer()
+        {
+            buffer = new JsonArray();
+        }
+
+        // add a msg to the buffer
+        public void add(JsonObject msg)
+        {
+            //remove the first element if we've reached max size
+            if (buffer.size() == SIZE)
+                {
+                    buffer.remove(0);
+                }
+            buffer.add(msg);
+        }
+
+        // reset the buffer to empty
+        public void clear()
+        {
+            buffer.clear();
+        }
+
+        // return the number of messages stored in the buffer
+        public int size()
+        {
+            return buffer.size();
+        }
+
+        // return the entire buffer as a JsonArray in the correct order
+        public JsonArray json_array()
+        {
+            return buffer;
+        }
+        
+    } // end class MsgBuffer
 } // end class Zone
