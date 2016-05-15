@@ -160,8 +160,8 @@ function init_sock()
     rita_sock = new SockJS(SOCK_HTTP);
 
     rita_sock.onopen = function() {
-       //debug socket opened debug message to browser js console
-       console.log(' socket opened');
+       // debug socket opened debug message to browser js console
+       //console.log(' socket opened');
        // send the zone_connect message to socket to initialize updates
        send_sock_connect_msg();
     };
@@ -173,11 +173,21 @@ function init_sock()
        { 
          handle_zone_update(rita_msg);
        }
+       else if (rita_msg.msg_type=="zone_update") //debug should use system Constants for msg_type
+       {
+          //console.log('zone update length='+rita_msg.msgs.length);
+          for (var i=0; i<rita_msg.msgs.length; i++)
+          {
+             //console.log("zone update "+JSON.stringify(rita_msg.msgs[i]));
+             handle_zone_update(rita_msg.msgs[i]);
+          }
+       }
+
     };
 
     rita_sock.onclose = function() {
-       //debug socket closed debug message to browser js console
-       console.log('socket closed');
+       // debug socket closed debug message to browser js console
+       //console.log('socket closed');
     };
 
 }
@@ -185,7 +195,7 @@ function init_sock()
 // send connect messsage to Rita socket giving subscription config
 function send_sock_connect_msg() {
    // debug socket closed debug message to browser js console
-   console.log('sock send_sock_connect_msg...');
+   //console.log('sock send_sock_connect_msg...');
 
    rita_sock.send(JSON.stringify({ msg_type: 'zone_connect',
                                    UUID: config_UUID,
@@ -194,7 +204,7 @@ function send_sock_connect_msg() {
 
 function handle_zone_update(msg)
 {
-    console.log('chart update: '+msg.msg_type);
+    //console.log('chart update: '+msg.msg_type);
     rita_data.push(msg);
     draw_chart(rita_data);
           

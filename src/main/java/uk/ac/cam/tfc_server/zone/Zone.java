@@ -112,7 +112,8 @@ public class Zone extends AbstractVerticle {
     private String tfc_data_zone = null;
     //debug need a vehicles data hashmap for each monitoring instance
     private HashMap<String, Vehicle> vehicles; // dictionary to store vehicle status updated from feed
-    private ZoneMsgBuffer zone_msg_buffer; // stores zone completion messages since start of day
+    // zone_msg_buffer has a MsgBuffer entry for each zone.address
+    private HashMap<String, MsgBuffer> zone_msg_buffer; // stores zone completion messages since start of day
   
   // **************************************************************************************
   // Zone Verticle Startup procedure
@@ -134,7 +135,7 @@ public class Zone extends AbstractVerticle {
     // create box object with boundaries of rectangle that includes this zone polygon
     box = new Box();
 
-    zone_msg_buffer = new ZoneMsgBuffer();
+    zone_msg_buffer = new HashMap<String, MsgBuffer>();
     
     // Initialization from config() complete
     
@@ -252,31 +253,46 @@ public class Zone extends AbstractVerticle {
             {
                 handle_subscription(msg);              
             }
-        else if (msg.getString("msg_type").equals(Constants.ZONE_UPDATE))
+        else if (msg.getString("msg_type").equals(Constants.ZONE_UPDATE_REQUEST))
             {
-                handle_update(msg);
+                handle_update_request(msg);
             }
     }
 
     // Zone has received a ZONE_SUBSCRIBE message on the eb.manager eventbus address
-    private void handle_subscription(JsonObject msg)
+    private void handle_subscription(JsonObject request_msg)
     {
         // set up a subscription to a feed
         //debug need a data structure for a list of subscriptions
-        String ZONE_FEED = msg.getString("zone.feed");
+        String ZONE_FEED = request_msg.getString("zone.feed");
         
-        String ZONE_ADDRESS = msg.getString("zone.address");
+        String ZONE_ADDRESS = request_msg.getString("zone.address");
 
         monitor_feed(ZONE_FEED, ZONE_ADDRESS);
     }        
 
 
-    // Zone has received a ZONE_UPDATE message on the eb.manager eventbus address
+    // Zone has received a ZONE_UPDATE_REQUEST message on the eb.manager eventbus address
     // so should broadcast a message with all the completion messages for the day so far
-    private void handle_update(JsonObject msg)
+    private void handle_update_request(JsonObject request_msg)
     {
         //debug handle_update not implemented yet
         System.out.println("Zone."+MODULE_ID+": sending Zone update");
+        // ****************************************
+        // Send ZONE_UPDATE event message to ZONE_ADDRESS
+        // ****************************************
+
+        String ZONE_ADDRESS = request_msg.getString("zone.address");
+
+        JsonObject msg = new JsonObject();
+
+        msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
+        msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
+        msg.put("msg_type", Constants.ZONE_UPDATE);
+        msg.put("msgs", zone_msg_buffer.get(ZONE_ADDRESS).json_array());
+
+        // Send zone_completed message to common zone.address
+        vertx.eventBus().publish(ZONE_ADDRESS, msg);
     }
 
     // Subscribe to ZONE_FEED position messages, and publish zone messages to ZONE_ADDRESS.
@@ -284,7 +300,12 @@ public class Zone extends AbstractVerticle {
     private void monitor_feed(String ZONE_FEED, String ZONE_ADDRESS)
     {
               System.out.println("Zone: " + MODULE_NAME + "." + MODULE_ID +  " subscribing to "+ ZONE_FEED);
-              
+
+              // Create new MsgBuffer if not already existing for this ZONE_ADDRESS
+              if (!zone_msg_buffer.containsKey(ZONE_ADDRESS))
+                  {
+                      zone_msg_buffer.put(ZONE_ADDRESS, new MsgBuffer(Constants.ZONE_BUFFER_SIZE));
+                  }               
               // set up a handler for the actual vehicle position feed messages
               vertx.eventBus().consumer(ZONE_FEED, eb_message -> {
 
@@ -594,9 +615,10 @@ public class Zone extends AbstractVerticle {
                           //debug ! need to add confidence value in ZONE_COMPLETED eb msg e.g. duration of entry and exit vectors
 
                           // accumulate this Completion message in the ring buffer
-                          zone_msg_buffer.add(msg);
+                          zone_msg_buffer.get(ZONE_ADDRESS).add(msg);
                           //debug debug print statement
-                          System.out.println("Zone."+MODULE_ID+": zone_msg_buffer.size()="+zone_msg_buffer.size());
+                          System.out.println("Zone."+MODULE_ID+
+                                             ": zone_msg_buffer.size()="+zone_msg_buffer.get(ZONE_ADDRESS).size());
                           
                           // Send zone_completed message to common zone.address
                           vertx.eventBus().publish(ZONE_ADDRESS, msg);
@@ -820,13 +842,14 @@ public class Zone extends AbstractVerticle {
     // So ordered complete set of entries are:
     // full==false: buffer[0]..buffer[write_buffer-1]
     // full==true:  buffer[write_buffer].. loop around end to buffer[write_buffer-1]
-    class ZoneMsgBuffer {
-        static final int SIZE = 20;
+    class MsgBuffer {
+        int SIZE;
         JsonArray buffer;
 
         // initialize the object
-        public ZoneMsgBuffer()
+        public MsgBuffer(int max_size)
         {
+            SIZE = max_size;
             buffer = new JsonArray();
         }
 

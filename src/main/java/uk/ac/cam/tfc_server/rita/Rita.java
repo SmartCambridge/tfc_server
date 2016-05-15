@@ -361,22 +361,30 @@ public class Rita extends AbstractVerticle {
 
         ArrayList<String> zone_ids = client_table.get(UUID).zone_ids;
 
+        //debug currently assuming webpage only subscribes to a single zone
         String zone_id = zone_ids.get(0);
         
         // register consumer of relevant eventbus messages
-        //debug client subscription should allow multiple zone_ids
-        System.out.println("Rita."+MODULE_ID+": subscribing client to "+zone_id);
-        eb.consumer(ZONE_ADDRESS+"."+zone_id, message -> {
+
+        String this_zone_address = ZONE_ADDRESS+"."+zone_id;
+        
+        System.out.println("Rita."+MODULE_ID+": subscribing client to "+this_zone_address);
+        eb.consumer(this_zone_address, message -> {
                 send_client(sock, message.body().toString());
                 });
 
+        // also send ZONE_UPDATE_REQUEST to catch up earlier messages
         JsonObject msg = new JsonObject();
 
-        msg.put("module_name", MODULE_NAME);
-        msg.put("module_id", MODULE_ID);
-        msg.put("to_module_name", "zone");
+        msg.put("module_name", MODULE_NAME); // module name (i.e. 'rita') sending this request
+        msg.put("module_id", MODULE_ID); // module id sending this request
+        msg.put("to_module_name", "zone"); // module name / module id intended to action this management request
         msg.put("to_module_id", zone_id);
-        msg.put("msg_type", Constants.ZONE_UPDATE);
+        msg.put("zone.address", this_zone_address);
+        msg.put("msg_type", Constants.ZONE_UPDATE_REQUEST);
+
+        System.out.println("Rita."+MODULE_ID+": sending EB_MANAGER msg "+msg.toString());
+        
         // request a ZONE_UPDATE from relevant zone
         eb.publish(EB_MANAGER, msg);
     }
