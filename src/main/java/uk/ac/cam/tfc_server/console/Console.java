@@ -42,23 +42,26 @@ import io.vertx.ext.web.handler.sockjs.PermittedOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import io.vertx.ext.web.handler.sockjs.SockJSHandlerOptions;
 
+// handlebars for static .hbs web template files
+import io.vertx.ext.web.templ.HandlebarsTemplateEngine;
+
 import java.io.*;
 import java.time.*;
 import java.time.format.*;
 
 public class Console extends AbstractVerticle {
-  private int HTTP_PORT; // from config()
-  private String EB_SYSTEM_STATUS; // from config()
-  private String EB_MANAGER; // from config()
-  private String MODULE_NAME; // from config()
-  private String MODULE_ID; // from config()
-  private String WEBROOT; // from config()
-    
-  private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
-  private final int SYSTEM_STATUS_AMBER_SECONDS = 15;
-  private final int SYSTEM_STATUS_RED_SECONDS = 25;
+    private Integer HTTP_PORT; // from config()
+    private String EB_SYSTEM_STATUS; // from config()
+    private String EB_MANAGER; // from config()
+    private String MODULE_NAME; // from config()
+    private String MODULE_ID; // from config()
+    private String WEBROOT; // from config()
 
-  private EventBus eb = null;
+    private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
+    private final int SYSTEM_STATUS_AMBER_SECONDS = 15;
+    private final int SYSTEM_STATUS_RED_SECONDS = 25;
+
+    private EventBus eb;
     
   @Override
   public void start(Future<Void> fut) throws Exception {
@@ -70,7 +73,7 @@ public class Console extends AbstractVerticle {
             return;
         }
 
-    System.out.println("Console starting as "+MODULE_NAME+"."+MODULE_ID);
+    System.out.println("Console."+MODULE_ID+": Started. Address "+EB_SYSTEM_STATUS+" on port "+HTTP_PORT);
 
     eb = vertx.eventBus();
     
@@ -78,67 +81,52 @@ public class Console extends AbstractVerticle {
 
       Router router = Router.router(vertx);
 
-      // create handler for browser socket 
-
-      SockJSHandlerOptions options = new SockJSHandlerOptions().setHeartbeatInterval(2000);
-      
-      SockJSHandler wsHandler = SockJSHandler.create(vertx, options);
-
-      wsHandler.socketHandler( ws -> {
-             ws.handler(ws::write);
-          });
-
-      router.route("/ws/*").handler(wsHandler);
-
-      // create handler for embedded page
-      
-      router.route("/home").handler( routingContext -> {
-
-        HttpServerResponse response = routingContext.response();
-        response.putHeader("content-type", "text/html");
-
-        response.end("<h1>TFC Console."+MODULE_ID+"</h1><p>Vertx-Web!</p>");
-      });
-
       // create handler for eventbus bridge
 
       SockJSHandler ebHandler = SockJSHandler.create(vertx);
 
-      PermittedOptions inbound_permitted = new PermittedOptions().setAddress("console_in");
       BridgeOptions bridge_options = new BridgeOptions();
-      bridge_options.addOutboundPermitted( new PermittedOptions().setAddress("console_out") );
-      bridge_options.addOutboundPermitted( new PermittedOptions().setAddress("console_out_system_status") );
-
-      bridge_options.addInboundPermitted(inbound_permitted);
+      bridge_options.addOutboundPermitted( new PermittedOptions().setAddress(EB_SYSTEM_STATUS) );
 
       ebHandler.bridge(bridge_options);
 
       router.route("/eb/*").handler(ebHandler);
       
-      // create handler for static pages
-      
-      StaticHandler static_handler = StaticHandler.create();
-      static_handler.setWebRoot(WEBROOT);
-      static_handler.setCachingEnabled(false);
-      router.route(HttpMethod.GET, "/*").handler( static_handler );
+    // *****************************************
+    // create handler for console template pages
+    // *****************************************
 
-      // connect router to http_server
-      
-      http_server.requestHandler(router::accept).listen(HTTP_PORT);
-
-      // create listener for eventbus 'console_in' messages
-      eb.consumer("console_in", message -> {
-              System.out.println("Console_in: "+message.body());
-          });
-
-      // create listener for eventbus 'system_status' messages
-      eb.consumer(EB_SYSTEM_STATUS, message -> {
-              System.out.println("system_status: "+message.body());
-              eb.publish("console_out_system_status", message.body());
-          });
+    final HandlebarsTemplateEngine template_engine = HandlebarsTemplateEngine.create();
     
+    router.route(HttpMethod.GET, "/console").handler( ctx -> {
+
+            ctx.put("config_eb_system_status", EB_SYSTEM_STATUS);
+            
+            template_engine.render(ctx, "templates/console.hbs", res -> {
+                    if (res.succeeded())
+                    {
+                        ctx.response().end(res.result());
+                    }
+                    else
+                    {
+                        ctx.fail(res.cause());
+                    }
+                });
+        } );
+
+    // create handler for static resources
+
+    StaticHandler static_handler = StaticHandler.create();
+    static_handler.setWebRoot(WEBROOT);
+    static_handler.setCachingEnabled(false);
+    router.route(HttpMethod.GET, "/*").handler( static_handler );
+
+    // connect router to http_server
+
+    http_server.requestHandler(router::accept).listen(HTTP_PORT);
+
     // send periodic "system_status" messages
-      vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> {
+    vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> {
         eb.publish(EB_SYSTEM_STATUS,
                  "{ \"module_name\": \""+MODULE_NAME+"\"," +
                    "\"module_id\": \""+MODULE_ID+"\"," +
@@ -192,27 +180,15 @@ public class Console extends AbstractVerticle {
 
         // port for user browser access to this Rita
         HTTP_PORT = config().getInteger(MODULE_NAME+".http.port");
+        if (HTTP_PORT==null)
+            {
+                System.err.println("Console: no "+MODULE_NAME+".http.port in config()");
+                return false;
+            }
 
         // where the built-in webserver will find static files
         WEBROOT = config().getString(MODULE_NAME+".webroot");
         return true;
     }
     
-    // process the POST gtfs binary data
-  private void serve_page(HttpServerRequest request)
-    {
-        System.out.println("Console: serve_page");
-        LocalDateTime local_time = LocalDateTime.now();
-        request.response().end("<h1>TFC Console</h1> " +
-                "<p>Vert.x 3 application</p");
-        
-    } // end serve_page()
-
-  private void handle_feed(JsonObject feed_message)
-    {
-        //PositionRecord  pos_record = new PositionRecord(pos_records.get(0));
-        String filename = feed_message.getString("filename");
-        System.out.println("Console feed filename = " + filename);
-        eb.publish("console_out","{ \"filename\": " + filename + "}");
-    }
 } // end class Console

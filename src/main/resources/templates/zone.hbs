@@ -16,9 +16,14 @@
 
 <head>
     <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
-    <script src="//cdn.jsdelivr.net/sockjs/1.0.3/sockjs.min.js"></script>
+<!--    <script src="//cdn.jsdelivr.net/sockjs/1.0.3/sockjs.min.js"></script> -->
+    <script src='../sockjs.min.js'></script>
     <script src='../vertx-eventbus.js'></script>
     <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+
+    <!-- load constants template -->
+    <script src="/constants.js" charset="utf-8"></script>
+    
     <title>Rita::Zone 0.6</title>
 <!--
 RELEASE INFO:
@@ -80,13 +85,17 @@ var config_zone_id = '{{config_zone_id}}'; // zone_id as requested in URL
 //debug should allow multiple zone_id's
 var zone_ids;
 
+var chart_day_ts; // Timestamp of start of current chart day
+                  // When message arrives with timestamp >+24 hours, we will
+                  // reset the chart to next day...
+
 // Set base URL of web server
 var RITA_HTTP =  window.location.protocol + '//' +
                  window.location.hostname +
                  ':' + window.location.port;
 
 // Extend base URL for eventbus address
-var CONSOLE_EVENTBUS_HTTP =  RITA_HTTP + '/eb';
+var RITA_EVENTBUS_HTTP =  RITA_HTTP + '/eb';
 
 // Extend base URL for websocket address
 var SOCK_HTTP = RITA_HTTP + '/ws';
@@ -110,15 +119,23 @@ var chart_color;  // color chosen for current circle on scatterplaot
 var chart_tooltip;
 
 // time of day for scatterplot to start/end
-var CHART_START_TIME = 6; // start chart at 6am
-var CHART_END_TIME = 20;  // end chart at 8pm
+var CHART_START_TIME = 0; // start chart at midnight
+var CHART_END_TIME = 24;  // end chart at 8pm
+
 var CHART_DOT_RADIUS = 5; // size of dots on scatterplot
+
+
+// **********************************************
+// Initialize this page (called in body:onload())
+// **********************************************
 
 function init()
 {
 
     zone_ids = new Array();
     zone_ids.push(config_zone_id);
+
+    chart_day_start_ts = 0; // initially set start-time boundary of chart to distant past
 
     //init_eventbus();
     
@@ -133,10 +150,15 @@ function init()
 
 }
 
+
+// **********************************************
+// Initialize the connection to the eventbus
+// **********************************************
+
 function init_eventbus()
 {
     // initialize eventbus to connect to Rita.java on server
-    eb = new EventBus(CONSOLE_EVENTBUS_HTTP);
+    eb = new EventBus(RITA_EVENTBUS_HTTP);
 
     // script to run when Vertx EventBus is ready
     eb.onopen = function() {
@@ -146,7 +168,7 @@ function init_eventbus()
         eb.registerHandler('rita_out', function(error, message) {
           //debug we should test type of msg (e.g. zone update) and handle accordingly
           write_console1('rita_out: ' + JSON.stringify(message.body) + '<br/>');
-          if (message.body.msg_type=="zone_completion")
+          if (message.body.msg_type==constants.ZONE_COMPLETION)
           {
               handle_zone_update(message.body);
           }
@@ -154,66 +176,99 @@ function init_eventbus()
     }
 }
 
+// ********************************************
 // initialise websocket connection to Rita.java
+// ********************************************
 function init_sock()
 {
     rita_sock = new SockJS(SOCK_HTTP);
 
+    // When the socket opens, send a 'connect' message to Rita.java to get initial data
     rita_sock.onopen = function() {
-       // debug socket opened debug message to browser js console
-       //console.log(' socket opened');
        // send the zone_connect message to socket to initialize updates
        send_sock_connect_msg();
     };
 
+    // Set up the code to run each time a message is received from Rita.java
+    // e.g. these can be ZONE_COMPLETION message for the selected Zone, or
+    // a ZONE_UPDATE message allowing this browser to catch up with message so
+    // far today.
     rita_sock.onmessage = function(e) {
        write_console1('rita sock: ' + e.data + '<br/>');
        var rita_msg = JSON.parse(e.data);
-       if (rita_msg.msg_type=="zone_completion")
+       if (rita_msg.msg_type==constants.ZONE_COMPLETION)
        { 
-         handle_zone_update(rita_msg);
+         handle_zone_completion(rita_msg);
        }
-       else if (rita_msg.msg_type=="zone_update") //debug should use system Constants for msg_type
+       else if (rita_msg.msg_type==constants.ZONE_UPDATE) 
        {
-          //console.log('zone update length='+rita_msg.msgs.length);
-          for (var i=0; i<rita_msg.msgs.length; i++)
-          {
-             //console.log("zone update "+JSON.stringify(rita_msg.msgs[i]));
-             handle_zone_update(rita_msg.msgs[i]);
-          }
+         handle_zone_update(rita_msg);
        }
 
     };
 
     rita_sock.onclose = function() {
-       // debug socket closed debug message to browser js console
        //console.log('socket closed');
     };
 
 }
 
 // send connect messsage to Rita socket giving subscription config
-function send_sock_connect_msg() {
-   // debug socket closed debug message to browser js console
-   //console.log('sock send_sock_connect_msg...');
-
-   rita_sock.send(JSON.stringify({ msg_type: 'zone_connect',
+function send_sock_connect_msg()
+{
+   rita_sock.send(JSON.stringify({ msg_type: constants.SOCKET_ZONE_CONNECT,
                                    UUID: config_UUID,
                                    zone_ids: zone_ids }));
 }
 
-function handle_zone_update(msg)
+// handle ZONE_UPDATE message received on socket from Rita.java
+function handle_zone_update(rita_msg)
 {
+    //console.log('zone update length='+rita_msg.msgs.length);
+    for (var i=0; i<rita_msg.msgs.length; i++)
+    {
+       //console.log("zone update "+JSON.stringify(rita_msg.msgs[i]));
+       handle_zone_completion(rita_msg.msgs[i]);
+    }
+}
+                                          
+// handle ZONE_COMPLETION message received on socket from Rita.java
+function handle_zone_completion(msg)
+{
+    // If this zone completion is before the start-of-day for the current chart
+    // just ignore it
+    if (msg.ts < chart_day_start_ts)
+    {
+      console.log("handle_zone_completion msg from before start-of-day "+msg.toString());
+      return;
+    }
+
+    // If this zone completion is 24 hours after chart_start_day_ts
+    // then switch the chart over to a new day
+    if (msg.ts > chart_day_start_ts + 24 * 60 * 60)
+    {
+      d = new Date(msg.ts * 1000);
+      d.setHours(0,0,0,0);
+      chart_day_start_ts = Math.floor(d.getTime() / 1000);
+      console.log("resetting day start to "+chart_day_start_ts);
+      // empty the current message list
+      rita_data = new Array();                                          
+    }
+                                          
     //console.log('chart update: '+msg.msg_type);
     rita_data.push(msg);
     draw_chart(rita_data);
           
 }
 
+// ******************************************                                                
+// Initialize the chart to appear on the page
+// - not yet with any data
+// ******************************************
 function init_chart()
 {
     var margin = {top: 20, right: 20, bottom: 30, left: 40};
-    chart_width = 960 - margin.left - margin.right;
+    chart_width = 1800 - margin.left - margin.right;
     chart_height = 500 - margin.top - margin.bottom;
 
     // add the graph canvas to the body of the webpage
@@ -376,7 +431,9 @@ function zone_selected()
 
 <body onload='init()'>
   
-  <h1 class="header_title"><img src="../images/smart_cambridge_logo.jpg">Rita::Zone <span id='heading'></span></h1>
+<h1 class="header_title"><img src="../images/smart_cambridge_logo.jpg">Rita::Zone <span id='heading'></span></h1>
+
+<div id="chart_title"></div>
 
 <div class="chart" id="chart">
 </div>

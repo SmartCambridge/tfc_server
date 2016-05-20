@@ -59,7 +59,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class Rita extends AbstractVerticle {
 
-    private int HTTP_PORT; // from config()
+    private Integer HTTP_PORT; // from config()
     private String RITA_ADDRESS; // from config()
     private String EB_SYSTEM_STATUS; // from config()
     private String EB_MANAGER; // from config()
@@ -213,7 +213,7 @@ public class Rita extends AbstractVerticle {
                System.out.println("Rita."+MODULE_ID+": sock received '"+buf+"'");
                // Add this connection to the client table
                // and set up consumer for eventbud messages
-               create_client_subscription(sock, buf);
+               create_zone_subscription(sock, buf);
                 });
 
             sock.endHandler( (Void v) -> {
@@ -273,9 +273,9 @@ public class Rita extends AbstractVerticle {
             routingContext.response().setStatusCode(200).end();
         } );
 
-    // ***********************************
+    // **************************************
     // create handler for zone template pages
-    // ***********************************
+    // **************************************
 
     final HandlebarsTemplateEngine template_engine = HandlebarsTemplateEngine.create();
     
@@ -304,6 +304,26 @@ public class Rita extends AbstractVerticle {
             }
         } );
 
+    // ****************************************
+    // create handler for constants.js template
+    // ****************************************
+
+    router.route(HttpMethod.GET, "/constants.js").handler( ctx -> {
+
+            ctx.put("config_constants", Constants.js());  // get constants in JS format
+            
+            template_engine.render(ctx, "templates/constants.js.hbs", res -> {
+                    if (res.succeeded())
+                    {
+                        ctx.response().end(res.result());
+                    }
+                    else
+                    {
+                        ctx.fail(res.cause());
+                    }
+                });
+        } );
+
     // ********************************
     // create handler for static pages
     // ********************************
@@ -324,11 +344,11 @@ public class Rita extends AbstractVerticle {
     // Set up handlers for eventbus messages    
     // *************************************
     
-    //debug hardcoded to "rita_in" should be in config()
+    // debug hardcoded to "rita_in" should be in config()
     // create listener for eventbus 'console_in' messages
-    eb.consumer("rita_in", message -> {
-          System.out.println("Rita_in: "+message.body());
-      });
+    //eb.consumer("rita_in", message -> {
+    //      System.out.println("Rita_in: "+message.body());
+    //  });
 
     //debug !! wrong to hardcode the feedplayer eventbus address
     //debug also hardcoded "rita_out"
@@ -354,7 +374,7 @@ public class Rita extends AbstractVerticle {
 
     // create new client connection
     // on receipt of 'zone_connect' message on socket
-    private void create_client_subscription(SockJSSocket sock, Buffer buf)
+    private void create_zone_subscription(SockJSSocket sock, Buffer buf)
     {
         // create entry in client table
         String UUID = client_table.add(sock, buf);
@@ -473,6 +493,11 @@ public class Rita extends AbstractVerticle {
 
         // port for user browser access to this Rita
         HTTP_PORT = config().getInteger(MODULE_NAME+".http.port");
+        if (HTTP_PORT==null)
+            {
+                System.err.println("Rita: no "+MODULE_NAME+".http.port in config()");
+                return false;
+            }
 
         // where the built-in webserver will find static files
         WEBROOT = config().getString(MODULE_NAME+".webroot");

@@ -1,38 +1,38 @@
 <html>
   <head>
-    <script src="//cdn.jsdelivr.net/sockjs/1.0.3/sockjs.min.js"></script>
-    <script src='vertx-eventbus.js'></script>
-    <title>RITA Console 0.2</title>
-    <style>
-      body {
-        font-family: sans-serif;
-      }
+    <script src='../sockjs.min.js'></script>
+    <script src='../vertx-eventbus.js'></script>
+    <title>RITA Console 0.3</title>
+<style>
+body {
+   font-family: Tahoma, Verdana, Segoe, sans-serif;
+}  
 
-      #rita_icon {
-        float: left;
-      }
+img {
+   vertical-align: middle;
+}
 
-      .status_area {
-        display: inline-block;
-        /* width: 100px; */
-        /* height: 60px; */
-        border-radius: 8px;
-        text-align: center;
-        vertical-align: middle;
-        margin: 10px;
-      }
-    </style>
+.header_title {
+   color: #707070;
+}
+
+.status_area {
+    display: inline-block;
+    /* width: 100px; */
+    /* height: 60px; */
+    border-radius: 8px;
+    text-align: center;
+    vertical-align: middle;
+    margin: 10px;
+}
+</style>
 
 <script>
   // ******************************************************************************************************
   // This JS console receives messages from the Vertx eventbus, published by server-side Console.java.
   // Console.java provides both the web server for this page, and the eventbus bridge to this javascript.
   //
-  // "console_out_status_update": periodic messages published by all modules onto "status_update" address
-  //
-  // "console_out": other general messages send by Console.java, not fully designed yet
-  
-  // Message format: "console_out_status_update":
+  // Message format on the 'system status' eventbus address
   //   { "module_name": "console",
   //     "module_id": <whatever unique identifier this instance has>,
   //     "status": "UP" ,
@@ -46,11 +46,21 @@
   // ******************************************************************************************************
 
   // Constant address of server-side eventbus bridge
-  // Provided by Console.java
-  var CONSOLE_EVENTBUS_HTTP = 'http://carrier.csi.cam.ac.uk:8081/eb';
-  
+
+  // Set base URL of web server
+  var CONSOLE_HTTP =  window.location.protocol + '//' +
+                 window.location.hostname +
+                 ':' + window.location.port;
+
+  // Extend base URL for eventbus address
+  var CONSOLE_EVENTBUS_HTTP =  CONSOLE_HTTP + '/eb';
+
+  // System eventbus address for system status messages
+  // Handlebars template var populated by config.java
+  var EB_SYSTEM_STATUS = '{{config_eb_system_status}}';
+    
   // Default constants for status timeouts for module from green->amber, and amber->red
-  // Note these threshold values can also be sent in the "console_out_status_update" message
+  // Note these threshold values can also be sent in the EB_SYSTEM_STATUS message
   // i.e. if the console hasn't received an 'UP' status message in 35 seconds, it will treat the
   // local status of that module as 'amber'
   var STATUS_AMBER_SECONDS_DEFAULT = 35;
@@ -82,17 +92,10 @@
       // script to run when Vertx EventBus is ready
       eb.onopen = function() {
 
-        // set a handler to receive a "console_out" message
-        eb.registerHandler('console_out', function(error, message) {
-          log(console1, 'console_out: ' + message.body);
-        });
+        // Set a handler to receive a 'system status' message
+        // on the address passed to page by Console.java on startup
+        eb.registerHandler(EB_SYSTEM_STATUS, handle_status );
 
-        // set a handler to receive a "console_out_system_status" message
-        eb.registerHandler('console_out_system_status', handle_status );
-
-        // send a message on startup
-        // alert("about to send on eventbus...");
-        // eb.send('console_in', {name: 'tim', age: 587});
       }
 
       // refresh all status buttons every 3 seconds
@@ -103,7 +106,7 @@
   
   } // end init()
 
-// We have just received a message on the "console_out_system_status" address
+// We have just received a message on the EB_SYSTEM_STATUS address
 // so update the appropriate 'status_area' on the page
 function handle_status(error,message)
 {
@@ -176,30 +179,6 @@ function handle_status(error,message)
     //log(console1, 'system_status: ' + message.body);
 } // end handle_status()
   
-       var sock = new SockJS('http://carrier.csi.cam.ac.uk:8081/ws');
-       
-       sock.onopen = function() {
-           console.log('opened');
-       };
-       
-       sock.onmessage = function(e) {
-           console.log('message', e.data);
-       };
-       
-       sock.onclose = function() {
-           console.log('closed');
-       };
-
-       function send_sock() {
-           console.log('sending...');
-           sock.send('test');
-       }
-
-       function close_sock() {
-           console.log('closing...');
-           sock.close();
-       }
-
 function format_time(t)
 {
       var hours = t.getHours();
@@ -269,10 +248,7 @@ function log(console_div, text)
 
 </head>
   <body onload="init()">
-    <img id="rita_icon" src="images/smart_cambridge.png"/>
-    <h1>RITA Console</h1>
-    <button onclick="send_sock()">Send</button>
-    <button onclick="close_sock()">Close</button>
+    <h1 class="header_title"><img src="../images/smart_cambridge_logo.jpg">Rita::Console {{config_eb_system_status}}<span id='heading'></span></h1>
     <div id="status_areas">
       <h4>Module Status <span id="clock"></span></h4>
     </div>

@@ -130,7 +130,7 @@ public class Zone extends AbstractVerticle {
               return;
           }
       
-    System.out.println("Zone: " + MODULE_NAME + "." + MODULE_ID + " started");
+    System.out.println("Zone."+MODULE_ID+": started");
 
     // create box object with boundaries of rectangle that includes this zone polygon
     box = new Box();
@@ -169,6 +169,7 @@ public class Zone extends AbstractVerticle {
 
     // send periodic "system_status" messages
     vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> {
+            System.out.println("Zone."+MODULE_ID+": sending UP status to "+EB_SYSTEM_STATUS);
       eb.publish(EB_SYSTEM_STATUS,
                  "{ \"module_name\": \""+MODULE_NAME+"\"," +
                    "\"module_id\": \""+MODULE_ID+"\"," +
