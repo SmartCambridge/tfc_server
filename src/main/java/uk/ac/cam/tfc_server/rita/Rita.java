@@ -39,6 +39,7 @@ import io.vertx.core.json.JsonArray;
 // vertx web, service proxy, sockjs eventbus bridge
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.Route;
+import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.handler.sockjs.BridgeOptions;
 import io.vertx.ext.web.handler.sockjs.PermittedOptions;
@@ -212,10 +213,16 @@ public class Rita extends AbstractVerticle {
             // Assign a handler funtion to receive data if send
             sock.handler( buf -> {
                System.out.println("Rita."+MODULE_ID+": sock received '"+buf+"'");
-               // Add this connection to the client table
-               // and set up consumer for eventbud messages
-               create_zone_subscription(sock, buf);
-                });
+
+               JsonObject sock_msg = new JsonObject(buf.toString());
+
+               if (sock_msg.getString("msg_type").equals(Constants.SOCKET_ZONE_CONNECT))
+               {
+                   // Add this connection to the client table
+                   // and set up consumer for eventbud messages
+                   create_zone_subscription(sock, sock_msg);
+               }
+            });
 
             sock.endHandler( (Void v) -> {
                     System.out.println("Rita."+MODULE_ID+": sock closed "+sock.writeHandlerID());
@@ -283,8 +290,11 @@ public class Rita extends AbstractVerticle {
     final HandlebarsTemplateEngine template_engine = HandlebarsTemplateEngine.create();
     
     router.route(HttpMethod.GET, "/zone/:zoneid/plot").handler( ctx -> {
+            
             String zone_id = ctx.request().getParam("zoneid");
 
+            System.out.println("Rita."+MODULE_ID+": serving zone_plot.hbs for "+zone_id);
+            
             ctx.put("config_zone_id",zone_id); // pass zone_id from URL into template var
             ctx.put("config_UUID", get_UUID());// add template var for Unique User ID
             
@@ -294,7 +304,7 @@ public class Rita extends AbstractVerticle {
             }
             else
             {
-                template_engine.render(ctx, "templates/zone.hbs", res -> {
+                template_engine.render(ctx, "templates/zone_plot.hbs", res -> {
                         if (res.succeeded())
                         {
                             ctx.response().end(res.result());
@@ -307,6 +317,10 @@ public class Rita extends AbstractVerticle {
             }
         } );
 
+    router.route(HttpMethod.GET, "/zone/:zoneid/map").handler( ctx -> {
+            serve_zone_map(ctx, ctx.request().getParam("zoneid"), template_engine);
+        });
+            
     router.route(HttpMethod.GET, "/feed").handler( ctx -> {
 
             if (FEEDPLAYER_ADDRESS == null)
@@ -371,10 +385,10 @@ public class Rita extends AbstractVerticle {
 
     // create new client connection
     // on receipt of 'zone_connect' message on socket
-  private void create_zone_subscription(SockJSSocket sock, Buffer buf)
+  private void create_zone_subscription(SockJSSocket sock, JsonObject sock_msg)
     {
         // create entry in client table
-        String UUID = client_table.add(sock, buf);
+        String UUID = client_table.add(sock, sock_msg);
 
         ArrayList<String> zone_ids = client_table.get(UUID).zone_ids;
 
@@ -406,6 +420,33 @@ public class Rita extends AbstractVerticle {
         eb.publish(EB_MANAGER, msg);
     }
 
+    // Serve the templates/zone_map.hbs web page
+    private void serve_zone_map(RoutingContext ctx, String zone_id, HandlebarsTemplateEngine engine)
+    {
+        System.out.println("Rita."+MODULE_ID+": serving zone_map.hbs for "+zone_id);
+            
+        ctx.put("config_zone_id",zone_id); // pass zone_id from URL into template var
+        ctx.put("config_UUID", get_UUID());// add template var for Unique User ID
+
+        if (zone_id == null)
+        {
+            ctx.response().setStatusCode(400).end();
+        }
+        else
+        {
+            engine.render(ctx, "templates/zone_map.hbs", res -> {
+                    if (res.succeeded())
+                    {
+                        ctx.response().end(res.result());
+                    }
+                    else
+                    {
+                        ctx.fail(res.cause());
+                    }
+                });
+        }
+    }
+    
     private void send_client(SockJSSocket sock, String msg)
     {
         sock.write(Buffer.buffer(msg));
@@ -565,7 +606,7 @@ class ClientTable {
 
     // Add new connection to known list, with zone_ids in buf
     // returns UUID of entry added
-    public String add(SockJSSocket sock, Buffer buf)
+    public String add(SockJSSocket sock, JsonObject sock_msg)
     {
         if (sock == null)
             {
@@ -573,21 +614,20 @@ class ClientTable {
                 return null;
             }
 
-        JsonObject connect_jo = new JsonObject(buf.toString());
         // create new entry for sock_data
         ClientConfig entry = new ClientConfig();
         entry.sock = sock;
         
         entry.zone_ids = new ArrayList<String>();
 
-        JsonArray zones_ja = connect_jo.getJsonArray("zone_ids");
+        JsonArray zones_ja = sock_msg.getJsonArray("zone_ids");
         for (int i=0; i<zones_ja.size(); i++)
             {
                 entry.zone_ids.add(zones_ja.getString(i));
             }
-        System.out.println("Rita."+MODULE_ID+": ClientTable.add "+connect_jo.getString("UUID")+ " " +entry.zone_ids.toString());
+        System.out.println("Rita."+MODULE_ID+": ClientTable.add "+sock_msg.getString("UUID")+ " " +entry.zone_ids.toString());
         // push this entry onto the array
-        String UUID = connect_jo.getString("UUID");        
+        String UUID = sock_msg.getString("UUID");        
         client_table.put(UUID,entry);
         return UUID;
     }

@@ -1,0 +1,270 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<!--
+    zone_map.hbs is served by Rita.java
+    The idea is that it will become an 'end-user' map page for a given zone.
+    
+    This page receives real-time data from the server-side Rita module from
+    which it can update its 'Zone map' display as required.
+
+-->
+
+<head>
+    <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+    <script src='/static/sockjs.min.js'></script>
+    <script src='/static/vertx-eventbus.js'></script>
+
+    <!-- load constants template -->
+    <script src="/constants.js" charset="utf-8"></script>
+    
+    <title>Rita::Zone Map 0.61</title>
+<!--
+RELEASE INFO:
+
+2016-05-21 cloned from zone_plot
+
+-->	
+<style type="text/css">
+body {
+   font-family: Tahoma, Verdana, Segoe, sans-serif;
+}  
+
+img {
+   vertical-align: middle;
+}
+
+.header_title {
+   color: #707070;
+}
+
+#map { height: 500px; }
+
+</style>
+
+<script type="text/javascript">
+
+var config_UUID = '{{config_UUID}}'; // unique id issued by server
+var config_zone_id = '{{config_zone_id}}'; // zone_id as requested in URL
+
+//debug should allow multiple zone_id's
+var zone_ids;
+
+var chart_day_ts; // Timestamp of start of current chart day
+                  // When message arrives with timestamp >+24 hours, we will
+                  // reset the chart to next day...
+
+// Set base URL of web server
+var RITA_HTTP =  window.location.protocol + '//' +
+                 window.location.hostname +
+                 ':' + window.location.port;
+
+// Extend base URL for websocket address
+var SOCK_HTTP = RITA_HTTP + '/ws';
+
+var rita_sock; // websocket to connect back to server Rita.java
+
+var map; // google.maps.Map object
+var map_element; // doc div element holding map
+var MAPCENTER = { lat: 52.2, lng: 0.05};
+// initialize lat/lng bounds of the Google map, to prune the markers we need to draw
+var map_bounds = { n: 90, s: -90, e: 180, w: -180 };
+
+// **********************************************
+// Initialize this page (called in body:onload())
+// **********************************************
+
+function init()
+{
+
+    zone_ids = new Array();
+    zone_ids.push(config_zone_id);
+
+    chart_day_start_ts = 0; // initially set start-time boundary of chart to distant past
+
+    // initialize websocket connection to Rita.java
+    init_sock();
+
+    // initialize empty data structure to hold Zone messages
+    rita_data = new Array();
+
+}
+
+// ********************************************
+// initialise websocket connection to Rita.java
+// ********************************************
+function init_sock()
+{
+    rita_sock = new SockJS(SOCK_HTTP);
+
+    // When the socket opens, send a 'connect' message to Rita.java to get initial data
+    rita_sock.onopen = function() {
+       // send the zone_connect message to socket to initialize updates
+       send_sock_connect_msg();
+    };
+
+    // Set up the code to run each time a message is received from Rita.java
+    // e.g. these can be ZONE_COMPLETION message for the selected Zone, or
+    // a ZONE_UPDATE message allowing this browser to catch up with message so
+    // far today.
+    rita_sock.onmessage = function(e) {
+       write_console1('rita sock: ' + e.data + '<br/>');
+       var rita_msg = JSON.parse(e.data);
+       if (rita_msg.msg_type==constants.ZONE_COMPLETION)
+       { 
+         handle_zone_completion(rita_msg);
+       }
+       else if (rita_msg.msg_type==constants.ZONE_UPDATE) 
+       {
+         handle_zone_update(rita_msg);
+       }
+       else if (rita_msg.msg_type==constants.ZONE_INFO) 
+       {
+         handle_zone_info(rita_msg);
+       }
+
+    };
+
+    rita_sock.onclose = function() {
+       //console.log('socket closed');
+    };
+
+}
+
+// send connect messsage to Rita socket giving subscription config
+function send_sock_connect_msg()
+{
+   rita_sock.send(JSON.stringify({ msg_type: constants.SOCKET_ZONE_MAP_CONNECT,
+                                   UUID: config_UUID,
+                                   zone_ids: zone_ids }));
+}
+
+// handle ZONE_UPDATE message received on socket from Rita.java
+function handle_zone_update(rita_msg)
+{
+    //console.log('zone update length='+rita_msg.msgs.length);
+    for (var i=0; i<rita_msg.msgs.length; i++)
+    {
+       //console.log("zone update "+JSON.stringify(rita_msg.msgs[i]));
+       handle_zone_completion(rita_msg.msgs[i]);
+    }
+}
+                                          
+// handle ZONE_INFO message received on socket from Rita.java
+function handle_zone_info(rita_msg)
+{
+    write_console1("rita sock: ZONE_INFO finish_index="+rita_msg.finish_index);
+}
+                                          
+// handle ZONE_COMPLETION message received on socket from Rita.java
+function handle_zone_completion(msg)
+{
+    // If this zone completion is before the start-of-day for the current chart
+    // just ignore it
+    if (msg.ts < chart_day_start_ts)
+    {
+      console.log("handle_zone_completion msg from before start-of-day "+msg.toString());
+      return;
+    }
+
+    // If this zone completion is 24 hours after chart_start_day_ts
+    // then switch the chart over to a new day
+    if (msg.ts > chart_day_start_ts + 24 * 60 * 60)
+    {
+      d = new Date(msg.ts * 1000);
+      d.setHours(0,0,0,0);
+      chart_day_start_ts = Math.floor(d.getTime() / 1000);
+      console.log("resetting day start to "+chart_day_start_ts);
+      // empty the current message list
+      rita_data = new Array();                                          
+    }
+                                          
+    write_console1('rita sock msg: '+msg.msg_type+'<br/>');
+    rita_data.push(msg);
+    update_map(rita_data);
+          
+}
+
+
+function update_map(rita_data)
+{
+    // do nothing if no data is available
+    if (rita_data.length == 0) return;
+
+    // rita_data is array of objects e.g.:
+    // { "duration":105,
+    //   "module_id":"madingley_road_in",
+    //   "route_id":"SCCM-X5",
+    //   "ts":1457676998,
+    //   "msg_type":"zone_completion",
+    //   "module_name":"zone",
+    //   "vehicle_id":"14376"
+    // }
+
+
+} // end update_map
+
+function write_console1(msg)
+{
+    var c = document.getElementById('console1');
+    c.innerHTML += msg;
+}
+
+// initMap() is called when the map loaded into the page (see src URL in google javascript link above)
+function initMap() {
+
+    console.log('initMap()');
+    
+    map_element = document.getElementById('map');
+
+    // set a map style to NOT display points-of-interest
+    var mapStyles =[{
+            featureType: "poi",
+            elementType: "labels",
+            stylers: [
+                  { visibility: "off" }
+            ]
+        }];
+
+    map = new google.maps.Map(map_element, {
+	  zoom: 13,
+          center: new google.maps.LatLng(MAPCENTER.lat, MAPCENTER.lng),
+	  mapTypeId: google.maps.MapTypeId.ROADMAP,
+          draggableCursor:'crosshair',
+          styles: mapStyles
+	});
+
+    // set listener to update boundary box for map each time user changes it
+    google.maps.event.addListener(map, "bounds_changed", function() {
+         var m = map.getBounds();
+         map_bounds.w = m.getSouthWest().lng();
+         map_bounds.e = m.getNorthEast().lng();
+         map_bounds.s = m.getSouthWest().lat();
+         map_bounds.n = m.getNorthEast().lat();
+    });
+
+    infowindow = new google.maps.InfoWindow( { disableAutoPan: true });
+  
+}
+                                          
+</script>
+
+<!-- GOOGLE maps api -->
+<script async defer
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAn3n2YQ2wBSnQtITOzsEPhVLaa6n79Qyg&callback=initMap">
+</script>
+
+</head>
+
+<body onload='init()'>
+  
+<h1 class="header_title">
+  <img src="/static/images/smart_cambridge_logo.jpg">Rita::Zone <span id='heading'>{{config_zone_id}}</span></h1>
+
+<div id="map"></div>
+
+<div id="console1">
+  <h4>Messages</h4>
+</div>
+
+</body>
+</html>

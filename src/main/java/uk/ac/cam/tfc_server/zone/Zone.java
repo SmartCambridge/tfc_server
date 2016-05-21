@@ -4,7 +4,7 @@ package uk.ac.cam.tfc_server.zone;
 // *************************************************************************************************
 // *************************************************************************************************
 // Zone.java
-// Version 0.08
+// Version 0.09
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
@@ -49,7 +49,14 @@ package uk.ac.cam.tfc_server.zone;
 //     "route_id", route_id,
 //     "ts", position_ts // this is the timestamp of the first point INSIDE the zone
 //   }
-//
+
+// When a ZONE_UPDATE_REQUEST message is received, Zone sends the history of prior messages
+//   { "module_name": MODULE_NAME,
+//        "module_id", MODULE_ID),
+//        "msg_type", Constants.ZONE_UPDATE,
+//        "msgs", [ <zone message>, <zone message> ... ]
+//   }
+
 // *************************************************************************************************
 // *************************************************************************************************
 // *************************************************************************************************
@@ -258,6 +265,10 @@ public class Zone extends AbstractVerticle {
             {
                 handle_update_request(msg);
             }
+        else if (msg.getString("msg_type").equals(Constants.ZONE_INFO_REQUEST))
+            {
+                handle_info_request(msg);
+            }
     }
 
     // Zone has received a ZONE_SUBSCRIBE message on the eb.manager eventbus address
@@ -277,10 +288,9 @@ public class Zone extends AbstractVerticle {
     // so should broadcast a message with all the completion messages for the day so far
     private void handle_update_request(JsonObject request_msg)
     {
-        //debug handle_update not implemented yet
         System.out.println("Zone."+MODULE_ID+": sending Zone update");
         // ****************************************
-        // Send ZONE_UPDATE event message to ZONE_ADDRESS
+        // Send ZONE_UPDATE message to ZONE_ADDRESS
         // ****************************************
 
         String ZONE_ADDRESS = request_msg.getString("zone.address");
@@ -292,6 +302,29 @@ public class Zone extends AbstractVerticle {
         msg.put("msg_type", Constants.ZONE_UPDATE);
         msg.put("msgs", zone_msg_buffer.get(ZONE_ADDRESS).json_array());
 
+        // Send zone_completed message to common zone.address
+        vertx.eventBus().publish(ZONE_ADDRESS, msg);
+    }
+
+    // Zone has received a ZONE_INFO_REQUEST message on the eb.manager eventbus address
+    // so should broadcast a message with the zone details
+    private void handle_info_request(JsonObject request_msg)
+    {
+        System.out.println("Zone."+MODULE_ID+": sending Zone info");
+        // ****************************************
+        // Send ZONE_INFO message to ZONE_ADDRESS
+        // ****************************************
+
+        String ZONE_ADDRESS = request_msg.getString("zone.address");
+
+        JsonObject msg = new JsonObject();
+
+        msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
+        msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
+        msg.put("msg_type", Constants.ZONE_INFO);
+        msg.put("finish_index", FINISH_INDEX );
+        //debug ZONE_INFO msg is incomplete
+        
         // Send zone_completed message to common zone.address
         vertx.eventBus().publish(ZONE_ADDRESS, msg);
     }
