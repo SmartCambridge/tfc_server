@@ -1,6 +1,8 @@
 ## [RITA](https://github.com/ijl20/tfc_server) &gt; Rita
 Realtime Intelligent Traffic Analysis
 
+![zone plot screenshot](../../../../../../../../images/zone_plot_screenshot.png)
+
 ## Overview
 
 The Rita module acts as the 'user agent' in the system, providing a user-friendly web interface meaningful
