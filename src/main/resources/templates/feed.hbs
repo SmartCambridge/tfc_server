@@ -1,0 +1,232 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+
+<head>
+    <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+    <script src="/static/sockjs.min.js"></script>
+    <script src="/static/vertx-eventbus.js"></script>
+    <title>TFC RITA FEED 0.6</title>
+<!--
+RELEASE INFO:
+
+2016-05-21 0.6 moved to Handlebars template feed.hbs
+2016-04-07 0.55 moved JS to js/rita.js
+
+2016-04-01 0.52 html/js ported to Rita NG, now served by vertx
+----
+2016-01-18 0.31 added 'name' to save of current bounds
+        moved process_positions into got_data instead of parse_positions
+        bugfix moved bounds initialization code in load_saves()
+
+2016-01-17 0.30	completion message with start, finish, duration
+		added hard-coded cache of Cambridge region bounds
+
+2016-01-14 0.29 Now supports multiple bounds
+
+Feed format:
+{ "filename":"1447402833_2015-11-13-08-20-33",
+  "filepath":"2015/11/13",
+  "entities":[ { "trip_id":"1176607-20151101-20151224",
+                 "route_id":"FE-B",
+                 "current_stop_sequence":9,
+                 "bearing":18,
+                 "latitude":52.341217,
+                 "longitude":-0.17712024,
+                 "timestamp":1447402814,
+                 "stop_id":"2688",
+                 "label":"FE-15657",
+                 "vehicle_id":"13",
+                 "received_timestamp":1459603668
+               }, ...
+             ]
+}
+-->	
+<style type="text/css">
+body {
+   font-family: Tahoma, Verdana, Segoe, sans-serif;
+}  
+
+img {
+   vertical-align: middle;
+}
+
+.header_title {
+   color: #707070;
+}
+
+
+#position_text {
+    display: block;
+}
+
+#map { height: 500px; }
+
+.save_view {
+  cursor: pointer; 
+}
+.save_delete {
+  cursor: pointer; 
+}
+</style>
+
+<script>
+
+// Set base URL of web server
+var RITA_HTTP =  window.location.protocol + '//' +
+                 window.location.hostname +
+                 ':' + window.location.port;
+
+// Extend base URL for eventbus address
+var RITA_EVENTBUS_HTTP =  RITA_HTTP + '/eb';
+
+var eb; // eventbus
+
+var map; // google.maps.Map object
+var map_element; // doc div element holding map
+var MAPCENTER = { lat: 52.2, lng: 0.05};
+// initialize lat/lng bounds of the Google map, to prune the markers we need to draw
+var map_bounds = { n: 90, s: -90, e: 180, w: -180 };
+var markers = new Array();
+
+var infowindow;
+
+// ***********************************************************************************
+// ***********************************************************************************
+// ************ START CODE ON PAGE/MAP LOAD                         ******************
+// ***********************************************************************************
+// ***********************************************************************************
+
+function init()
+{
+    // initialize eventbus to connect to Rita.java on server
+    eb = new EventBus(RITA_EVENTBUS_HTTP);
+    // script to run when Vertx EventBus is ready
+    eb.onopen = function() {
+
+        // set a handler to receive a "rita_feed" message
+        eb.registerHandler('{{config_feed_address}}', function(error, message) {
+           map_feed(message.body);
+        });
+    }
+}
+
+// initMap() is called when the map loaded into the page (see src URL in google javascript link above)
+function initMap() {
+
+    console.log('initMap()');
+    
+    map_element = document.getElementById('map');
+
+    // set a map style to NOT display points-of-interest
+    var mapStyles =[{
+            featureType: "poi",
+            elementType: "labels",
+            stylers: [
+                  { visibility: "off" }
+            ]
+        }];
+
+    map = new google.maps.Map(map_element, {
+	  zoom: 13,
+          center: new google.maps.LatLng(MAPCENTER.lat, MAPCENTER.lng),
+	  mapTypeId: google.maps.MapTypeId.ROADMAP,
+          draggableCursor:'crosshair',
+          styles: mapStyles
+	});
+
+    // set listener to update boundary box for map each time user changes it
+    google.maps.event.addListener(map, "bounds_changed", function() {
+         var m = map.getBounds();
+         map_bounds.w = m.getSouthWest().lng();
+         map_bounds.e = m.getNorthEast().lng();
+         map_bounds.s = m.getSouthWest().lat();
+         map_bounds.n = m.getNorthEast().lat();
+    });
+
+    infowindow = new google.maps.InfoWindow( { disableAutoPan: true });
+  
+}
+
+// draw the vehicle positions from the rita_feed onto the map
+function map_feed(feed)
+{
+    for (var i=0; i< markers.length; i++)
+    {
+        markers[i].setMap(null);
+    }
+    markers = [];
+
+    var positions = feed.entities;
+
+    var marker_count = 0;
+    for (var i=0; i < positions.length; i++)
+    {
+        var lat = positions[i].latitude;
+        var lng = positions[i].longitude;
+        if (lat < map_bounds.n && lat > map_bounds.s && lng > map_bounds.w && lng < map_bounds.e)
+        {
+        marker_count++;        
+            var marker = new google.maps.Marker({
+                position: { lat: lat, lng: lng },
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 4,
+                    strokeColor: 'green'
+                },
+                map: map
+            });
+
+            markers.push(marker);
+        }
+    }
+    //write_console1('markers: '+marker_count);
+}
+                                                                                    
+
+function write_console1(msg)
+{
+    var c = document.getElementById('console1');
+    c.innerHTML += msg;
+}
+
+</script>
+
+<!-- GOOGLE maps api -->
+<script async defer
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAn3n2YQ2wBSnQtITOzsEPhVLaa6n79Qyg&callback=initMap">
+</script>
+ 
+</head>
+
+<body onload='init()'>
+
+<h1 class="header_title">
+  <img src="/static/images/smart_cambridge_logo.jpg">Rita::Feed <span id='heading'>{{config_feed_address}}</span></h1>
+  
+<div id="status">Initializing...</div>
+  
+<table style="width: 100%; height: 60%">
+    <tr>
+    <td style="vertical-align: top">
+        <div id="toolbar">
+            <label><input id="update" type="checkbox" onclick="user_update()">Update</label>
+            <form action="">
+                <input type="radio" name="realtime" onclick="user_realtime(this)" value="realtime">Realtime<br/>
+                <input type="radio" name="realtime" checked onclick="user_realtime(this)" value="day">Day
+                <input type="text" value="2015-11-13" size="10"/>
+            </form>
+
+            <button onclick="user_clear_tracking()">Clear tracked buses</button>
+            <button onclick="debug()">DEBUG</button>
+        </div>
+    </td>
+    <td style="width: 100%; vertical-align: top;">
+        <div id="map"></div>
+    </td>
+    </tr>
+</table>
+<div id="console1">
+		<h4>Rita Messages</h4>
+</div>
+</body>
+</html>

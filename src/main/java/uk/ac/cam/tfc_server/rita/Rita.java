@@ -242,15 +242,15 @@ public class Rita extends AbstractVerticle {
 
     SockJSHandler ebHandler = SockJSHandler.create(vertx);
 
-    //debug rita_in/out EB names should be in config()
-    PermittedOptions inbound_permitted = new PermittedOptions().setAddress("rita_in");
     BridgeOptions bridge_options = new BridgeOptions();
     // add outbound address for user messages
     bridge_options.addOutboundPermitted( new PermittedOptions().setAddress("rita_out") );
     // add outbound address for feed messages
-    bridge_options.addOutboundPermitted( new PermittedOptions().setAddress("rita_feed") );
-
-    bridge_options.addInboundPermitted(inbound_permitted);
+    if (FEEDPLAYER_ADDRESS != null)
+    {
+        System.out.println("Rita."+MODULE_ID+": permitting eventbus "+FEEDPLAYER_ADDRESS+" to browser");
+        bridge_options.addOutboundPermitted( new PermittedOptions().setAddress(FEEDPLAYER_ADDRESS) );
+    }
 
     ebHandler.bridge(bridge_options);
 
@@ -275,12 +275,14 @@ public class Rita extends AbstractVerticle {
         } );
 
     // **************************************
-    // create handler for zone template pages
+    // **************************************
+    // create handlers for template pages
+    // **************************************
     // **************************************
 
     final HandlebarsTemplateEngine template_engine = HandlebarsTemplateEngine.create();
     
-    router.route(HttpMethod.GET, "/zone/:zoneid").handler( ctx -> {
+    router.route(HttpMethod.GET, "/zone/:zoneid/plot").handler( ctx -> {
             String zone_id = ctx.request().getParam("zoneid");
 
             ctx.put("config_zone_id",zone_id); // pass zone_id from URL into template var
@@ -303,6 +305,29 @@ public class Rita extends AbstractVerticle {
                         }
                     });
             }
+        } );
+
+    router.route(HttpMethod.GET, "/feed").handler( ctx -> {
+
+            if (FEEDPLAYER_ADDRESS == null)
+                {
+                  ctx.response().setStatusCode(400).end();
+                }
+            else
+                {
+                    ctx.put("config_feed_address",FEEDPLAYER_ADDRESS); // pass zone_id from URL into template var
+
+                    template_engine.render(ctx, "templates/feed.hbs", res -> {
+                            if (res.succeeded())
+                            {
+                                ctx.response().end(res.result());
+                            }
+                            else
+                            {
+                                ctx.fail(res.cause());
+                            }
+                        });
+                }
         } );
 
     // ****************************************
@@ -332,50 +357,21 @@ public class Rita extends AbstractVerticle {
     StaticHandler static_handler = StaticHandler.create();
     static_handler.setWebRoot(WEBROOT);
     static_handler.setCachingEnabled(false);
-    router.route(HttpMethod.GET, "/*").handler( static_handler );
+    router.route(HttpMethod.GET, "/static/*").handler( static_handler );
 
+    System.out.println("Rita."+MODULE_ID+" static handler using "+WEBROOT);
+    
     // ********************************
     // connect router to http_server
     // ********************************
 
     http_server.requestHandler(router::accept).listen(HTTP_PORT);
 
-
-    // *************************************
-    // Set up handlers for eventbus messages    
-    // *************************************
-    
-    // debug hardcoded to "rita_in" should be in config()
-    // create listener for eventbus 'console_in' messages
-    //eb.consumer("rita_in", message -> {
-    //      System.out.println("Rita_in: "+message.body());
-    //  });
-
-    //debug !! wrong to hardcode the feedplayer eventbus address
-    //debug also hardcoded "rita_out"
-    // create listener for eventbus FeedPlayer messages
-    // and send them to the browser via rita_out
-    if (FEEDPLAYER_ADDRESS != null)
-        {
-            eb.consumer(FEEDPLAYER_ADDRESS, message -> {
-                    //debug! this rita_feed is currently publishing messages to ALL http clients
-                    eb.publish("rita_feed", message.body());
-                    //eb.send("rita_out", "feed received from "+FEEDPLAYER_ADDRESS);
-              });
-        }
-    else if (ZONE_FEED != null)
-        {
-            eb.consumer(ZONE_FEED, message -> {
-                    eb.publish("rita_feed", message.body());
-                    //eb.send("rita_out", "feed received from "+FEEDPLAYER_ADDRESS);
-              });
-        }
-
-    } // end start()
+  } // end start()
 
     // create new client connection
     // on receipt of 'zone_connect' message on socket
-    private void create_zone_subscription(SockJSSocket sock, Buffer buf)
+  private void create_zone_subscription(SockJSSocket sock, Buffer buf)
     {
         // create entry in client table
         String UUID = client_table.add(sock, buf);

@@ -17,17 +17,18 @@
 <head>
     <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
 <!--    <script src="//cdn.jsdelivr.net/sockjs/1.0.3/sockjs.min.js"></script> -->
-    <script src='../sockjs.min.js'></script>
-    <script src='../vertx-eventbus.js'></script>
+    <script src='/static/sockjs.min.js'></script>
+    <script src='/static/vertx-eventbus.js'></script>
     <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 
     <!-- load constants template -->
     <script src="/constants.js" charset="utf-8"></script>
     
-    <title>Rita::Zone 0.6</title>
+    <title>Rita::Zone 0.61</title>
 <!--
 RELEASE INFO:
 
+2016-05-21 improved message handshake with rita.java, plot reset each midnight
 2016-05-12 modified page to zone.hbs handlebars template
 2016-05-07 using SockJS to receive update messages
 2016-05-02 using clever 'd3' library to render real-time journey time plot
@@ -431,7 +432,8 @@ function zone_selected()
 
 <body onload='init()'>
   
-<h1 class="header_title"><img src="../images/smart_cambridge_logo.jpg">Rita::Zone <span id='heading'></span></h1>
+<h1 class="header_title">
+  <img src="/static/images/smart_cambridge_logo.jpg">Rita::Zone <span id='heading'>{{config_zone_id}}</span></h1>
 
 <div id="chart_title"></div>
 

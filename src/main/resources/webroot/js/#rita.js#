@@ -167,6 +167,8 @@ function init_bounds()
 
 // initMap() is called when the map loaded into the page (see src URL in google javascript link above)
 function initMap() {
+
+    console.log('initMap()');
     
     //path = document.getElementById('path');
     map_element = document.getElementById('map');
