@@ -3,7 +3,7 @@
 Console is part of the RITA Realtime Intelligent Traffic Analysis platform,
 supported by the Smart Cambridge programme.
 
-![console screenshot](https://github.com/ijl20/tfc_server/images/console_screenshot.png)
+![console screenshot](../../../../../../../../images/console_screenshot.png)
 
 ## Overview
 
