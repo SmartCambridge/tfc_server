@@ -97,7 +97,8 @@ public class Rita extends AbstractVerticle {
             return;
         }
 
-    System.out.println("Rita starting as "+MODULE_NAME+"."+MODULE_ID);
+    System.out.println("Rita starting as "+MODULE_NAME+"."+MODULE_ID+
+                       " on port "+HTTP_PORT );
 
     // initialize object to hold socket connection data for each connected session
     client_table = new ClientTable(MODULE_ID);

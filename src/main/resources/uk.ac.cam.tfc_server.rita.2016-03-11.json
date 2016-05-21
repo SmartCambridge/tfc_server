@@ -12,14 +12,14 @@
 
             "rita.address":     "tfc.rita.2016-03-11",
 
-            "rita.feedplayers": [ "2016-03-11" ],
+            "rita.feedplayers":  [ "2016-03-11" ],
             "rita.zonemanagers": [ "madingley_road_in" ],
-            "rita.feedplayer.address":    "tfc.feedplayer.2016-03-11",
-            "rita.zone.address": "tfc.zone.2016-03-11",
-            "rita.zone.feed": "tfc.feedplayer.2016-03-11",
+            "rita.feedplayer.address": "tfc.feedplayer.2016-03-11",
+            "rita.zone.address":       "tfc.zone.2016-03-11",
+            "rita.zone.feed":          "tfc.feedplayer.2016-03-11",
 
             "rita.name":      "RITA-2016-03-11",
-            "rita.http.port":  8082,
+            "rita.http.port":  8099,
             "rita.webroot":   "src/main/java/uk/ac/cam/tfc_server/rita/webroot"
         }
     }
