@@ -110,85 +110,18 @@ public class Rita extends AbstractVerticle {
     // get test config options for FeedPlayers from conf file given to Rita
     for (int i=0; i<FEEDPLAYERS.size(); i++)
         {
-            final String feedplayer_id = FEEDPLAYERS.get(i);
-            //debug -- also should get start commands from eb.zonemanager.X
-            DeploymentOptions feedplayer_options = new DeploymentOptions();
-            JsonObject conf = new JsonObject();
-            if (EB_SYSTEM_STATUS != null)
-                {
-                    conf.put("eb.system_status", EB_SYSTEM_STATUS);
-                }
-            if (EB_MANAGER != null)
-                {
-                    conf.put("eb.manager", EB_MANAGER);
-                }
-            if (FEEDPLAYER_ADDRESS != null)
-                {
-                    conf.put("feedplayer.address", FEEDPLAYER_ADDRESS);
-                }
-            feedplayer_options.setConfig(conf);
-            vertx.deployVerticle("service:uk.ac.cam.tfc_server.feedplayer."+feedplayer_id,
-                                 feedplayer_options,
-                                 res -> {
-                    if (res.succeeded()) {
-                        System.out.println("Rita"+MODULE_ID+": FeedPlayer "+feedplayer_id+ "started");
-                    } else {
-                        System.err.println("Rita"+MODULE_ID+": failed to start FeedPlayer " + feedplayer_id);
-                        fut.fail(res.cause());
-                    }
-                });
+            deploy_feed_player(FEEDPLAYERS.get(i));
         }
     
     //debug currently only spawning zonemanagers at startup - should support browser client messages
     for (int i=0; i<ZONEMANAGERS.size(); i++)
         {
-            final String zonemanager_id = ZONEMANAGERS.get(i);
-            //debug -- also should get start commands from eb.zonemanager.X
-            DeploymentOptions zonemanager_options = new DeploymentOptions();
-            JsonObject conf = new JsonObject();
-            if (EB_SYSTEM_STATUS != null)
-                {
-                    conf.put("eb.system_status", EB_SYSTEM_STATUS);
-                }
-            if (EB_MANAGER != null)
-                {
-                    conf.put("eb.manager", EB_MANAGER);
-                }
-            if (ZONE_ADDRESS != null)
-                {
-                    conf.put("zonemanager.zone.address", ZONE_ADDRESS);
-                }
-            if (ZONE_FEED != null)
-                {
-                    // note if FeedPlayers are also started, this will usually be
-                    // the same as FEEDPLAYER_ADDRESS so the Zones listen to the
-                    // FeedPlayers
-                    conf.put("zonemanager.zone.feed", ZONE_FEED);
-                }
-            zonemanager_options.setConfig(conf);
-            vertx.deployVerticle("service:uk.ac.cam.tfc_server.zonemanager."+zonemanager_id,
-                                 zonemanager_options,
-                                 res -> {
-                    if (res.succeeded()) {
-                        System.out.println("Rita"+MODULE_ID+": ZoneManager "+zonemanager_id+ "started");
-                    } else {
-                        System.err.println("Rita"+MODULE_ID+": failed to start ZoneManager " + zonemanager_id);
-                        fut.fail(res.cause());
-                    }
-                });
+            deploy_zone_manager(ZONEMANAGERS.get(i));
         }
-    
-    // send periodic "system_status" messages
-    vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> {
-      eb.publish(EB_SYSTEM_STATUS,
-                 "{ \"module_name\": \""+MODULE_NAME+"\"," +
-                   "\"module_id\": \""+MODULE_ID+"\"," +
-                   "\"status\": \"UP\"," +
-                   "\"status_amber_seconds\": "+String.valueOf( SYSTEM_STATUS_AMBER_SECONDS ) + "," +
-                   "\"status_red_seconds\": "+String.valueOf( SYSTEM_STATUS_RED_SECONDS ) +
-                 "}" );
-      });
 
+    // send periodic "system_status" messages
+    init_system_status();
+    
     // *************************************************************************************
     // *************************************************************************************
     // *********** Start Rita web server (incl Socket and EventBus Bridge)      ************
@@ -221,6 +154,12 @@ public class Rita extends AbstractVerticle {
                    // Add this connection to the client table
                    // and set up consumer for eventbud messages
                    create_zone_subscription(sock, sock_msg);
+               }
+               else if (sock_msg.getString("msg_type").equals(Constants.SOCKET_ZONE_MAP_CONNECT))
+               {
+                   // Add this connection to the client table
+                   // and set up consumer for eventbud messages
+                   create_zone_map_subscription(sock, sock_msg);
                }
             });
 
@@ -383,7 +322,92 @@ public class Rita extends AbstractVerticle {
 
   } // end start()
 
-    // create new client connection
+    // *******************************************************************************
+    // *******************************************************************************
+    // *******************************************************************************
+    
+    // Deploy FeedPlayer verticle
+    private void deploy_feed_player(String feed_player_id)
+    {
+        DeploymentOptions feedplayer_options = new DeploymentOptions();
+        JsonObject conf = new JsonObject();
+        if (EB_SYSTEM_STATUS != null)
+            {
+                conf.put("eb.system_status", EB_SYSTEM_STATUS);
+            }
+        if (EB_MANAGER != null)
+            {
+                conf.put("eb.manager", EB_MANAGER);
+            }
+        if (FEEDPLAYER_ADDRESS != null)
+            {
+                conf.put("feedplayer.address", FEEDPLAYER_ADDRESS);
+            }
+        feedplayer_options.setConfig(conf);
+        vertx.deployVerticle("service:uk.ac.cam.tfc_server.feedplayer."+feed_player_id,
+                             feedplayer_options,
+                             res -> {
+                if (res.succeeded()) {
+                    System.out.println("Rita"+MODULE_ID+": FeedPlayer "+feed_player_id+ "started");
+                } else {
+                    System.err.println("Rita"+MODULE_ID+": failed to start FeedPlayer " + feed_player_id);
+                    //fut.fail(res.cause());
+                }
+            });
+    }
+    
+    // Deploy ZoneManager verticle
+    private void deploy_zone_manager(String zone_manager_id)
+    {
+        DeploymentOptions zonemanager_options = new DeploymentOptions();
+        JsonObject conf = new JsonObject();
+        if (EB_SYSTEM_STATUS != null)
+            {
+                conf.put("eb.system_status", EB_SYSTEM_STATUS);
+            }
+        if (EB_MANAGER != null)
+            {
+                conf.put("eb.manager", EB_MANAGER);
+            }
+        if (ZONE_ADDRESS != null)
+            {
+                conf.put("zonemanager.zone.address", ZONE_ADDRESS);
+            }
+        if (ZONE_FEED != null)
+            {
+                // note if FeedPlayers are also started, this will usually be
+                // the same as FEEDPLAYER_ADDRESS so the Zones listen to the
+                // FeedPlayers
+                conf.put("zonemanager.zone.feed", ZONE_FEED);
+            }
+        zonemanager_options.setConfig(conf);
+        vertx.deployVerticle("service:uk.ac.cam.tfc_server.zonemanager."+zone_manager_id,
+                             zonemanager_options,
+                             res -> {
+                if (res.succeeded()) {
+                    System.out.println("Rita"+MODULE_ID+": ZoneManager "+zone_manager_id+ "started");
+                } else {
+                    System.err.println("Rita"+MODULE_ID+": failed to start ZoneManager " + zone_manager_id);
+                    //fut.fail(res.cause());
+                }
+            });
+    }
+
+    // Set periodic timer to broadcast "system UP" status messages to EB_SYSTEM_STATUS address
+    private void init_system_status()
+    {
+    vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> {
+      eb.publish(EB_SYSTEM_STATUS,
+                 "{ \"module_name\": \""+MODULE_NAME+"\"," +
+                   "\"module_id\": \""+MODULE_ID+"\"," +
+                   "\"status\": \"UP\"," +
+                   "\"status_amber_seconds\": "+String.valueOf( SYSTEM_STATUS_AMBER_SECONDS ) + "," +
+                   "\"status_red_seconds\": "+String.valueOf( SYSTEM_STATUS_RED_SECONDS ) +
+                 "}" );
+      });
+    }
+
+    // zone_plot.hbs: create new client connection
     // on receipt of 'zone_connect' message on socket
   private void create_zone_subscription(SockJSSocket sock, JsonObject sock_msg)
     {
@@ -417,6 +441,43 @@ public class Rita extends AbstractVerticle {
         System.out.println("Rita."+MODULE_ID+": sending EB_MANAGER msg "+msg.toString());
         
         // request a ZONE_UPDATE from relevant zone
+        eb.publish(EB_MANAGER, msg);
+    }
+
+    // zone_map.hbs: create new client connection
+    // on receipt of 'zone_map_connect' message on socket
+  private void create_zone_map_subscription(SockJSSocket sock, JsonObject sock_msg)
+    {
+        // create entry in client table
+        String UUID = client_table.add(sock, sock_msg);
+
+        ArrayList<String> zone_ids = client_table.get(UUID).zone_ids;
+
+        //debug currently assuming webpage only subscribes to a single zone
+        String zone_id = zone_ids.get(0);
+        
+        // register consumer of relevant eventbus messages
+
+        String this_zone_address = ZONE_ADDRESS+"."+zone_id;
+        
+        System.out.println("Rita."+MODULE_ID+": subscribing client to "+this_zone_address);
+        eb.consumer(this_zone_address, message -> {
+                send_client(sock, message.body().toString());
+                });
+
+        // also send ZONE_INFO_REQUEST to get Zone details
+        JsonObject msg = new JsonObject();
+
+        msg.put("module_name", MODULE_NAME); // module name (i.e. 'rita') sending this request
+        msg.put("module_id", MODULE_ID); // module id sending this request
+        msg.put("to_module_name", "zone"); // module name / module id intended to action this management request
+        msg.put("to_module_id", zone_id);
+        msg.put("zone.address", this_zone_address);
+        msg.put("msg_type", Constants.ZONE_INFO_REQUEST);
+
+        System.out.println("Rita."+MODULE_ID+": sending EB_MANAGER msg "+msg.toString());
+        
+        // request a ZONE_INFO from relevant zone
         eb.publish(EB_MANAGER, msg);
     }
 
