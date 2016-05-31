@@ -18,7 +18,7 @@
 
             "rita.name":      "RITA-CAMBRIDGE",
             "rita.http.port":  8082,
-            "rita.webroot":   "src/main/java/uk/ac/cam/tfc_server/rita/webroot"
+            "rita.webroot":   "src/main/resources/webroot"
         }
     }
 }
