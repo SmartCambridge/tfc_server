@@ -7,10 +7,20 @@ import java.time.LocalDateTime;
 
 public class Log {
 
+    // get current local time as "YYYY-MM-DD-hh-mm-ss"
+  public static String local_datetime_string()
+    {
+        LocalDateTime local_time = LocalDateTime.now();
+        return local_time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss"));
+    }
+
+    // print msg to stderr prepended with local time
+  public static void log_err(String msg)
+    {
+        System.err.println(local_datetime_string()+": "+msg);
+    }
+    
     public static void log(String msg) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        LocalDateTime date_time = LocalDateTime.now();
-        
-        System.out.println(date_time.format(formatter)+ ": "+msg );
+        System.out.println(local_datetime_string()+ ": "+msg );
     }
 }

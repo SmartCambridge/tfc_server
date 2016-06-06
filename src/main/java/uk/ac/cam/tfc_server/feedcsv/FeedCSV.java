@@ -4,16 +4,18 @@ package uk.ac.cam.tfc_server.feedcsv;
 // *************************************************************************************************
 // *************************************************************************************************
 // FeedCSV.java
-// Version 0.03
+// Version 0.10
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
 //
-// Subscribes to address "feed_vehicle" and writes file:
-//   $TFC_DATA_CSV/YYYY/MM/DD/<filename>
-// where <filename> = <UTC TIMESTAMP>_YYYY-MM-DD-hh-mm-ss.csv
+// Subscribes to address given in condig() as "feedcsv.feedhandler.address"
+// and writes file to path:
+//   TFC_DATA_CSV/YYYY/MM/DD/FILENAME
+// where TFC_DATA_CSV is given in config() as "feedcsv.tfc_data_csv"
+// and   FILENAME = <UTC TIMESTAMP>_YYYY-MM-DD-hh-mm-ss.csv
 //
-// Publishes periodic status UP messages to address "system_status"
+// Publishes periodic status UP messages to address given in config as "eb.system_status"
 //
 // *************************************************************************************************
 // *************************************************************************************************
@@ -32,36 +34,45 @@ import java.io.*;
 import java.time.*;
 import java.time.format.*;
 
-public class FeedCSV extends AbstractVerticle {
+// other tfc_server classes
+import uk.ac.cam.tfc_server.util.Log;
 
-  private final String CSV_FILE_HEADER = "timestamp,vehicle_id,label,route_id,trip_id,latitude,longitude,bearing,current_stop_sequence,stop_id";
-  private final String ENV_VAR_CSV_PATH = "TFC_DATA_CSV";
-  private final String EB_SYSTEM_STATUS = "system_status";
-  private final int SYSTEM_STATUS_PERIOD = 10000; // period between system_status 'UP' messages
-  private final int SYSTEM_STATUS_AMBER_SECONDS = 15; // delay before flagging system as AMBER
-  private final int SYSTEM_STATUS_RED_SECONDS = 25; // delay before flagging system as RED
-  
+public class FeedCSV extends AbstractVerticle {
+    // from config()
+    private String MODULE_NAME;       // config module.name - normally "feedhandler"
+    private String MODULE_ID;         // config module.id
+    private String EB_SYSTEM_STATUS;  // config eb.system_status
+    private String EB_MANAGER;        // config eb.manager
     
-  private EventBus eb = null;
-  private String tfc_data_csv = null;
+    private String FEEDHANDLER_ADDRESS; // config MODULE_NAME.feedhandler.address
     
+    private String TFC_DATA_CSV = null; // config MODULE_NAME.tfc_data_csv
+
+    private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
+    private final int SYSTEM_STATUS_AMBER_SECONDS = 15;
+    private final int SYSTEM_STATUS_RED_SECONDS = 25;
+    
+    private EventBus eb = null;
+    
+    private final String CSV_FILE_HEADER = "timestamp,vehicle_id,label,route_id,trip_id,latitude,longitude,bearing,current_stop_sequence,stop_id";
+     
   @Override
   public void start(Future<Void> fut) throws Exception {
-
-    System.out.println("FeedCSV started! ");
+      
+    // load FeedCSV initialization values from config()
+    if (!get_config())
+          {
+              Log.log_err("FeedCSV: "+ MODULE_ID + " failed to load initial config()");
+              vertx.close();
+              return;
+          }
+      
+    System.out.println("FeedCSV: " + MODULE_ID + " started, listening to "+FEEDHANDLER_ADDRESS);
 
     eb = vertx.eventBus();
 
-    tfc_data_csv = System.getenv(ENV_VAR_CSV_PATH);
-    if (tfc_data_csv == null)
-    {
-      System.err.println(ENV_VAR_CSV_PATH + " environment var not set -- aborting FeedCSV startup");
-      vertx.close();
-      return;
-    }
-
-    eb.consumer("feed_vehicle", message -> {
-      System.out.println("FeedCSV got message from feed_vehicle address");
+    eb.consumer(FEEDHANDLER_ADDRESS, message -> {
+      System.out.println("FeedCSV got message from " + FEEDHANDLER_ADDRESS);
       //debug
       JsonObject feed_message = new JsonObject(message.body().toString());
       JsonArray entities = feed_message.getJsonArray("entities");
@@ -72,17 +83,70 @@ public class FeedCSV extends AbstractVerticle {
     
     // send periodic "system_status" messages
     vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> {
-      System.out.println("FeedCSV Sending system_status UP");
-      // publish { "module_name": "console", "status": "UP" } on address "system_status"
       eb.publish(EB_SYSTEM_STATUS,
-                 "{ \"module_name\": \"feedcsv\"," +
+                 "{ \"module_name\": \""+MODULE_NAME+"\"," +
+                   "\"module_id\": \""+MODULE_ID+"\"," +
                    "\"status\": \"UP\"," +
-                 "\"status_amber_seconds\": "+String.valueOf( SYSTEM_STATUS_AMBER_SECONDS ) + "," +
-                 "\"status_red_seconds\": "+String.valueOf( SYSTEM_STATUS_RED_SECONDS ) +
+                   "\"status_amber_seconds\": "+String.valueOf( SYSTEM_STATUS_AMBER_SECONDS ) + "," +
+                   "\"status_red_seconds\": "+String.valueOf( SYSTEM_STATUS_RED_SECONDS ) +
                  "}" );
     });
 
   } // end start()
+
+    // Load initialization global constants defining this Zone from config()
+    private boolean get_config()
+    {
+        // config() values needed by all TFC modules are:
+        //   module.name - usually "feedcsv"
+        //   module.id - unique module reference to be used by this verticle
+        //   eb.system_status - String eventbus address for system status messages
+        //   eb.manager - eventbus address for manager messages
+        
+        MODULE_NAME = config().getString("module.name");
+        if (MODULE_NAME == null)
+        {
+          Log.log_err("FeedCSV: module.name config() not set");
+          return false;
+        }
+        
+        MODULE_ID = config().getString("module.id");
+        if (MODULE_ID == null)
+        {
+          Log.log_err("FeedCSV."+MODULE_ID+": module.id config() not set");
+          return false;
+        }
+
+        EB_SYSTEM_STATUS = config().getString("eb.system_status");
+        if (EB_SYSTEM_STATUS == null)
+        {
+          Log.log_err("FeedCSV."+MODULE_ID+": eb.system_status config() not set");
+          return false;
+        }
+
+        EB_MANAGER = config().getString("eb.manager");
+        if (EB_MANAGER == null)
+        {
+          Log.log_err("FeedCSV."+MODULE_ID+": eb.manager config() not set");
+          return false;
+        }
+
+        FEEDHANDLER_ADDRESS = config().getString(MODULE_NAME+".feedhandler.address");
+        if (FEEDHANDLER_ADDRESS == null)
+            {
+                Log.log_err("FeedCSV."+MODULE_ID+": "+MODULE_NAME+".feedhandler.address config() not set");
+                return false;
+            }
+
+        TFC_DATA_CSV = config().getString(MODULE_NAME+".tfc_data_csv");
+        if (TFC_DATA_CSV == null)
+        {
+          Log.log_err("FeedCSV."+MODULE_ID+": "+MODULE_NAME+".tfc_data_csv config() not set");
+          return false;
+        }
+
+        return true;
+    }
 
   private void handle_feed(JsonObject feed_message)
     {
@@ -105,11 +169,13 @@ public class FeedCSV extends AbstractVerticle {
               buf.appendString(entity_to_csv(json_record));
             }
 
-        // Write file to $TFC_DATA_CSV
+        // Write file to TFC_DATA_CSV/YYYY/MM/DD/FILENAME
+        // where TFC_DATA_CSV is given in config() as "feedcsv.tfc_data_csv"
+        // and   FILENAME = <UTC TIMESTAMP>_YYYY-MM-DD-hh-mm-ss.csv
         //
         // if full directory path exists, then write file
         // otherwise create full path first
-        final String csv_path = tfc_data_csv+"/"+filepath;
+        final String csv_path = TFC_DATA_CSV+"/"+filepath;
         System.out.println("Writing "+csv_path+"/"+filename+".csv");
         fs.exists(csv_path, result -> {
             if (result.succeeded() && result.result())
@@ -127,7 +193,7 @@ public class FeedCSV extends AbstractVerticle {
                                 }
                             else
                                 {
-                                    System.err.println("FeedCSV error creating path "+csv_path);
+                                    System.err.println("FeedCSV."+MODULE_ID+": error creating path "+csv_path);
                                 }
                         });
                 }
@@ -157,9 +223,9 @@ public class FeedCSV extends AbstractVerticle {
                  buf, 
                  result -> {
       if (result.succeeded()) {
-        System.out.println("File "+file_path+" written");
+        System.out.println("FeedCSV: File "+file_path+" written");
       } else {
-        System.err.println("FeedHandler write_file error ..." + result.cause());
+        System.err.println("FeedCSV: write_file error ..." + result.cause());
       }
     });
   } // end write_file
