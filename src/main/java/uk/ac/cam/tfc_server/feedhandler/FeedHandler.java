@@ -4,7 +4,7 @@ package uk.ac.cam.tfc_server.feedhandler;
 // *************************************************************************************************
 // *************************************************************************************************
 // FeedHandler.java
-// Version 0.07
+// Version 0.08
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
@@ -67,7 +67,6 @@ import java.io.*;
 import java.time.*;
 import java.time.format.*;
 import java.util.*;
-//import java.lang.*;
 
 import com.google.transit.realtime.GtfsRealtime.FeedMessage;
 import com.google.transit.realtime.GtfsRealtime.FeedHeader;
@@ -76,6 +75,9 @@ import com.google.transit.realtime.GtfsRealtime.VehiclePosition;
 import com.google.transit.realtime.GtfsRealtime.VehicleDescriptor;
 import com.google.transit.realtime.GtfsRealtime.TripDescriptor;
 import com.google.transit.realtime.GtfsRealtime.Position;
+
+// other tfc_server classes
+import uk.ac.cam.tfc_server.util.Log;
 
 public class FeedHandler extends AbstractVerticle {
 
@@ -105,10 +107,10 @@ public class FeedHandler extends AbstractVerticle {
 
     boolean ok = true; // simple boolean to flag an abort during startup
 
-    // load Zone initialization values from config()
+    // load FeedHandler initialization values from config()
     if (!get_config())
           {
-              log_err("FeedHandler: "+ MODULE_ID + " failed to load initial config()");
+              Log.log_err("FeedHandler: "+ MODULE_ID + " failed to load initial config()");
               vertx.close();
               return;
           }
@@ -122,23 +124,17 @@ public class FeedHandler extends AbstractVerticle {
     http_server.requestHandler(new Handler<HttpServerRequest>() {
         @Override
         public void handle(HttpServerRequest request) {
-            //System.out.println("FeedHandler called handle!");
             if(request.method() == HttpMethod.POST) {
 
               request.bodyHandler(body_data -> {
-                      //System.out.println("FeedHandler called bodyHandler!");
-                      //System.out.println("Full body received, length(" + body_data.length()+")");
-
                 try {
                   process_gtfs(body_data);
                 }
                 catch (Exception ex) {
-                  log_err("process_gtfs Exception");
-                  log_err(ex.getMessage());
+                  Log.log_err("FeedHandler."+MODULE_ID+": process_gtfs Exception");
+                  Log.log_err(ex.getMessage());
                 }
                 request.response().end("");
-                    // here you can access the 
-                    // fullRequestBody Buffer instance.
               });
             } else {
               request.response().end("<h1>TFC Feed Handler V2</h1> " +
@@ -148,7 +144,7 @@ public class FeedHandler extends AbstractVerticle {
       });
 
       http_server.listen(HTTP_PORT, result -> {
-              System.out.println("FeedHandler listening on port " + String.valueOf(HTTP_PORT));
+        System.out.println("FeedHandler listening on port " + String.valueOf(HTTP_PORT));
         if (result.succeeded()) {
           fut.complete();
         } else {
@@ -169,7 +165,7 @@ public class FeedHandler extends AbstractVerticle {
 
   } // end start()
 
-    // Load initialization global constants defining this Zone from config()
+    // Load initialization global constants defining this FeedHandler from config()
     private boolean get_config()
     {
         // config() values needed by all TFC modules are:
@@ -181,49 +177,68 @@ public class FeedHandler extends AbstractVerticle {
         MODULE_NAME = config().getString("module.name");
         if (MODULE_NAME == null)
             {
-                log_err("FeedHandler: config() not set");
+                Log.log_err("FeedHandler: config() not set");
                 return false;
             }
         
         MODULE_ID = config().getString("module.id");
-        if (MODULE_ID==null) return false;
-
-        EB_SYSTEM_STATUS = config().getString("eb.system_status");
-
-        EB_MANAGER = config().getString("eb.manager");
-
-        FEEDHANDLER_ADDRESS = config().getString(MODULE_NAME+".address");
-        if (FEEDHANDLER_ADDRESS == null)
+        if (MODULE_ID == null)
             {
-                log_err("FeedHandler: "+MODULE_ID+" "+MODULE_NAME+".address config() not set");
+                Log.log_err("FeedHandler: module.id config() not set");
                 return false;
             }
 
+        EB_SYSTEM_STATUS = config().getString("eb.system_status");
+        if (EB_SYSTEM_STATUS == null)
+            {
+                Log.log_err("FeedHandler."+MODULE_ID+": eb.system_status config() not set");
+                return false;
+            }
+
+        EB_MANAGER = config().getString("eb.manager");
+        if (EB_MANAGER == null)
+            {
+                Log.log_err("FeedHandler."+MODULE_ID+": eb.manager config() not set");
+                return false;
+            }
+
+        // eventbus address this FeedHandler will broadcast onto
+        FEEDHANDLER_ADDRESS = config().getString(MODULE_NAME+".address");
+        if (FEEDHANDLER_ADDRESS == null)
+            {
+                Log.log_err("FeedHandler."+MODULE_ID+": "+MODULE_NAME+".address config() not set");
+                return false;
+            }
+
+        // web address for this FeedHandler to receive POST data messages from original source
         HTTP_PORT = config().getInteger(MODULE_NAME+".http.port",0);
         if (HTTP_PORT == 0)
         {
-          log_err("tfc_data_cache config() var not set -- aborting feedhandler startup");
+          Log.log_err("FeedHandler."+MODULE_ID+": "+MODULE_NAME+".http_port config() var not set");
           return false;
         }
 
+        // backup alternate filesystem path for use when the 'tfc_data_bin' path fails
         TFC_DATA_CACHE = config().getString(MODULE_NAME+".tfc_data_cache");
         if (TFC_DATA_CACHE == null)
         {
-          log_err("tfc_data_cache config() var not set -- aborting feedhandler startup");
+          Log.log_err("FeedHandler."+MODULE_ID+": "+MODULE_NAME+".tfc_data_cache config() var not set");
           return false;
         }
 
+        // primary filesystem path to store the data exacly as received (i.e. GTFS binary .bin files)
         TFC_DATA_BIN = config().getString(MODULE_NAME+".tfc_data_bin");
         if (TFC_DATA_BIN == null)
         {
-          log_err("tfc_data_bin config() var not set -- aborting feedhandler startup");
+          Log.log_err("FeedHandler."+MODULE_ID+": "+MODULE_NAME+".tfc_data_bin config() var not set");
           return false;
         }
 
+        // filesystem path to store the latest 'post_data.bin' file so it can be monitored for inotifywait processing
         TFC_DATA_MONITOR = config().getString(MODULE_NAME+".tfc_data_monitor");
         if (TFC_DATA_MONITOR == null)
         {
-          log_err("tfc_data_monitor config() var not set -- aborting feedhandler startup");
+          Log.log_err("FeedHandler."+MODULE_ID+": "+MODULE_NAME+".tfc_data_monitor config() var not set");
           return false;
         }
         
@@ -284,7 +299,7 @@ public class FeedHandler extends AbstractVerticle {
                                 }
                             else
                                 {
-                                    log_err("FeedHandler error creating path "+bin_path);
+                                    Log.log_err("FeedHandler."+MODULE_ID+": error creating tfc_data_bin path "+bin_path);
                                 }
                         });
                 }
@@ -312,7 +327,7 @@ public class FeedHandler extends AbstractVerticle {
                                 }
                             else
                                 {
-                                    log_err("FeedHandler error creating path "+cache_path);
+                                    Log.log_err("FeedHandler."+MODULE_ID+": error creating tfc_data_cache path "+cache_path);
                                 }
                         });
                 }
@@ -330,7 +345,7 @@ public class FeedHandler extends AbstractVerticle {
                                             fs.delete(f, delete_result -> {
                                                     if (!delete_result.succeeded())
                                                         {
-                                                          log_err("FeedHandler error tfc_data_monitor delete: "+f);
+                                                          Log.log_err("FeedHandler."+MODULE_ID+": error tfc_data_monitor delete: "+f);
                                                         }
                                                 });
                                         }
@@ -338,8 +353,8 @@ public class FeedHandler extends AbstractVerticle {
                                 }
                             else
                                 {
-                                    log_err("FeedHandler error reading tfc_data_monitor path: "+TFC_DATA_MONITOR);
-                                    log_err(monitor_result.cause().getMessage());
+                                    Log.log_err("FeedHandler."+MODULE_ID+": error reading tfc_data_monitor path: "+TFC_DATA_MONITOR);
+                                    Log.log_err(monitor_result.cause().getMessage());
                                 }
     });
 
@@ -359,7 +374,7 @@ public class FeedHandler extends AbstractVerticle {
       if (result.succeeded()) {
         System.out.println("File "+file_path+" written");
       } else {
-        log_err("FeedHandler write_file error ..." + result.cause());
+        Log.log_err("FeedHandler."+MODULE_ID+": write_file error ..." + result.cause());
       }
     });
   } // end write_file
@@ -448,7 +463,7 @@ public class FeedHandler extends AbstractVerticle {
                 } // end try
             catch (Exception e)
                 {
-                    log_err("Feedhandler exception parsing position record");
+                    Log.log_err("FeedHandler."+MODULE_ID+": exception parsing position record");
                 }
         }
 
