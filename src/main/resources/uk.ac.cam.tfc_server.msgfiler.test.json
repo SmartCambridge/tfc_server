@@ -1,0 +1,32 @@
+                                                                                
+{
+    "main":    "uk.ac.cam.tfc_server.msgfiler.MsgFiler",
+    "options":
+        { "config":
+          {
+
+            "module.name":           "msgfiler",
+            "module.id":             "test",
+
+            "eb.system_status":      "tfc.system_status",
+            "eb.console_out":        "tfc.console_out",
+            "eb.manager":            "tfc.manager",
+
+            "msgfiler.address": "tfc.msgfiler.test",
+
+            "msgfiler.filers":
+            [
+                { "source_address": "tfc.zone.cambridge.madingley_road_in",
+                  "source_filter": { "field": "msg_type",
+                                     "compare": ">",
+                                     "value": "zone_e"
+                                   },
+                  "store_path": "/home/ijl20/tfc_server_data/data_zone/{{ts|yyyy}}/{{ts|MM}}/{{ts|dd}}",
+                  "store_name": "{{module_id}}.txt",
+                  "store_mode": "append"
+                }
+            ]
+              
+          }
+        }
+}

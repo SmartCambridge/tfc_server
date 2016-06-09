@@ -4,7 +4,7 @@ package uk.ac.cam.tfc_server.zone;
 // *************************************************************************************************
 // *************************************************************************************************
 // Zone.java
-// Version 0.09
+// Version 0.10
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
@@ -15,30 +15,33 @@ package uk.ac.cam.tfc_server.zone;
 
 // When a vehicle completes a transit of the Zone, startline..finishline:
 //   { "module_name":  MODULE_NAME,
-//     "module_id", MODULE_ID,
-//     "msg_type", Constants.ZONE_COMPLETION,
-//     "vehicle_id", vehicle_id,
-//     "route_id", route_id,
-//     "ts", finish_ts, // this is a CALCULATED timestamp of the finishline crossing
-//     "duration", duration // Zone transit journey time in seconds
+//     "module_id": MODULE_ID,
+//     "msg_type": Constants.ZONE_COMPLETION,
+//     "vehicle_id": vehicle_id,
+//     "route_id": route_id,
+//     "ts": finish_ts, // this is a CALCULATED timestamp of the finishline crossing
+//     "ts_delta": start_ts_delta + finish_ts_delta, // 'confidence' factor
+//     "duration": duration // Zone transit journey time in seconds
 //   }
 
 // When a vehicle exits the Zone other than via start and finish lines
 //   { "module_name":  MODULE_NAME,
-//     "module_id", MODULE_ID,
-//     "msg_type", Constants.ZONE_EXIT,
-//     "vehicle_id", vehicle_id,
-//     "route_id", route_id,
-//     "ts", position_ts // this is the timestamp of the first point OUTSIDE the zone
+//     "module_id": MODULE_ID,
+//     "msg_type": Constants.ZONE_EXIT,
+//     "vehicle_id": vehicle_id,
+//     "route_id": route_id,
+//     "ts": position_ts // this is the timestamp of the first point OUTSIDE the zone
+//     "ts_delta": ts - prev_ts // duration of exit vector (in seconds)
 //   }
 
 // When a vehicle enters the Zone via the start line
 //   { "module_name":  MODULE_NAME,
-//     "module_id", MODULE_ID,
-//     "msg_type", Constants.ZONE_START,
-//     "vehicle_id", vehicle_id,
-//     "route_id", route_id,
-//     "ts", start_ts // this is the timestamp of the first point OUTSIDE the zone
+//     "module_id": MODULE_ID,
+//     "msg_type": Constants.ZONE_START,
+//     "vehicle_id": vehicle_id,
+//     "route_id": route_id,
+//     "ts": start_ts // this is the timestamp of the first point OUTSIDE the zone
+//     "ts_delta": ts - prev_ts // duration of entry vector (in seconds)
 //   }
 
 // When a vehicle enters the Zone but NOT via the start line
@@ -48,6 +51,7 @@ package uk.ac.cam.tfc_server.zone;
 //     "vehicle_id", vehicle_id,
 //     "route_id", route_id,
 //     "ts", position_ts // this is the timestamp of the first point INSIDE the zone
+//     "ts_delta": ts - prev_ts // duration of entry vector (in seconds)
 //   }
 
 // When a ZONE_UPDATE_REQUEST message is received, Zone sends the history of prior messages
@@ -82,6 +86,7 @@ import java.util.TimeZone;
 
 import uk.ac.cam.tfc_server.util.Position;
 import uk.ac.cam.tfc_server.util.Constants;
+import uk.ac.cam.tfc_server.util.Log;
 
 // ********************************************************************************************
 // ********************************************************************************************
@@ -127,12 +132,12 @@ public class Zone extends AbstractVerticle {
   @Override
   public void start(Future<Void> fut) throws Exception {
 
-    // will publish to EventBus address ZONE_ADDRESS
+    // will publish to EventBus address ZONE_ADDRESS e.g. tfc.zone.madingley_road_in
 
     // load Zone initialization values from config()
     if (!get_config())
           {
-              System.err.println("Zone: failed to load initial config()");
+              Log.log_err("Zone: failed to load initial config()");
               vertx.close();
               return;
           }
@@ -210,28 +215,28 @@ public class Zone extends AbstractVerticle {
         MODULE_NAME = config().getString("module.name"); // "zonemanager"
         if (MODULE_NAME==null)
             {
-                System.err.println("Zone: no module.name in config()");
+                Log.log_err("Zone: no module.name in config()");
                 return false;
             }
         
         MODULE_ID = config().getString("module.id"); // A, B, ...
         if (MODULE_ID==null)
             {
-                System.err.println("Zone: no module.id in config()");
+                Log.log_err("Zone: no module.id in config()");
                 return false;
             }
 
         EB_SYSTEM_STATUS = config().getString("eb.system_status");
         if (EB_SYSTEM_STATUS==null)
             {
-                System.err.println("Zone: no eb.system_status in config()");
+                Log.log_err("Zone."+MODULE_ID+": no eb.system_status in config()");
                 return false;
             }
 
         EB_MANAGER = config().getString("eb.manager");
         if (EB_MANAGER==null)
             {
-                System.err.println("Zone: no eb.manager in config()");
+                Log.log_err("Zone."+MODULE_ID+": no eb.manager in config()");
                 return false;
             }
 
@@ -509,7 +514,7 @@ public class Zone extends AbstractVerticle {
                                 }
                             else
                                 {
-                                    System.err.println("FeedCSV error creating path "+csv_path);
+                                    Log.log_err("FeedCSV error creating path "+csv_path);
                                 }
                         });
                 }
@@ -535,10 +540,11 @@ public class Zone extends AbstractVerticle {
       // And set the flag for whether this vehicle is within this Zone
       v.within = inside(v.position);
 
-
       //****************************************************************************************************
       //*************************  This vehicle data is all ready, so do Zone enter/exit logic  ************
       //****************************************************************************************************
+
+      // DID VEHICLE ENTER? either via the startline (zone_start) or into the zone some other way (zone_entry)
       if (v.within && !v.prev_within)
           {
               // Did vehicle cross start line?
@@ -549,60 +555,28 @@ public class Zone extends AbstractVerticle {
 
                       // Set start timestamp to timestamp at Intersection with startline
                       v.start_ts = i.position.ts;
-                      
-                      System.out.println( "Zone: ,"+MODULE_ID+",vehicle_id("+vehicle_id+
-                                          ") clean start at "+ts_to_time_str(i.position.ts));
+                      // calculate 'time delta' within which this start time was calculated
+                      // i.e. the difference in timestamps between points when vehicle entered zone
+                      v.start_ts_delta = v.position.ts - v.prev_position.ts;
 
-                      // ****************************************
-                      // Send Zone event message to ZONE_ADDRESS
-                      // ****************************************
-
-                      JsonObject msg = new JsonObject();
-
-                      msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
-                      msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
-                      msg.put("msg_type", Constants.ZONE_START);
-                      msg.put("vehicle_id", v.vehicle_id);
-                      msg.put("route_id", v.route_id);
-                      msg.put("ts", v.start_ts);
-
-                      // Send zone_completed message to common zone.address
-                      vertx.eventBus().publish(ZONE_ADDRESS, msg);
-                      // ****************************************
-                      // Zone message sent
-                      // ****************************************
+                      // ZONE_START (entry via start line)
+                      zone_start(ZONE_ADDRESS, v);
                       
                   }
               else
                   {
-                      System.out.println("Zone: ,"+MODULE_ID+",vehicle_id("+vehicle_id+
-                                         ") early entry at "+ts_to_time_str(v.position.ts));
-                      // ****************************************
-                      // Send Zone event message to ZONE_ADDRESS
-                      // ****************************************
-
-                      JsonObject msg = new JsonObject();
-
-                      msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
-                      msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
-                      msg.put("msg_type", Constants.ZONE_ENTRY);
-                      msg.put("vehicle_id", v.vehicle_id);
-                      msg.put("route_id", v.route_id);
-                      msg.put("ts", v.position.ts);
-
-                      // Send zone_completed message to common zone.address
-                      vertx.eventBus().publish(ZONE_ADDRESS, msg);
-                      // ****************************************
-                      // Zone message sent
-                      // ****************************************
+                      // ZONE_ENTRY (entry but not via start line)
+                      zone_entry(ZONE_ADDRESS, v);
                   }
           }
-      if (v.within && v.prev_within)
+      // IS VEHICLE TRAVELLING WITHIN ZONE?
+      else if (v.within && v.prev_within)
           {
               // vehicle is continuing to travel within zone
               //System.out.println("Zone: vehicle_id("+vehicle_id+") inside zone "+ZONE_NAME);
           }
-      if (!v.within && v.prev_within)
+      // HAS VEHICLE EXITTED ZONE? either via the finish line (zone_completion) or not (zone_exit)
+      else if (!v.within && v.prev_within)
           {
               // Vehicle has just exitted zone
 
@@ -615,105 +589,179 @@ public class Zone extends AbstractVerticle {
                       // if we also have a good entry, then this is a successful COMPLETION
                       if (v.start_ts>0L)
                         {
-                          // exit completion message
-                          Long duration = finish_ts - v.start_ts; // time taken to transit this Zone
-
-                          // Build console string and output
-                          // e.g. 2016-03-16 15:19:08,Cam Test,315,no_route,00:00:29,0.58,COMPLETED,15:11:41,15:18:55,00:07:14
-                          String completed_log = "Zone: ,"+MODULE_ID+",";
-                          completed_log += "COMPLETED,";
-                          completed_log += v.vehicle_id+",";
-                          completed_log += v.route_id + ",";
-                          completed_log += finish_ts+",";
-                          completed_log += duration+",";
-                          completed_log += ts_to_datetime_str(v.position.ts) + ",";
-                          completed_log += ts_to_time_str(v.start_ts) + ",";
-                          completed_log += ts_to_time_str(finish_ts) + ","; // finish time
-                          completed_log += duration_to_time_str(duration);
-
-                          System.out.println(completed_log);
-
-                          // ****************************************
-                          // Send Zone event message to ZONE_ADDRESS
-                          // ****************************************
-
-                          JsonObject msg = new JsonObject();
-
-                          msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
-                          msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
-                          msg.put("msg_type", Constants.ZONE_COMPLETION);
-                          msg.put("vehicle_id", v.vehicle_id);
-                          msg.put("route_id", v.route_id);
-                          msg.put("ts", finish_ts);
-                          msg.put("duration", duration);
-                          //debug ! need to add confidence value in ZONE_COMPLETED eb msg e.g. duration of entry and exit vectors
-
-                          // accumulate this Completion message in the ring buffer
-                          zone_msg_buffer.get(ZONE_ADDRESS).add(msg);
-                          //debug debug print statement
-                          System.out.println("Zone."+MODULE_ID+
-                                             ": zone_msg_buffer.size()="+zone_msg_buffer.get(ZONE_ADDRESS).size());
-                          
-                          // Send zone_completed message to common zone.address
-                          vertx.eventBus().publish(ZONE_ADDRESS, msg);
-                          // ****************************************
-                          // Zone message sent
-                          // ****************************************
-                          
+                            // ZONE_COMPLETION
+                            zone_completion(ZONE_ADDRESS, v, finish_ts);
                         }
                       else
                         {
-                          // output clean exit (no start) message
-                          System.out.println("Zone: ,"+MODULE_ID+",vehicle_id("+vehicle_id+
-                                             ") clean exit (no start) at "+ts_to_time_str(finish_ts));
-                          // ****************************************
-                          // Send Zone event message to ZONE_ADDRESS
-                          // ****************************************
-
-                          JsonObject msg = new JsonObject();
-
-                          msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
-                          msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
-                          msg.put("msg_type", Constants.ZONE_EXIT);
-                          msg.put("vehicle_id", v.vehicle_id);
-                          msg.put("route_id", v.route_id);
-                          msg.put("ts", finish_ts);
-
-                          // Send zone_completed message to common zone.address
-                          vertx.eventBus().publish(ZONE_ADDRESS, msg);
-                          // ****************************************
-                          // Zone message sent
-                          // ****************************************
+                            // ZONE_EXIT via finish line but no prior good start
+                            zone_finish_no_start(ZONE_ADDRESS, v, finish_ts);
                         }
                   }
               else
                   {
-                      System.out.println("Zone: ,"+MODULE_ID+",vehicle_id("+vehicle_id+
-                                         ") early exit at "+ts_to_time_str(v.position.ts));
-                      // ****************************************
-                      // Send Zone event message to ZONE_ADDRESS
-                      // ****************************************
-
-                      JsonObject msg = new JsonObject();
-
-                      msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
-                      msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
-                      msg.put("msg_type", Constants.ZONE_EXIT);
-                      msg.put("vehicle_id", v.vehicle_id);
-                      msg.put("route_id", v.route_id);
-                      msg.put("ts", v.position.ts);
-
-                      // Send zone_completed message to common zone.address
-                      vertx.eventBus().publish(ZONE_ADDRESS, msg);
-                      // ****************************************
-                      // Zone message sent
-                      // ****************************************
+                      // ZONE EXIT but not via finish line
+                      zone_exit(ZONE_ADDRESS, v);
                   }
               
               // Reset the Zone start time for this vehicle
               v.start_ts = 0L;
+              v.start_ts_delta = 0L;
           }
     }
+
+    // ******************************************************************************************
+    // ******************************************************************************************
+    // ************* Handle each Zone event for current vehicle  ********************************
+    // ************* i.e. ZONE_START, ZONE_COMPLETION, ZONE_EXIT ********************************
+    // ******************************************************************************************
+    // ******************************************************************************************
+
+    private void zone_start(String ZONE_ADDRESS, Vehicle v)
+    {
+      System.out.println( "Zone: ,"+MODULE_ID+",vehicle_id("+v.vehicle_id+
+                          ") clean start at "+ts_to_time_str(v.start_ts) +
+                          " start_ts_delta " + v.start_ts_delta);
+
+      // ****************************************
+      // Send Zone event message to ZONE_ADDRESS
+      // ****************************************
+
+      JsonObject msg = new JsonObject();
+
+      msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
+      msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
+      msg.put("msg_type", Constants.ZONE_START);
+      msg.put("vehicle_id", v.vehicle_id);
+      msg.put("route_id", v.route_id);
+      msg.put("ts", v.start_ts);
+      msg.put("ts_delta", v.start_ts_delta);
+
+      // Send zone_completed message to common zone.address
+      vertx.eventBus().publish(ZONE_ADDRESS, msg);
+    }
+
+    private void zone_entry(String ZONE_ADDRESS, Vehicle v)
+    {
+      System.out.println("Zone: ,"+MODULE_ID+",vehicle_id("+v.vehicle_id+
+                         ") early entry at "+ts_to_time_str(v.position.ts)+
+                         " ts_delta " + (v.position.ts - v.prev_position.ts));
+      // ****************************************
+      // Send Zone event message to ZONE_ADDRESS
+      // ****************************************
+
+      JsonObject msg = new JsonObject();
+
+      msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
+      msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
+      msg.put("msg_type", Constants.ZONE_ENTRY);
+      msg.put("vehicle_id", v.vehicle_id);
+      msg.put("route_id", v.route_id);
+      msg.put("ts", v.position.ts);
+      msg.put("ts_delta", v.position.ts - v.prev_position.ts);
+
+      // Send zone_completed message to common zone.address
+      vertx.eventBus().publish(ZONE_ADDRESS, msg);
+    }
+    
+    private void zone_completion(String ZONE_ADDRESS, Vehicle v, Long finish_ts)
+    {
+
+      // exit completion message
+      Long duration = finish_ts - v.start_ts; // time taken to transit this Zone
+
+      // calculate duration of exit vector
+      Long finish_ts_delta = v.position.ts - v.prev_position.ts;
+      
+      // Build console string and output
+      // e.g. 2016-03-16 15:19:08,Cam Test,315,no_route,00:00:29,0.58,COMPLETED,15:11:41,15:18:55,00:07:14
+      String completed_log = "Zone: ,"+MODULE_ID+",";
+      completed_log += "COMPLETED,";
+      completed_log += v.vehicle_id+",";
+      completed_log += v.route_id + ",";
+      completed_log += finish_ts+",";
+      completed_log += duration+",";
+      completed_log += ts_to_datetime_str(v.position.ts) + ",";
+      completed_log += ts_to_time_str(v.start_ts) + ",";
+      completed_log += ts_to_time_str(finish_ts) + ","; // finish time
+      completed_log += duration_to_time_str(v.start_ts_delta) + ",";
+      completed_log += duration_to_time_str(finish_ts_delta);
+
+      System.out.println(completed_log);
+
+      // ****************************************
+      // Send Zone event message to ZONE_ADDRESS
+      // ****************************************
+
+      JsonObject msg = new JsonObject();
+
+      msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
+      msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
+      msg.put("msg_type", Constants.ZONE_COMPLETION);
+      msg.put("vehicle_id", v.vehicle_id);
+      msg.put("route_id", v.route_id);
+      msg.put("ts", finish_ts);
+      msg.put("duration", duration);
+      // note we send start_ts_delta + finish_ts_delta as the 'confidence' factor
+      msg.put("ts_delta", finish_ts_delta + v.start_ts_delta);
+
+      // accumulate this Completion message in the ring buffer
+      zone_msg_buffer.get(ZONE_ADDRESS).add(msg);
+
+      // Send zone_completed message to common zone.address
+      vertx.eventBus().publish(ZONE_ADDRESS, msg);
+    }
+    
+    private void zone_finish_no_start(String ZONE_ADDRESS, Vehicle v, Long finish_ts)
+    {
+      // output clean exit (no start) message
+      System.out.println("Zone: ,"+MODULE_ID+",vehicle_id("+v.vehicle_id+
+                         ") clean exit (no start) at "+ts_to_time_str(finish_ts) +
+                         " ts_delta " + (v.position.ts - v.prev_position.ts));
+      // ****************************************
+      // Send Zone event message to ZONE_ADDRESS
+      // ****************************************
+
+      JsonObject msg = new JsonObject();
+
+      msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
+      msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
+      msg.put("msg_type", Constants.ZONE_EXIT);
+      msg.put("vehicle_id", v.vehicle_id);
+      msg.put("route_id", v.route_id);
+      msg.put("ts", finish_ts);
+      msg.put("ts_delta", v.position.ts - v.prev_position.ts);
+
+      // Send zone_completed message to common zone.address
+      vertx.eventBus().publish(ZONE_ADDRESS, msg);
+    }
+    
+    private void zone_exit(String ZONE_ADDRESS, Vehicle v)
+    {
+      System.out.println("Zone: ,"+MODULE_ID+",vehicle_id("+v.vehicle_id+
+                         ") early exit at "+ts_to_time_str(v.position.ts)+
+                         " ts_delta " + (v.position.ts - v.prev_position.ts));
+      // ****************************************
+      // Send ZONE_EXIT event message to ZONE_ADDRESS
+      // ****************************************
+
+      JsonObject msg = new JsonObject();
+
+      msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
+      msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
+      msg.put("msg_type", Constants.ZONE_EXIT);
+      msg.put("vehicle_id", v.vehicle_id);
+      msg.put("route_id", v.route_id);
+      msg.put("ts", v.position.ts);
+      msg.put("ts_delta", v.position.ts - v.prev_position.ts);
+
+      // Send zone_completed message to common zone.address
+      vertx.eventBus().publish(ZONE_ADDRESS, msg);
+    }
+    
+    // ******************************************************************************************
+    // ****************** Some support functions ************************************************
+    // ******************************************************************************************
 
     //debug I'm sure these should be in a general RITA library...
     private String ts_to_time_str(Long ts)
@@ -736,7 +784,7 @@ public class Zone extends AbstractVerticle {
     {
         if (d >= 24 * 60 * 60)
             {
-                System.err.println("Zone: "+MODULE_ID+" ERROR duration "+d+" > 24 hours");
+                Log.log_err("Zone: "+MODULE_ID+" ERROR duration "+d+" > 24 hours");
             }
         String d_time = LocalTime.ofSecondOfDay(d).toString();
 
@@ -752,17 +800,17 @@ public class Zone extends AbstractVerticle {
       if (result.succeeded()) {
         System.out.println("File "+file_path+" written");
       } else {
-        System.err.println("FeedHandler write_file error ..." + result.cause());
+        Log.log_err("Zone."+MODULE_ID+": write_file error ..." + result.cause());
       }
     });
   } // end write_file
 
     //*************************************************************************************
-    // Class Box
+    // Class Box - rectangle surrounding zone polygon, for fast 'within zone' exclusion
     //*************************************************************************************
     
     // The Zone Boundary has a simplified boundary of a Box, i.e. a
-    // simple rectangle. This permits a fast check of
+    // simple rectangle. This permits a fast initial test of
     // whether a Position is outside the Zone. I.e. if
     // a Position is outside the Box, it's outside the Zone.
     class Box {
@@ -805,6 +853,7 @@ public class Zone extends AbstractVerticle {
         public boolean init; // only true if this position has been initialized but not updated
         public boolean within; // true if within bounds at current timestamp
         public Long start_ts; // timestamp of successful start (otherwise 0)
+        public Long start_ts_delta; // reliability indicator: (position.ts - prev_position.ts) at time of start
 
         // Initialize a new Vehicle object from a JSON position record
         public Vehicle(JsonObject position_record)
@@ -826,6 +875,7 @@ public class Zone extends AbstractVerticle {
             init = true; // will be reset to false when this entry is updated
             within = false;
             start_ts = 0L;
+            start_ts_delta = 0L;
 
         }
 

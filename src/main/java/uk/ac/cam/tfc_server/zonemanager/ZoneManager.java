@@ -70,21 +70,12 @@ public class ZoneManager extends AbstractVerticle {
 
     //debug -- zone.address and zone.feed should come from manager messages
     JsonObject zone_conf = new JsonObject();
-    if (EB_SYSTEM_STATUS != null)
-        {
-            // All zones will use this address to transmit 'status up' messages
-            zone_conf.put("eb.system_status", EB_SYSTEM_STATUS);
-        }
-    if (EB_MANAGER != null)
-        {
-            // All zones will use this address to exchange management/control messages
-            zone_conf.put("eb.manager", EB_MANAGER);
-        }
-    if (ZONE_FEED != null)
-        {
-            // All zones will subscribe to this address to get vehicle position messages
-            zone_conf.put("zone.feed", ZONE_FEED);
-        }
+    // All zones will use this address to transmit 'status up' messages
+    zone_conf.put("eb.system_status", EB_SYSTEM_STATUS);
+    // All zones will use this address to exchange management/control messages
+    zone_conf.put("eb.manager", EB_MANAGER);
+    // All zones will subscribe to this address to get vehicle position messages
+    zone_conf.put("zone.feed", ZONE_FEED);
 
     // iterate through all the zones to be started
     for (int i=0; i<START_ZONES.size(); i++)
