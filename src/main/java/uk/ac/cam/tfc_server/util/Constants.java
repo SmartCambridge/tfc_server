@@ -29,6 +29,12 @@ public class Constants {
     public static final String SOCKET_ZONE_MAP_CONNECT = "zone_map_connect"; // msg_type zone_map.hbs initial connect
     public static final String SOCKET_FEED_CONNECT = "feed_connect"; // msg_type feed.hbs initial connect
 
+    // MsgFiler constants - also used in MsgFiler config()
+    public static final String FILE_WRITE = "write"; // will overwrite the file
+    public static final String FILE_APPEND = "append"; // will append to the file
+
+    // *********************************************************************************
+    // Function to return the same constants as required in served HTML/JAVASCRIPT pages
     public static String js()
     {
         return "{ \n" +

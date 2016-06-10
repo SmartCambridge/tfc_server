@@ -16,13 +16,13 @@
 
             "msgfiler.filers":
             [
-                { "source_address": "tfc.zone.cambridge.madingley_road_in",
+                { "source_address": "tfc.zone.cambridge",
                   "source_filter": { "field": "msg_type",
-                                     "compare": ">",
-                                     "value": "zone_e"
+                                     "compare": "=",
+                                     "value": "zone_completion"
                                    },
                   "store_path": "/home/ijl20/tfc_server_data/data_zone/{{ts|yyyy}}/{{ts|MM}}/{{ts|dd}}",
-                  "store_name": "{{module_id}}.txt",
+                  "store_name": "{{module_id}}_{{ts|yyyy}}-{{ts|MM}}-{{ts|dd}}.txt",
                   "store_mode": "append"
                 }
             ]

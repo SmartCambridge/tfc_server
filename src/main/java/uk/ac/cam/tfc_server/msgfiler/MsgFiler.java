@@ -4,7 +4,7 @@ package uk.ac.cam.tfc_server.msgfiler;
 // *************************************************************************************************
 // *************************************************************************************************
 // MsgFiler.java
-// Version 0.02
+// Version 0.03
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
@@ -18,7 +18,9 @@ package uk.ac.cam.tfc_server.msgfiler;
 //   "source_filter" : a json object that specifies which subset of messages to write to disk
 //      e.g. { "field": "msg_type", "compare": "=", "value": "zone_completion" }
 //   "store_path" : a parameterized string giving the full filepath for storing the message
-//      e.g. "/home/ijl20/tfc_server_data/data_zone/{{ts|yyyy}}/{{ts|MM}}/{{ts|dd}}/{{module_id}}.txt
+//      e.g. "/home/ijl20/tfc_server_data/data_zone/{{ts|yyyy}}/{{ts|MM}}/{{ts|dd}}"
+//   "store_name" : a parameterized string giving the filename for storing the message
+//      e.g. "{{module_id}}.txt"
 //   "store_mode" : "write" | "append", defining whether the given file should be written or appended
 //
 // Publishes periodic status UP messages to address given in config as "eb.system_status"
@@ -43,6 +45,7 @@ import java.util.ArrayList;
 
 // other tfc_server classes
 import uk.ac.cam.tfc_server.util.Log;
+import uk.ac.cam.tfc_server.util.Constants;
 
 public class MsgFiler extends AbstractVerticle {
     // from config()
@@ -93,7 +96,10 @@ public class MsgFiler extends AbstractVerticle {
 
   } // end start()
 
+    // ************************************************************
+    // start_filer()
     // start a Filer by registering a consumer to the given address
+    // ************************************************************
     private void start_filer(FilerConfig filer_config)
     {
         String filer_filter;
@@ -106,7 +112,10 @@ public class MsgFiler extends AbstractVerticle {
                 filer_filter = " with " + filer_config.source_filter.toString();
             }
         System.out.println("MsgFiler."+MODULE_ID+": starting filer "+filer_config.source_address+ filer_filter);
-    
+
+        // register to filer_config.source_address,
+        // test messages with filer_config.source_filter
+        // and call store_msg if current message passes filter
         eb.consumer(filer_config.source_address, message -> {
             System.out.println("MsgFiler."+MODULE_ID+": got message from " + filer_config.source_address);
             JsonObject msg = new JsonObject(message.body().toString());
@@ -120,79 +129,59 @@ public class MsgFiler extends AbstractVerticle {
         });
     
     } // end start_filer
-    
+
+    // **********************************
+    // store_msg()
+    // Store the message to the filesystem
+    // **********************************
     private void store_msg(JsonObject msg, String config_path, String config_name, String config_mode)
     {
         System.out.println("MsgFiler."+MODULE_ID+": store_msg " + config_mode + " " + config_path + " " + config_name );
-        System.out.println(msg.toString());
+        System.out.println(msg);
 
         // map the message values into the {{..}} placeholders in path and name
         String filepath;
         String filename;
-        /*        try
-                  {*/
-            filepath = build_string(config_path, msg);
-            filename = build_string(config_name, msg);
+        filepath = build_string(config_path, msg);
+        filename = build_string(config_name, msg);
 
-            System.out.println("MsgFiler."+MODULE_ID+": "+config_mode+ " " +filepath+"/"+filename);
-            /* } 
-        catch (Exception e)
-        {
+        System.out.println("MsgFiler."+MODULE_ID+": "+config_mode+ " " +filepath+"/"+filename);
+
+        /*
             Log.log_err("MsgFiler."+MODULE_ID+": failed buildstring with "+config_path+","+config_name);
             Log.log_err(msg.toString());
             return;
-            }*/
+            }
+        */
 
+        String msg_str = msg.toString();
         
-        /*
-        JsonArray entities = feed_message.getJsonArray("entities");
-
-        String filename = feed_message.getString("filename");
-        String filepath = feed_message.getString("filepath");
-
         FileSystem fs = vertx.fileSystem();
         
-        Buffer buf = Buffer.buffer();
-
-        // add csv header to buf
-        buf.appendString(CSV_FILE_HEADER+"\n");
-        
-        for (int i = 0; i < entities.size(); i++)
-            {
-              JsonObject json_record = entities.getJsonObject(i);
-              buf.appendString(entity_to_csv(json_record));
-            }
-
-        // Write file to TFC_DATA_CSV/YYYY/MM/DD/FILENAME
-        // where TFC_DATA_CSV is given in config() as "feedcsv.tfc_data_csv"
-        // and   FILENAME = <UTC TIMESTAMP>_YYYY-MM-DD-hh-mm-ss.csv
-        //
         // if full directory path exists, then write file
         // otherwise create full path first
-        final String csv_path = TFC_DATA_CSV+"/"+filepath;
-        System.out.println("Writing "+csv_path+"/"+filename+".csv");
-        fs.exists(csv_path, result -> {
+        
+        fs.exists(filepath, result -> {
             if (result.succeeded() && result.result())
                 {
-                    System.out.println("FeedCSV: path "+csv_path+" exists");
-                    write_file(fs, buf, csv_path+"/"+filename+".csv");
+                    System.out.println("MsgFiler."+MODULE_ID+": path "+filepath+" exists");
+                    write_file(msg_str, filepath+"/"+filename, config_mode);
                 }
             else
                 {
-                    System.out.println("FeedCSV: Creating directory "+csv_path);
-                    fs.mkdirs(csv_path, mkdirs_result -> {
+                    System.out.println("MsgFiler."+MODULE_ID+": creating directory "+filepath);
+                    fs.mkdirs(filepath, mkdirs_result -> {
                             if (mkdirs_result.succeeded())
                                 {
-                                    write_file(fs, buf, csv_path+"/"+filename+".csv");
+                                    write_file(msg_str, filepath+"/"+filename, config_mode);
                                 }
                             else
                                 {
-                                    System.err.println("FeedCSV."+MODULE_ID+": error creating path "+csv_path);
+                                    Log.log_err("MsgFiler."+MODULE_ID+": error creating path "+filepath);
                                 }
                         });
                 }
         });
-        */
     } // end store_msg()
 
     // ************************************************************************************
@@ -312,10 +301,33 @@ public class MsgFiler extends AbstractVerticle {
 
         return pattern;
     }
-        
-    /*
-    private void write_file(FileSystem fs, Buffer buf, String file_path)
+
+    // *****************************************************************
+    // write_file()
+    // either overwrite (ASYNC) or append(SYNC) according to config_mode
+    private void write_file(String msg, String file_path, String config_mode)
     {
+        if (config_mode.equals(Constants.FILE_WRITE))
+            {
+                overwrite_file(msg, file_path);
+            }
+        else // append - this is a SYNCHRONOUS operation...
+            {
+                vertx.executeBlocking(fut -> {
+                        append_file(msg, file_path);
+                        fut.complete();
+                    }, res -> { }
+                    );
+            }
+    }        
+        
+    // **********************************************************
+    // write_file()
+    // will do an ASYNCHRONOUS operation, i.e. return immediately
+    private void overwrite_file(String msg, String file_path)
+    {
+        FileSystem fs = vertx.fileSystem();
+        Buffer buf = Buffer.buffer(msg);
         fs.writeFile(file_path, 
                      buf, 
                      result -> {
@@ -326,7 +338,33 @@ public class MsgFiler extends AbstractVerticle {
           }
         });
     } // end write_file
-    */
+
+    // *********************************************************************
+    // append_file()
+    // BLOCKING code that will open and append 'msg'+'\n' to file 'filepath'
+    private void append_file(String msg, String file_path)
+    {
+        System.out.println("MsgFiler."+MODULE_ID+": append_file "+ file_path);
+
+        BufferedWriter bw = null;
+
+        try {
+            // note FileWriter second arg 'true' => APPEND MODE
+            bw = new BufferedWriter(new FileWriter(file_path, true));
+            bw.write(msg);
+            bw.newLine();
+            bw.flush();
+        } catch (IOException ioe) {
+            Log.log_err("MsgFiler."+MODULE_ID+": append_file failed for "+file_path);
+        } finally {                       // always close the file
+            if (bw != null) try {
+                    bw.close();
+                } catch (IOException ioe2) {
+                    // just ignore it
+                }
+        } // end try/catch/finally
+
+    } // end append_file
     
     // **********************************************************************************************
     // **********************************************************************************************
