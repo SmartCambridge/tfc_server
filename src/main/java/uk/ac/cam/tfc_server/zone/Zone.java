@@ -4,7 +4,7 @@ package uk.ac.cam.tfc_server.zone;
 // *************************************************************************************************
 // *************************************************************************************************
 // Zone.java
-// Version 0.10
+// Version 0.11
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
@@ -327,8 +327,15 @@ public class Zone extends AbstractVerticle {
         msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
         msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
         msg.put("msg_type", Constants.ZONE_INFO);
+        msg.put("center", CENTER.toJsonObject());
         msg.put("finish_index", FINISH_INDEX );
-        //debug ZONE_INFO msg is incomplete
+        msg.put("zoom", ZOOM);
+        JsonArray json_path = new JsonArray();
+        for (int i=0; i < PATH.size(); i++)
+            {
+                json_path.add(PATH.get(i).toJsonObject());
+            }
+        msg.put("path", json_path);
         
         // Send zone_completed message to common zone.address
         vertx.eventBus().publish(ZONE_ADDRESS, msg);

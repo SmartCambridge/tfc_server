@@ -17,7 +17,7 @@
     <!-- load constants template created by Rita.java -->
     <script src="/constants.js" charset="utf-8"></script>
     
-    <title>Rita::Zone Map 0.62</title>
+    <title>Rita::Zone Map 0.63</title>
 <!--
 RELEASE INFO:
 
@@ -152,7 +152,12 @@ function handle_zone_update(rita_msg)
 // handle ZONE_INFO message received on socket from Rita.java
 function handle_zone_info(rita_msg)
 {
-    write_console1("rita sock: ZONE_INFO finish_index="+rita_msg.finish_index);
+    write_console1("rita sock: ZONE_INFO finish_index="+rita_msg.finish_index+"<br/>");
+    draw_polygon(rita_msg.path);
+    draw_start(rita_msg.path);
+    draw_finish(rita_msg.path, rita_msg.finish_index);
+    map.setCenter(rita_msg.center);
+    map.setZoom(rita_msg.zoom);
 }
                                           
 // handle ZONE_COMPLETION message received on socket from Rita.java
@@ -245,7 +250,64 @@ function initMap() {
     infowindow = new google.maps.InfoWindow( { disableAutoPan: true });
   
 }
+
+// draw zone polygon on map
+function draw_polygon(path)
+{
+    // draw the polygon of the bounds onto the map
+    new google.maps.Polygon({
+      paths: path,
+      strokeColor: '#FFFF99',
+      strokeOpacity: 0.8,
+      strokeWeight: 2,
+      fillColor: '#FFFF99',
+      fillOpacity: 0.25,
+      editable: true,
+      zIndex: 5,
+      map: map
+    });
+}
+               
+// draw zone start line on map
+function draw_start(path)
+{
+  new google.maps.Polyline({
+                  path: [ path[0], path[1]],
+                  strokeColor: '#009900',
+                  strokeOpacity: 1.0,
+                  strokeWeight: 4,
+                  editable: false,
+                  zIndex: 10,
+                  map: map
+                });
+}
+
+// calculate [pos1, pos2] for finish line coords
+function finish_path(path, finish_index)
+{
+  var a = finish_index;
+  var b = a + 1;
+  if (b == path.length)
+  {
+      b = 0;
+  }
+  return [ path[a], path[b] ];
+}
                                           
+// draw the finish line on map
+function draw_finish(path, finish_index)
+{
+ new google.maps.Polyline({
+              path: finish_path(path, finish_index),
+              strokeColor: '#990000',
+              strokeOpacity: 1.0,
+              strokeWeight: 4,
+              editable: false,
+              zIndex: 10,
+              map: map
+            });
+}
+
 </script>
 
 <!-- GOOGLE maps api -->
