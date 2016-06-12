@@ -17,17 +17,18 @@
 <head>
     <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
 <!--    <script src="//cdn.jsdelivr.net/sockjs/1.0.3/sockjs.min.js"></script> -->
-    <script src='/static/sockjs.min.js'></script>
-    <script src='/static/vertx-eventbus.js'></script>
-    <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <script src="/static/sockjs.min.js"></script>
+    <script src="/static/vertx-eventbus.js"></script>
+    <script src="/static/d3.v3.min.js" charset="utf-8"></script>
 
     <!-- load constants template -->
     <script src="/constants.js" charset="utf-8"></script>
     
-    <title>Rita::Zone 0.61</title>
+    <title>Rita::Zone 0.62</title>
 <!--
 RELEASE INFO:
 
+2016-06-12 moved d3.v3.min.js to Rita static webserver
 2016-05-21 improved message handshake with rita.java, plot reset each midnight
 2016-05-12 modified page to zone.hbs handlebars template
 2016-05-07 using SockJS to receive update messages
@@ -121,9 +122,9 @@ var chart_tooltip;
 
 // time of day for scatterplot to start/end
 var CHART_START_TIME = 0; // start chart at midnight
-var CHART_END_TIME = 24;  // end chart at 8pm
+var CHART_END_TIME = 24;  // end chart at midnight
 
-var CHART_DOT_RADIUS = 5; // size of dots on scatterplot
+var CHART_DOT_RADIUS = 6; // size of dots on scatterplot
 
 
 // **********************************************
@@ -138,8 +139,6 @@ function init()
 
     chart_day_start_ts = 0; // initially set start-time boundary of chart to distant past
 
-    //init_eventbus();
-    
     // initialize websocket connection to Rita.java
     init_sock();
 
@@ -149,32 +148,6 @@ function init()
     // set up layout / axes of scatterplot
     init_chart();
 
-}
-
-
-// **********************************************
-// Initialize the connection to the eventbus
-// **********************************************
-
-function init_eventbus()
-{
-    // initialize eventbus to connect to Rita.java on server
-    eb = new EventBus(RITA_EVENTBUS_HTTP);
-
-    // script to run when Vertx EventBus is ready
-    eb.onopen = function() {
-
-        // set a handler to receive a "rita_out" message
-        //debug zone event messages are currently hardcoded to arrive via rita_out
-        eb.registerHandler('rita_out', function(error, message) {
-          //debug we should test type of msg (e.g. zone update) and handle accordingly
-          write_console1('rita_out: ' + JSON.stringify(message.body) + '<br/>');
-          if (message.body.msg_type==constants.ZONE_COMPLETION)
-          {
-              handle_zone_update(message.body);
-          }
-        });
-    }
 }
 
 // ********************************************
@@ -248,13 +221,32 @@ function handle_zone_completion(msg)
     // then switch the chart over to a new day
     if (msg.ts > chart_day_start_ts + 24 * 60 * 60)
     {
+      // ******************************************************
+      // *******  It's a new day ! ****************************
+      // ******************************************************
       d = new Date(msg.ts * 1000);
       d.setHours(0,0,0,0);
       chart_day_start_ts = Math.floor(d.getTime() / 1000);
-      console.log("resetting day start to "+chart_day_start_ts);
+      console.log("Resetting day start to "+chart_day_start_ts);
+
+      // Write formatted date to page heading
+      var heading_date = document.getElementById('heading_date');
+      var monthNames = [
+                         "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul",
+                         "Aug", "Sep", "Oct", "Nov", "Dec"
+                       ];
+      var day = d.getDate();
+      var monthIndex = d.getMonth();
+      var year = d.getFullYear();
+
+      heading_date.innerHTML = day + ' ' + monthNames[monthIndex] + ' ' + year;
+                                          
       // empty the current message list
       rita_data = new Array();                                          
     }
+
+    // add this data point to the stored array
+    // and update the chart
                                           
     //console.log('chart update: '+msg.msg_type);
     rita_data.push(msg);
@@ -268,9 +260,9 @@ function handle_zone_completion(msg)
 // ******************************************
 function init_chart()
 {
-    var margin = {top: 20, right: 20, bottom: 30, left: 40};
-    chart_width = 1800 - margin.left - margin.right;
-    chart_height = 500 - margin.top - margin.bottom;
+    var margin = {top: 20, right: 50, bottom: 30, left: 40};
+    chart_width = window.innerWidth * 0.8 - margin.left - margin.right;
+    chart_height = window.innerHeight * 0.6 - margin.top - margin.bottom;
 
     // add the graph canvas to the body of the webpage
     chart_svg = d3.select("#chart").append("svg")
@@ -418,14 +410,6 @@ function write_console1(msg)
     c.innerHTML += msg;
 }
 
-//debug zone.html should be configured to display selected zones
-// User has triggered zone select dropdown
-function zone_selected()
-{
-    zone_id = document.getElementById('zone_select').value.split(",")[0];
-    alert(zone_id);
-}
-
 </script>
 
 </head>
@@ -433,7 +417,11 @@ function zone_selected()
 <body onload='init()'>
   
 <h1 class="header_title">
-  <img src="/static/images/smart_cambridge_logo.jpg">Rita::Zone <span id='heading'>{{config_zone_id}}</span></h1>
+  <img src="/static/images/smart_cambridge_logo.jpg">Rita::Zone
+  <span id="heading_zone_id">{{config_zone_id}}</span>
+  <span id="heading_date"></span>
+  
+</h1>
 
 <div id="chart_title"></div>
 
