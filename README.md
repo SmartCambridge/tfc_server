@@ -54,6 +54,14 @@ implementation is expected to have hundreds of zones and routes being monitored 
 The use of Vertx and the clustered EventBus allows Rita modules to be run in multiple instances on a single server, and
 also across multiple distributed servers. This also allows the realtime data to be archived simultaneously in multiple locations.
 
+Most current modules in the Rita platform are general purpose, i.e. the function is independent of the actual type of
+realtime data received. The image below shows this division between (on the left) general-purpose modules
+that have no interest in the actual type of realtime data received (e.g. the FeedHandler and MsgFiler) and
+(on the right) those that interpret the data and produce derived analytics (i.e. particularly the Zone which interprets
+the feed as vehicle position data and produces new messages indicating current zone transit times).
+
+![General vs traffic-data specific aspects of the Rita platform](images/rita_general.png)
+
 ## Summary of system modules
 *For more detail see the readme in each module directory*
 
