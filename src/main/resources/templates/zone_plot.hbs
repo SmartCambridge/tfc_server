@@ -22,12 +22,13 @@
     <script src="/static/d3.v3.min.js" charset="utf-8"></script>
 
     <!-- load constants template -->
-    <script src="/constants.js" charset="utf-8"></script>
+    <script src="/{{config_base_uri}}/constants.js" charset="utf-8"></script>
     
-    <title>Rita::Zone 0.62</title>
+    <title>Rita::Zone Plot 0.63</title>
 <!--
 RELEASE INFO:
 
+2016-06-21 0.63 changes for Nginx reverse proxy compatibility
 2016-06-12 moved d3.v3.min.js to Rita static webserver
 2016-05-21 improved message handshake with rita.java, plot reset each midnight
 2016-05-12 modified page to zone.hbs handlebars template
@@ -92,9 +93,10 @@ var chart_day_ts; // Timestamp of start of current chart day
                   // reset the chart to next day...
 
 // Set base URL of web server
-var RITA_HTTP =  window.location.protocol + '//' +
-                 window.location.hostname +
-                 ':' + window.location.port;
+var RITA_HTTP =   window.location.protocol + '//' +
+                  window.location.hostname +
+                  ':' + window.location.port +
+                  '/' + "{{config_base_uri}}";
 
 // Extend base URL for eventbus address
 var RITA_EVENTBUS_HTTP =  RITA_HTTP + '/eb';

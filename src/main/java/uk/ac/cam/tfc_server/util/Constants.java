@@ -7,6 +7,7 @@ public class Constants {
 //
     // FeedPlayer msg_type values
     public static final String FEED_BUS_POSITION = "feed_bus_position"; // e.g. as derived from GTFS bus
+    public static final int    FEEDHANDLER_MAX_POST = 1000000; // max feed post in bytes
     
     // Zone msg_type values which flow on zone.address
     public static final String ZONE_START = "zone_entry_start"; // vehicle entered zone via start line

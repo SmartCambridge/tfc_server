@@ -77,20 +77,28 @@ public class Console extends AbstractVerticle {
 
     eb = vertx.eventBus();
     
-      HttpServer http_server = vertx.createHttpServer();
+    HttpServer http_server = vertx.createHttpServer();
 
-      Router router = Router.router(vertx);
+    Router router = Router.router(vertx);
 
+    // general logging of get requests
+    router.route(HttpMethod.GET,"/*").handler(ctx -> {
+            System.out.println("Console GET request for " + ctx.request().absoluteURI());
+            ctx.next();
+        });
+    
+    // *****************************************
       // create handler for eventbus bridge
+    // *****************************************
 
-      SockJSHandler ebHandler = SockJSHandler.create(vertx);
+    SockJSHandler ebHandler = SockJSHandler.create(vertx);
 
-      BridgeOptions bridge_options = new BridgeOptions();
-      bridge_options.addOutboundPermitted( new PermittedOptions().setAddress(EB_SYSTEM_STATUS) );
+    BridgeOptions bridge_options = new BridgeOptions();
+    bridge_options.addOutboundPermitted( new PermittedOptions().setAddress(EB_SYSTEM_STATUS) );
 
-      ebHandler.bridge(bridge_options);
+    ebHandler.bridge(bridge_options);
 
-      router.route("/eb/*").handler(ebHandler);
+    router.route("/console/eb/*").handler(ebHandler);
       
     // *****************************************
     // create handler for console template pages
@@ -101,6 +109,8 @@ public class Console extends AbstractVerticle {
     router.route(HttpMethod.GET, "/console").handler( ctx -> {
 
             ctx.put("config_eb_system_status", EB_SYSTEM_STATUS);
+            
+            ctx.put("config_module_id", MODULE_ID);
             
             template_engine.render(ctx, "templates/console.hbs", res -> {
                     if (res.succeeded())
@@ -119,10 +129,17 @@ public class Console extends AbstractVerticle {
     StaticHandler static_handler = StaticHandler.create();
     static_handler.setWebRoot(WEBROOT);
     static_handler.setCachingEnabled(false);
-    router.route(HttpMethod.GET, "/*").handler( static_handler );
+    router.route(HttpMethod.GET, "/static/*").handler( static_handler );
 
+    System.out.println("Console."+MODULE_ID+": StaticHandler "+WEBROOT+" Started for /static/*");
     // connect router to http_server
 
+      // general logging of get requests
+      router.route(HttpMethod.GET,"/*").handler(ctx -> {
+            System.out.println("Console GET request not matched for " + ctx.request().absoluteURI());
+            ctx.next();
+        });
+    
     http_server.requestHandler(router::accept).listen(HTTP_PORT);
 
     // send periodic "system_status" messages

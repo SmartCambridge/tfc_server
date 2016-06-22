@@ -11,7 +11,7 @@
             "eb.manager":       "tfc.manager",
 
             "console.http.port":  8081,
-            "console.webroot":   "src/main/java/uk/ac/cam/tfc_server/console/webroot"
+            "console.webroot":   "webroot"
         }
     }
 }

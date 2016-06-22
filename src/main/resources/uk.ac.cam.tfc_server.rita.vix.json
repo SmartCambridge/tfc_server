@@ -4,22 +4,20 @@
     "options": {
         "config": {
             "module.name":      "rita",
-            "module.id":        "test",
+            "module.id":        "vix",
 
             "eb.system_status": "tfc.system_status",
             "eb.console_out":   "tfc.console_out",
             "eb.manager":       "tfc.manager",
 
-            "rita.address":     "tfc.rita.test",
+            "rita.address":     "tfc.rita.vix",
 
-            "rita.feedplayers": [ "2016-03-07-week" ],
             "rita.zonemanagers": [ "cambridge" ],
-            "rita.feedplayer.address":    "tfc.feedplayer.test",
-            "rita.zone.address": "tfc.zone.test",
-            "rita.zone.feed": "tfc.feedplayer.test",
+            "rita.zone.address": "tfc.zone.cambridge",
+            "rita.zone.feed":    "tfc.feedhandler.vix",
 
-            "rita.name":      "RITA-test",
-            "rita.http.port":  8099,
+            "rita.name":      "RITA-CAMBRIDGE",
+            "rita.http.port":  8082,
             "rita.webroot":   "webroot"
         }
     }

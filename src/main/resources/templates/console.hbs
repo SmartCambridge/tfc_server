@@ -1,8 +1,9 @@
 <html>
   <head>
-    <script src='../sockjs.min.js'></script>
-    <script src='../vertx-eventbus.js'></script>
-    <title>RITA Console 0.3</title>
+    <script src='/static/sockjs.min.js'></script>
+    <script src='/static/vertx-eventbus.js'></script>
+    <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico"/>
+    <title>RITA Console 0.32</title>
 <style>
 body {
    font-family: Tahoma, Verdana, Segoe, sans-serif;
@@ -49,9 +50,9 @@ img {
   // Constant address of server-side eventbus bridge
 
   // Set base URL of web server
-  var CONSOLE_HTTP =  window.location.protocol + '//' +
-                 window.location.hostname +
-                 ':' + window.location.port;
+  var CONSOLE_HTTP = window.location.href; // window.location.protocol + '//' +
+                      // window.location.hostname +
+                      // ':' + window.location.port;
 
   // Extend base URL for eventbus address
   var CONSOLE_EVENTBUS_HTTP =  CONSOLE_HTTP + '/eb';
@@ -249,7 +250,7 @@ function log(console_div, text)
 
 </head>
   <body onload="init()">
-    <h1 class="header_title"><img src="../images/smart_cambridge_logo.jpg">Rita::Console {{config_eb_system_status}}<span id='heading'></span></h1>
+    <h1 class="header_title"><img src="/static/images/smart_cambridge_logo.jpg">Rita::Console.{{config_module_id}} {{config_eb_system_status}}<span id='heading'></span></h1>
     <div id="status_areas">
       <h4>Module Status <span id="clock"></span></h4>
     </div>

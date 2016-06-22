@@ -18,7 +18,7 @@
 
             "rita.name":      "RITA-CAMBRIDGE",
             "rita.http.port":  8082,
-            "rita.webroot":   "src/main/resources/webroot"
+            "rita.webroot":   "webroot"
         }
     }
 }

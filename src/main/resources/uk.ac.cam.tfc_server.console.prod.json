@@ -4,13 +4,13 @@
     "options": {
         "config": {
             "module.name":      "console",
-            "module.id":        "test",
+            "module.id":        "A",
 
-            "eb.system_status": "tfc.test_system_status",
+            "eb.system_status": "tfc.system_status",
             "eb.console_out":   "tfc.console_out",
             "eb.manager":       "tfc.manager",
 
-            "console.http.port":  8099,
+            "console.http.port":  81,
             "console.webroot":   "src/main/java/uk/ac/cam/tfc_server/console/webroot"
         }
     }

@@ -76,6 +76,8 @@ public class Rita extends AbstractVerticle {
     private String ZONE_FEED; // optional from config()
     private String FEEDPLAYER_ADDRESS; // optional from config()
 
+    private String BASE_URI; // used as template parameter for web pages, built from config()
+    
     private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
     private final int SYSTEM_STATUS_AMBER_SECONDS = 15;
     private final int SYSTEM_STATUS_RED_SECONDS = 25;
@@ -100,6 +102,8 @@ public class Rita extends AbstractVerticle {
 
     System.out.println("Rita starting as "+MODULE_NAME+"."+MODULE_ID+
                        " on port "+HTTP_PORT );
+
+    BASE_URI = MODULE_NAME; // typically 'rita'
 
     // initialize object to hold socket connection data for each connected session
     client_table = new ClientTable(MODULE_ID);
@@ -168,13 +172,13 @@ public class Rita extends AbstractVerticle {
                 });
       });
 
-    router.route("/ws/*").handler(sock_handler);
+    router.route("/"+BASE_URI+"/ws/*").handler(sock_handler);
 
     // ********************************
     // create handler for embedded page
     // ********************************
 
-    router.route("/home").handler( routingContext -> {
+    router.route("/"+BASE_URI+"/home").handler( routingContext -> {
 
         HttpServerResponse response = routingContext.response();
         response.putHeader("content-type", "text/html");
@@ -200,13 +204,13 @@ public class Rita extends AbstractVerticle {
 
     ebHandler.bridge(bridge_options);
 
-    router.route("/eb/*").handler(ebHandler);
+    router.route("/"+BASE_URI+"/eb/*").handler(ebHandler);
 
     // ***********************************
     // create handler for zone restful api
     // ***********************************
 
-    router.route(HttpMethod.GET, "/api/zone/:zoneid").handler( routingContext -> {
+    router.route(HttpMethod.GET, "/"+BASE_URI+"/api/zone/:zoneid").handler( routingContext -> {
             String zone_id = routingContext.request().getParam("zoneid");
 
             if (zone_id == null) {
@@ -228,7 +232,7 @@ public class Rita extends AbstractVerticle {
 
     final HandlebarsTemplateEngine template_engine = HandlebarsTemplateEngine.create();
     
-    router.route(HttpMethod.GET, "/zone/:zoneid/plot").handler( ctx -> {
+    router.route(HttpMethod.GET,"/"+BASE_URI+"/zone/:zoneid/plot").handler( ctx -> {
             
             String zone_id = ctx.request().getParam("zoneid");
 
@@ -236,6 +240,7 @@ public class Rita extends AbstractVerticle {
             
             ctx.put("config_zone_id",zone_id); // pass zone_id from URL into template var
             ctx.put("config_UUID", get_UUID());// add template var for Unique User ID
+            ctx.put("config_base_uri", BASE_URI);// add template var for base URI e.g. 'rita'
             
             if (zone_id == null)
             {
@@ -256,11 +261,11 @@ public class Rita extends AbstractVerticle {
             }
         } );
 
-    router.route(HttpMethod.GET, "/zone/:zoneid/map").handler( ctx -> {
+    router.route(HttpMethod.GET, "/"+BASE_URI+"/zone/:zoneid/map").handler( ctx -> {
             serve_zone_map(ctx, ctx.request().getParam("zoneid"), template_engine);
         });
             
-    router.route(HttpMethod.GET, "/feed").handler( ctx -> {
+    router.route(HttpMethod.GET, "/"+BASE_URI+"/feed").handler( ctx -> {
 
             if (FEEDPLAYER_ADDRESS == null)
                 {
@@ -287,7 +292,7 @@ public class Rita extends AbstractVerticle {
     // create handler for constants.js template
     // ****************************************
 
-    router.route(HttpMethod.GET, "/constants.js").handler( ctx -> {
+    router.route(HttpMethod.GET, "/"+BASE_URI+"/constants.js").handler( ctx -> {
 
             ctx.put("config_constants", Constants.js());  // get constants in JS format
             
@@ -488,6 +493,7 @@ public class Rita extends AbstractVerticle {
             
         ctx.put("config_zone_id",zone_id); // pass zone_id from URL into template var
         ctx.put("config_UUID", get_UUID());// add template var for Unique User ID
+        ctx.put("config_base_uri", BASE_URI);// add template var for base URI e.g. 'rita'
 
         if (zone_id == null)
         {

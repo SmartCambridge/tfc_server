@@ -58,17 +58,11 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
-
-import io.vertx.ext.web.Router;
-import io.vertx.ext.web.Route;
-import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.handler.BodyHandler;
 
 import java.io.*;
 import java.time.*;
@@ -85,7 +79,6 @@ import com.google.transit.realtime.GtfsRealtime.Position;
 
 // other tfc_server classes
 import uk.ac.cam.tfc_server.util.Log;
-import uk.ac.cam.tfc_server.util.Constants;
 
 public class FeedHandler extends AbstractVerticle {
 
@@ -109,8 +102,6 @@ public class FeedHandler extends AbstractVerticle {
     
     private HttpServer http_server = null;
     private EventBus eb = null;
-
-    private String BASE_URI; // defined the http POST base for this FeedHandler
     
   @Override
   public void start(Future<Void> fut) throws Exception {
@@ -127,61 +118,10 @@ public class FeedHandler extends AbstractVerticle {
       
     System.out.println("FeedHandler: " + MODULE_ID + " started, sending to "+FEEDHANDLER_ADDRESS);
 
-    // set up base URI that will be used for feed post, e.g. feedhandler/vix
-    BASE_URI = MODULE_NAME + "/" + MODULE_ID;
-
-    // create link to EventBus
     eb = vertx.eventBus();
-
-    // create webserver
+    
     http_server = vertx.createHttpServer();
 
-    // create request router for webserver
-    Router router = Router.router(vertx);
-
-    // create bodyhandler for expected feed posts, and set max post size (in bytes)
-    //router.route().handler(BodyHandler.create().setBodyLimit(Constants.FEEDHANDLER_MAX_POST));
-    
-    // ************************************
-    // create handler for GET from BASE_URI
-    // ************************************
-
-    router.route(HttpMethod.GET,"/"+BASE_URI).handler( ctx -> {
-
-        HttpServerResponse response = ctx.response();
-        response.putHeader("content-type", "text/html");
-
-        response.end("<h1>TFC Rita FeedHandler at "+BASE_URI+"</h1><p>Vertx-Web!</p>");
-    });
-
-    // ************************************************
-    // ************************************************
-    // Here is where the essential feed POST is handled
-    // create handler for POST from BASE_URI
-    // ************************************************
-    // ************************************************
-
-    router.route(HttpMethod.POST,"/"+BASE_URI).handler( ctx -> {
-            ctx.request().bodyHandler( body_data -> {
-                try {
-                    process_gtfs(body_data);
-                }
-                catch (Exception ex) {
-                  Log.log_err("FeedHandler."+MODULE_ID+": process_gtfs Exception");
-                  Log.log_err(ex.getMessage());
-                }
-                ctx.request().response().end("");
-            });
-
-    });
-
-    // ********************************
-    // connect router to http_server
-    // ********************************
-
-    http_server.requestHandler(router::accept).listen(HTTP_PORT);
-    
-    /*
     http_server.requestHandler(new Handler<HttpServerRequest>() {
         @Override
         public void handle(HttpServerRequest request) {
@@ -213,8 +153,6 @@ public class FeedHandler extends AbstractVerticle {
         }
       });
 
-    */
-    
     // send periodic "system_status" messages
     vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> {
       eb.publish(EB_SYSTEM_STATUS,

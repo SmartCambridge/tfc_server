@@ -15,7 +15,7 @@
     <script src='/static/vertx-eventbus.js'></script>
 
     <!-- load constants template created by Rita.java -->
-    <script src="/constants.js" charset="utf-8"></script>
+    <script src="/{{config_base_uri}}/constants.js" charset="utf-8"></script>
     
     <title>Rita::Zone Map 0.63</title>
 <!--
@@ -56,7 +56,8 @@ var chart_day_ts; // Timestamp of start of current chart day
 // Set base URL of web server
 var RITA_HTTP =  window.location.protocol + '//' +
                  window.location.hostname +
-                 ':' + window.location.port;
+                 ':' + window.location.port +
+                 '/' + "{{config_base_uri}}";
 
 // Extend base URL for websocket address
 var SOCK_HTTP = RITA_HTTP + '/ws';

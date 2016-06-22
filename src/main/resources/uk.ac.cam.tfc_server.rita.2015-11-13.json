@@ -13,14 +13,14 @@
             "rita.address":     "tfc.rita.2015-11-13",
 
             "rita.feedplayers": [ "2015-11-13" ],
-            "rita.zonemanagers": [ "B" ],
+            "rita.zonemanagers": [ "cambridge" ],
             "rita.feedplayer.address":    "tfc.feedplayer.2015-11-13",
             "rita.zone.address": "tfc.zone.B",
             "rita.zone.feed": "tfc.feedplayer.2015-11-13",
 
             "rita.name":      "RITA-B",
-            "rita.http.port":  8082,
-            "rita.webroot":   "src/main/java/uk/ac/cam/tfc_server/rita/webroot"
+            "rita.http.port":  8099,
+            "rita.webroot":   "webroot"
         }
     }
 }
