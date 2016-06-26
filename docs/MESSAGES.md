@@ -65,7 +65,7 @@ before the startline, followed by another datapoint, between which the calculate
 to cross the start line. The 'ts_delta' value is how many seconds occurred between these data points
 and can be used as a 'confidence factor' in the calculated event time.
 
-ZONE_COMPLETION:
+#### ZONE_COMPLETION:
 ```
 { "module_name": "zone" // typically "zone",
   "module_id": "madingley_road_in", // id of zone, issued when Zone was started
@@ -78,7 +78,7 @@ ZONE_COMPLETION:
 }
 ```
 
-ZONE_START (vehicle entered zone via start line)
+#### ZONE_START (vehicle entered zone via start line)
 ```
 { "module_name": "zone" // typically "zone",
   "module_id": "madingley_road_in", // id of zone, issued when Zone was started
@@ -90,7 +90,7 @@ ZONE_START (vehicle entered zone via start line)
 }
 ```
 
-ZONE_ENTRY (vehicle entered zone but not via start line)
+#### ZONE_ENTRY (vehicle entered zone but not via start line)
 ```
 { "module_name": "zone" // typically "zone",
   "module_id": "madingley_road_in", // id of zone, issued when Zone was started
@@ -102,7 +102,7 @@ ZONE_ENTRY (vehicle entered zone but not via start line)
 }
 ```
 
-ZONE_EXIT (vehicle left the zone but without crossing start or finish lines)
+#### ZONE_EXIT (vehicle left the zone but without crossing start or finish lines)
 ```
 { "module_name": "zone" // typically "zone",
   "module_id": "madingley_road_in", // id of zone, issued when Zone was started
@@ -114,7 +114,7 @@ ZONE_EXIT (vehicle left the zone but without crossing start or finish lines)
 }
 ```
 
-ZONE_UPDATE
+#### ZONE_UPDATE
 When a ZONE_UPDATE_REQUEST message is received (from Rita), Zone sends the history of prior messages
 ```
 { "module_name": MODULE_NAME, // zone
@@ -124,7 +124,7 @@ When a ZONE_UPDATE_REQUEST message is received (from Rita), Zone sends the histo
 }
 ```
 
-ZONE_INFO
+#### ZONE_INFO
 When a ZONE_INFO_REQUEST message is received (from Rita), Zone sends the zone config parameters such
 as the lat/longs of the bounding polygon.
 ```
@@ -136,7 +136,7 @@ as the lat/longs of the bounding polygon.
   "zoom":        from config(),
   "path":        from config()
 }
-'''
+```
 
 ### Rita
 
