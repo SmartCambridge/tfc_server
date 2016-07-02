@@ -196,10 +196,10 @@ public class Rita extends AbstractVerticle {
     // add outbound address for user messages
     bridge_options.addOutboundPermitted( new PermittedOptions().setAddress("rita_out") );
     // add outbound address for feed messages
-    if (FEEDPLAYER_ADDRESS != null)
+    if (ZONE_FEED != null)
     {
-        System.out.println("Rita."+MODULE_ID+": permitting eventbus "+FEEDPLAYER_ADDRESS+" to browser");
-        bridge_options.addOutboundPermitted( new PermittedOptions().setAddress(FEEDPLAYER_ADDRESS) );
+        System.out.println("Rita."+MODULE_ID+": permitting eventbus "+ZONE_FEED+" to browser");
+        bridge_options.addOutboundPermitted( new PermittedOptions().setAddress(ZONE_FEED) );
     }
 
     ebHandler.bridge(bridge_options);
@@ -267,13 +267,13 @@ public class Rita extends AbstractVerticle {
             
     router.route(HttpMethod.GET, "/"+BASE_URI+"/feed").handler( ctx -> {
 
-            if (FEEDPLAYER_ADDRESS == null)
+            if (ZONE_FEED == null)
                 {
                   ctx.response().setStatusCode(400).end();
                 }
             else
                 {
-                    ctx.put("config_feed_address",FEEDPLAYER_ADDRESS); // pass zone_id from URL into template var
+                    ctx.put("config_feed_address",ZONE_FEED); // pass zone_id from URL into template var
 
                     template_engine.render(ctx, "templates/feed.hbs", res -> {
                             if (res.succeeded())

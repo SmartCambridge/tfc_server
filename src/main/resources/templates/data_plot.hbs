@@ -1,0 +1,368 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<!--
+    plot.hbs is served by DataServer.java
+    The idea is that it will become an 'end-user' status page for a given zone.
+    
+    This page receives real-time data from the server-side Rita module from
+    which it can update its 'Zone status' display as required.
+
+    *How* a user should be informed of the status of a particular 'Zone' (e.g.
+    whether an arterial road is congested or not) is still a work-in-progress.
+
+    Obvious ideas include a red-amber-green status highlight, an updating
+    graph showing journey times, simple messages explaining the status.
+-->
+
+<head>
+    <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+    <script src="/static/d3.v3.min.js" charset="utf-8"></script>
+
+    <!-- load constants template -->
+    <!-- <script src="/{{config_base_uri}}/constants.js" charset="utf-8"></script> -->
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon" />    
+    <title>Rita::Zone Data Plot 0.64</title>
+<!--
+RELEASE INFO:
+
+2016-07-03 0.64 migrated to DataServer to serve historical data without sockets
+2016-06-21 0.63 changes for Nginx reverse proxy compatibility
+2016-06-12 moved d3.v3.min.js to Rita static webserver
+2016-05-21 improved message handshake with rita.java, plot reset each midnight
+2016-05-12 modified page to zone.hbs handlebars template
+2016-05-07 using SockJS to receive update messages
+2016-05-02 using clever 'd3' library to render real-time journey time plot
+2016-04-24 0.1 initial draft based on rita.html
+
+-->	
+<style type="text/css">
+body {
+   font-family: Tahoma, Verdana, Segoe, sans-serif;
+}  
+
+img {
+   vertical-align: middle;
+}
+
+.header_title {
+   color: #707070;
+}
+
+/* .chart {
+    width: 600px;
+    height: 350px;
+} */
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #707070;
+  shape-rendering: crispEdges;
+}
+
+.dot {
+  stroke: #000;
+}
+
+.tooltip {
+  position: absolute;
+  width: 400px;
+  /* height: 28px; */
+  text-align: center;
+  padding: 2px;
+  font: 12px sans-serif;
+  background: lightsteelblue;
+  border: 0px;
+  border-radius: 8px;
+  pointer-events: none;
+}
+</style>
+
+<script type="text/javascript">
+
+
+var zone_id = "{{config_zone_id}}";
+
+// d3 scatterplot parameters
+var chart_svg;    // chart svg element
+var chart_width;  // width of chart in pixels
+var chart_height; // height of chart
+var chart_xScale; // d3 scale fn for x axis
+var chart_xAxis;  // x axis
+var chart_xValue; // value for x axis selected from current data object (i.e. timestamp)
+var chart_xMap;   // fn for x display value
+var chart_yScale;
+var chart_yAxis;
+var chart_yValue;
+var chart_yMap;
+var chart_cValue; // value from current data point to determine color of circle (i.e. route_id)
+var chart_color;  // color chosen for current circle on scatterplaot
+var chart_tooltip;
+
+// time of day for scatterplot to start/end
+var CHART_START_TIME = 0; // start chart at midnight
+var CHART_END_TIME = 24;  // end chart at midnight
+
+var CHART_DOT_RADIUS = 6; // size of dots on scatterplot
+
+
+// **********************************************
+// Initialize this page (called in body:onload())
+// **********************************************
+
+function init()
+{
+
+    chart_day_start_ts = 0; // initially set start-time boundary of chart to distant past
+
+
+    // initialize empty data structure to hold Zone messages
+    rita_data = JSON.parse('{{{config_plot_data}}}');
+
+    // set up layout / axes of scatterplot
+    init_chart();
+
+    // draw chart with the data embedded by the template into rita_data
+    draw_chart(rita_data);
+}
+
+// handle ZONE_UPDATE message received on socket from Rita.java
+function handle_zone_update(rita_msg)
+{
+    //console.log('zone update length='+rita_msg.msgs.length);
+    for (var i=0; i<rita_msg.msgs.length; i++)
+    {
+       //console.log("zone update "+JSON.stringify(rita_msg.msgs[i]));
+       handle_zone_completion(rita_msg.msgs[i]);
+    }
+}
+                                          
+// handle ZONE_COMPLETION message received on socket from Rita.java
+function handle_zone_completion(msg)
+{
+    // If this zone completion is before the start-of-day for the current chart
+    // just ignore it
+    if (msg.ts < chart_day_start_ts)
+    {
+      console.log("handle_zone_completion msg from before start-of-day "+msg.toString());
+      return;
+    }
+
+    // If this zone completion is 24 hours after chart_start_day_ts
+    // then switch the chart over to a new day
+    if (msg.ts > chart_day_start_ts + 24 * 60 * 60)
+    {
+      // ******************************************************
+      // *******  It's a new day ! ****************************
+      // ******************************************************
+      d = new Date(msg.ts * 1000);
+      d.setHours(0,0,0,0);
+      chart_day_start_ts = Math.floor(d.getTime() / 1000);
+      console.log("Resetting day start to "+chart_day_start_ts);
+
+      // Write formatted date to page heading
+      var heading_date = document.getElementById('heading_date');
+      var monthNames = [
+                         "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul",
+                         "Aug", "Sep", "Oct", "Nov", "Dec"
+                       ];
+      var day = d.getDate();
+      var monthIndex = d.getMonth();
+      var year = d.getFullYear();
+
+      heading_date.innerHTML = day + ' ' + monthNames[monthIndex] + ' ' + year;
+                                          
+      // empty the current message list
+      rita_data = new Array();                                          
+    }
+
+    // add this data point to the stored array
+    // and update the chart
+                                          
+    //console.log('chart update: '+msg.msg_type);
+    rita_data.push(msg);
+    draw_chart(rita_data);
+          
+}
+
+// ******************************************                                                
+// Initialize the chart to appear on the page
+// - not yet with any data
+// ******************************************
+function init_chart()
+{
+    var margin = {top: 20, right: 50, bottom: 30, left: 40};
+    chart_width = window.innerWidth * 0.8 - margin.left - margin.right;
+    chart_height = window.innerHeight * 0.6 - margin.top - margin.bottom;
+
+    // add the graph canvas to the body of the webpage
+    chart_svg = d3.select("#chart").append("svg")
+        .attr("width", chart_width + margin.left + margin.right)
+        .attr("height", chart_height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    // setup x
+    chart_xScale = d3.time.scale().range([0, chart_width]); // value -> display
+    chart_xAxis = d3.svg.axis().scale(chart_xScale).orient("bottom");
+    chart_xValue = function(d) { return new Date(d.ts*1000);}; // data -> value
+    chart_xMap = function(d) { return chart_xScale(chart_xValue(d));}; // data -> display
+
+    // setup fill color
+    chart_cValue = function(d) { return d.route_id; },
+    chart_color = function (x) { return x=="" ? "gray" : "yellow" ; };
+
+
+    // setup y
+    chart_yScale = d3.scale.linear().range([chart_height, 0]); // value -> display
+    chart_yAxis = d3.svg.axis().scale(chart_yScale).orient("left");
+    chart_yValue = function(d) { return d.duration;}, // data -> value
+    chart_yMap = function(d) { return chart_yScale(chart_yValue(d));}; // data -> display
+
+    // initialize x axis to TODAY - will redraw when data received
+    var min_date = new Date();
+    min_date.setHours(CHART_START_TIME);
+    min_date.setMinutes(0);
+    min_date.setSeconds(0);
+
+    var max_date = new Date(min_date);
+    max_date.setHours(CHART_END_TIME);
+
+    chart_xScale.domain([min_date, max_date]);
+    chart_yScale.domain([0, 500]);
+
+    // x-axis
+    chart_svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + chart_height + ")")
+      .call(chart_xAxis)
+      .append("text")
+      .attr("class", "label")
+      .attr("x", chart_width)
+      .attr("y", -6)
+      .style("text-anchor", "end")
+      .text("Time of day");
+
+    // y-axis
+    chart_svg.append("g")
+      .attr("class", "y axis")
+      .call(chart_yAxis)
+      .append("text")
+      .attr("class", "label")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("Journey time");
+
+    // add the tooltip area to the webpage
+    chart_tooltip = d3.select("#chart").append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
+
+}
+
+function draw_chart(rita_data)
+{
+    // do nothing if no data is available
+    if (rita_data.length == 0) return;
+
+    // rita_data is array of objects e.g.:
+    // { "duration":105,
+    //   "module_id":"madingley_road_in",
+    //   "route_id":"SCCM-X5",
+    //   "ts":1457676998,
+    //   "msg_type":"zone_completion",
+    //   "module_name":"zone",
+    //   "vehicle_id":"14376"
+    // }
+
+    /*
+     * value accessor - returns the value to encode for a given data object.
+     * scale - maps value to a visual display encoding, such as a pixel position.
+     * map function - maps from data value to display value
+     * axis - sets up axis
+     */
+
+
+      // don't want dots overlapping axis, so add in buffer to data domain
+      var min_date = d3.min(rita_data, chart_xValue);
+      min_date.setHours(CHART_START_TIME);
+      min_date.setMinutes(0);
+      min_date.setSeconds(0);
+
+      var max_date = new Date(min_date);
+      max_date.setHours(CHART_END_TIME);
+
+      chart_xScale.domain([min_date, max_date]);
+      chart_yScale.domain([0, d3.max(rita_data, chart_yValue)+1]);
+
+      chart_svg.select(".x.axis").call(chart_xAxis);
+      chart_svg.select(".y.axis").call(chart_yAxis);
+
+      chart_svg.selectAll(".dot")
+          .remove();
+
+      // draw dots
+      chart_svg.selectAll(".dot")
+          .data(rita_data)
+          .enter().append("circle")
+          .attr("class", "dot")
+          .attr("r", CHART_DOT_RADIUS)
+          .attr("cx", chart_xMap)
+          .attr("cy", chart_yMap)
+          .style("fill", function(d) { return chart_color(chart_cValue(d)); })
+          .on("mouseover", function(d) {
+              chart_tooltip.transition()
+                   .duration(500)
+                   .style("opacity", 0);
+              chart_tooltip.transition()
+                   .duration(200)
+                   .style("opacity", .9);
+              chart_tooltip.html("Zone: "+d.module_id+
+                                 "<br/>Route: "+d.route_id+
+                                 "<br/>Vehicle:"+d.vehicle_id +
+                                 "<br/> (" + chart_xValue(d) +
+                                 "<br/>" + chart_yValue(d) + " seconds)")
+                   .style("left", (d3.event.pageX + 5) + "px")
+                   .style("top", (d3.event.pageY - 28) + "px");
+          })
+          .on("mouseout", function(d) {
+              chart_tooltip.transition()
+                   .duration(500)
+                   .style("opacity", 0);
+          });
+
+} // end draw_chart
+
+function write_console1(msg)
+{
+    var c = document.getElementById('console1');
+    c.innerHTML += msg;
+}
+
+</script>
+
+</head>
+
+<body onload='init()'>
+  
+<h1 class="header_title">
+  <img src="/static/images/smart_cambridge_logo.jpg">Rita::Zone
+  <span id="heading_zone_id">{{config_zone_id}}</span>
+  <span id="heading_date"></span>
+  
+</h1>
+
+<div id="chart_title"></div>
+
+<div class="chart" id="chart">
+</div>
+
+<div id="console1">
+  <h4>Messages</h4>
+</div>
+
+</body>
+</html>
