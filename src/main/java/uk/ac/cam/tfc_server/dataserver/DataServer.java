@@ -68,6 +68,8 @@ public class DataServer extends AbstractVerticle {
     private String WEBROOT; // from config()
     
     private String BASE_URI; // used as template parameter for web pages, built from config()
+
+    private String DATA_PATH; // base filesystem path to data
     
     private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
     private final int SYSTEM_STATUS_AMBER_SECONDS = 15;
@@ -126,9 +128,27 @@ public class DataServer extends AbstractVerticle {
     // **************************************
 
     final HandlebarsTemplateEngine template_engine = HandlebarsTemplateEngine.create();
-    
+
+    // first check to see if we have a /plot/zone/zone_id with NO DATE, so do TODAY
     router.route(HttpMethod.GET, "/"+BASE_URI+"/plot/zone/:zoneid").handler( ctx -> {
-            serve_plot_zone(ctx, ctx.request().getParam("zoneid"), template_engine);
+            String zone_id =  ctx.request().getParam("zoneid");
+            LocalDateTime local_time = LocalDateTime.now();
+
+            String dd = local_time.format(DateTimeFormatter.ofPattern("dd"));
+            String MM = local_time.format(DateTimeFormatter.ofPattern("MM"));
+            String yyyy = local_time.format(DateTimeFormatter.ofPattern("yyyy"));
+            System.out.println("DataServer."+MODULE_ID+" zone "+zone_id+" TODAY "+yyyy+"/"+MM+"/"+dd);
+            serve_plot_zone(ctx, template_engine, zone_id, yyyy, MM, dd);
+        });
+
+    // check for /plot/zone/zone_id/yyyy/MM/dd and show data for that previous day
+    router.route(HttpMethod.GET, "/"+BASE_URI+"/plot/zone/:zoneid/:yyyy/:MM/:dd").handler( ctx -> {
+            String zone_id =  ctx.request().getParam("zoneid");
+            String yyyy =  ctx.request().getParam("yyyy");
+            String MM =  ctx.request().getParam("MM");
+            String dd =  ctx.request().getParam("dd");
+            System.out.println("DataServer."+MODULE_ID+" zone "+zone_id+" "+yyyy+"/"+MM+"/"+dd);
+            serve_plot_zone(ctx, template_engine, zone_id, yyyy, MM, dd);
         });
             
     // ********************************
@@ -169,9 +189,10 @@ public class DataServer extends AbstractVerticle {
     }
 
     // Serve the templates/data_plot.hbs web page
-    private void serve_plot_zone(RoutingContext ctx, String zone_id, HandlebarsTemplateEngine engine)
+    private void serve_plot_zone(RoutingContext ctx, HandlebarsTemplateEngine engine,
+                                 String zone_id, String yyyy, String MM, String dd)
     {
-        System.out.println("DataServer."+MODULE_ID+": serving plot.hbs for "+zone_id);
+        System.out.println("DataServer."+MODULE_ID+": serving data_plot.hbs for "+zone_id+" "+yyyy+"/"+MM+"/"+dd);
             
         if (zone_id == null)
         {
@@ -179,23 +200,22 @@ public class DataServer extends AbstractVerticle {
         }
         else
         {
-            System.out.println("DataServer."+MODULE_ID+": reading file");
+
+            ctx.put("config_zone_id",zone_id); // pass zone_id from URL into template var
+
+            // build full filepath for data to be retrieved
+            String filename = DATA_PATH+"zone/"+yyyy+"/"+MM+"/"+dd+"/"+zone_id+"_"+yyyy+"-"+MM+"-"+dd+".txt";
 
             // read the file containing the data
-            vertx.fileSystem().readFile("/home/ijl20/tfc_server_data/data_zone/2016/06/13/madingley_road_in_2016-06-13.txt", fileres -> {
+            vertx.fileSystem().readFile(filename, fileres -> {
+
                     if (fileres.succeeded()) {
 
                         // successful file read, so populate page data and return page
-                        
-                        System.out.println("DataServer."+MODULE_ID+": read file");
-
-                        System.out.println("file starts with "+fileres.result().toString().substring(0,100));
-
-                        ctx.put("config_zone_id",zone_id); // pass zone_id from URL into template var
 
                         // Convert file contents to valid JSON
                         // File starts as JSON objects separated by newlines
-                        
+
                         String plot_data = fileres.result().toString();
 
                         // replace newlines with commas
@@ -220,7 +240,17 @@ public class DataServer extends AbstractVerticle {
                                 }
                             });
                     } else {
-                        ctx.fail(fileres.cause());
+                        // render the template WITHOUT the data, so page can tell user of error
+                        engine.render(ctx, "templates/data_plot.hbs", res -> {
+                                if (res.succeeded())
+                                {
+                                    ctx.response().end(res.result());
+                                }
+                                else
+                                {
+                                    ctx.fail(res.cause());
+                                }
+                            });
                     }
             });
         }
@@ -276,7 +306,19 @@ public class DataServer extends AbstractVerticle {
 
         // where the built-in webserver will find static files
         WEBROOT = config().getString(MODULE_NAME+".webroot");
-        //debug we should properly test for bad config
+        if (WEBROOT==null)
+            {
+                System.err.println("DataServer: no "+MODULE_NAME+".webroot in config()");
+                return false;
+            }
+
+        // where the built-in webserver will find static files
+        DATA_PATH = config().getString(MODULE_NAME+".data_path");
+        if (DATA_PATH==null)
+            {
+                System.err.println("DataServer: no "+MODULE_NAME+".data_path in config()");
+                return false;
+            }
 
         return true;
     }

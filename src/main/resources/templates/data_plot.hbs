@@ -117,14 +117,22 @@ function init()
     chart_day_start_ts = 0; // initially set start-time boundary of chart to distant past
 
 
-    // initialize empty data structure to hold Zone messages
-    rita_data = JSON.parse('{{{config_plot_data}}}');
+    var rita_data = new Array();
 
+    // initialize empty data structure to hold Zone messages
+    try {
+        rita_data = JSON.parse('{{{config_plot_data}}}');
+    } catch(err) {
+        rita_data = new Array();
+    }
     // set up layout / axes of scatterplot
     init_chart();
 
-    // draw chart with the data embedded by the template into rita_data
-    draw_chart(rita_data);
+    if (rita_data.length > 0)
+    {
+      // draw chart with the data embedded by the template into rita_data
+      draw_chart(rita_data);
+    }
 }
 
 // handle ZONE_UPDATE message received on socket from Rita.java

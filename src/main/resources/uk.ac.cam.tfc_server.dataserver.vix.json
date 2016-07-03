@@ -4,7 +4,7 @@
     "options": {
         "config": {
             "module.name":      "dataserver",
-            "module.id":        "A",
+            "module.id":        "vix",
 
             "eb.system_status": "tfc.system_status",
             "eb.console_out":   "tfc.console_out",
@@ -12,7 +12,7 @@
 
             "dataserver.http.port":  8084,
             "dataserver.webroot":   "webroot",
-            "dataserver.data_path": "/home/ijl20/tfc_server_data/data_"
+            "dataserver.data_path": "/media/tfc/vix/data_"
         }
     }
 }
