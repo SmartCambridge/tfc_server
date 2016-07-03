@@ -123,6 +123,30 @@ issue occurred.
 It is intended that Rita will also provide the user subscription mechanism for human-readable
 *alerts*, e.g. a user may opt to receive an email at 4pm every day *if* Hills Road is congested.
 
+### MsgFiler (see [MsgFiler README](src/main/java/uk/ac/cam/tfc_server/msgfiler))
+
+MsgFiler is a general-purpose module that can be configured to subscribe to messages on the 
+EventBus and store them in the filesystem.
+
+### StaticServer (see [StaticServer README](src/main/java/uk/ac/cam/tfc_server/staticserver))
+
+StaticServer is a simple HTTP server for serving static files. This is useful with the Rita verticles
+running behind an Nginx reverse proxy, with /static/* requests redirected to this server.
+
+In general the verticles with a web interface (like Rita itself) also include a Vertx 'StaticHandler'
+on their http router so they can operate independently for testing, but in the production config all static
+http requests are redirected to this verticle.
+
+### DataServer (see [DataServer README](src/main/java/uk/ac/cam/tfc_server/dataserver))
+
+DataServer is an HTTP server supporting templated pages (currently using Vertx Handlebars support) which
+serves templated web pages populated with data from the Rita platform.
+
+For maximum robustness and performance, there is no live data on these pages. I.e. DataServer does not need
+to provide WebSocket or EventBus bridging to these pages as is provided by Rita for the more complex live data pages.
+All data is embedded into the page (as JSON data) before it is returned to the browser, like most traditional
+server-side scripted pages.
+
 ### FeedComposer *(planned)*
 
 It is intended that a FeedComposer module will accept a request (via the eventbus) for a custom
