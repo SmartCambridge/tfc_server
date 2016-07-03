@@ -9,5 +9,25 @@ StaticServer is a basic http server for serving static content from the filesyst
 useful for the Rita platform when running behind an Nginx reverse proxy.
 
 StaticServer is configured via Vertx application config(), such as
+```
+{
+    "main": "uk.ac.cam.tfc_server.staticserver.StaticServer",
+    "options": {
+        "config": {
+            "module.name":      "staticserver",
+            "module.id":        "A",
+
+            "eb.system_status": "tfc.system_status",
+            "eb.console_out":   "tfc.console_out",
+            "eb.manager":       "tfc.manager",
+
+            "staticserver.http.port":  8083,
+            "staticserver.webroot":   "webroot"
+        }
+    }
+}
+```
+
+StaticServer is complemented with DataServer which serves server-side scripted templated pages.
 
 
