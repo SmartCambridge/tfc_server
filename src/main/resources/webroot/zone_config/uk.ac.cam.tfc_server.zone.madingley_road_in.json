@@ -1,0 +1,24 @@
+                                                                                
+{
+    "main":    "uk.ac.cam.tfc_server.zone.Zone",
+    "options": { "config":
+                 {
+        "module.name":      "zone",
+        "module.id":        "madingley_road_in",
+
+        "eb.system_status": "system_status",
+        "eb.zone":          "tfc.zone",
+                     
+        "zone.center":{"lat":52.21132533651944,"lng":0.0969279289245284},
+        "zone.zoom":15,
+        "zone.path":[{"lat":52.212783911038585,"lng":0.08480072021484375},
+                     {"lat":52.214335321429296,"lng":0.08514404296875},
+                     {"lat":52.212257996914616,"lng":0.10570049285888672},
+                     {"lat":52.21065392038191,"lng":0.10548591613769531}],
+        "zone.finish_index":2,
+        "zone.name":"Madingley Road IN",
+        "zone.id":          "madingley_road_in"
+                 }
+               }
+    
+}

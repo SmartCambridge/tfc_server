@@ -201,8 +201,14 @@ public class DataServer extends AbstractVerticle {
         else
         {
 
+            ctx.put("config_base_uri", BASE_URI); // e.g. "dataserver"
+            
             ctx.put("config_zone_id",zone_id); // pass zone_id from URL into template var
 
+            ctx.put("config_yyyy", yyyy);
+            ctx.put("config_MM", MM);
+            ctx.put("config_dd", dd);
+            
             // build full filepath for data to be retrieved
             String filename = DATA_PATH+"zone/"+yyyy+"/"+MM+"/"+dd+"/"+zone_id+"_"+yyyy+"-"+MM+"-"+dd+".txt";
 

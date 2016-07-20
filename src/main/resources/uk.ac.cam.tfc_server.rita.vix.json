@@ -12,11 +12,11 @@
 
             "rita.address":     "tfc.rita.vix",
 
-            "rita.zonemanagers": [ "cambridge" ],
+            "rita.zonemanagers": [ "cambridge.vix" ],
             "rita.zone.address": "tfc.zone.cambridge",
             "rita.zone.feed":    "tfc.feedhandler.vix",
 
-            "rita.name":      "RITA-CAMBRIDGE",
+             "rita.name":      "RITA-CAMBRIDGE",
             "rita.http.port":  8082,
             "rita.webroot":   "webroot"
         }

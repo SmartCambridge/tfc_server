@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
 <!--
-    plot.hbs is served by DataServer.java
+    data_plot.hbs is served by DataServer.java
     The idea is that it will become an 'end-user' status page for a given zone.
     
     This page receives real-time data from the server-side Rita module from
@@ -17,12 +17,11 @@
 <head>
     <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
 
+    <!-- load the d3 library for the chart plot -->
     <script src="/static/d3.v3.min.js" charset="utf-8"></script>
 
-    <!-- load constants template -->
-    <!-- <script src="/{{config_base_uri}}/constants.js" charset="utf-8"></script> -->
     <link rel="icon" href="/static/favicon.ico" type="image/x-icon" />    
-    <title>Rita::Zone Data Plot 0.64</title>
+    <title>Rita::Zone Data Plot 0.65</title>
 <!--
 RELEASE INFO:
 
@@ -47,6 +46,14 @@ img {
 
 .header_title {
    color: #707070;
+}
+
+.chart_title {
+   color: #707070;
+}
+
+.time_shift {
+  display: inline-block;
 }
 
 /* .chart {
@@ -81,8 +88,22 @@ img {
 
 <script type="text/javascript">
 
+// Set base URL of web server
+var DATA_PLOT_ZONE_URL = "/{{config_base_uri}}/plot/zone/{{config_zone_id}}";
 
 var zone_id = "{{config_zone_id}}";
+
+var yyyy = {{config_yyyy}}; // Year e.g. 2016
+var MM = {{config_MM}};     // Month e.g. 07 = July
+var dd = {{config_dd}};     // day e.g. 23
+
+var plot_date; // date of currently displayed plot (initialized from yyyy/MM/dd)
+
+var plot_date_minus_1; // plot_date - 1 day
+var plot_date_plus_1; // plot_date + 1 day
+
+var month_of_year = new Array("spacer", "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec");
+var day_of_week = new Array("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat");
 
 // d3 scatterplot parameters
 var chart_svg;    // chart svg element
@@ -116,6 +137,36 @@ function init()
 
     chart_day_start_ts = 0; // initially set start-time boundary of chart to distant past
 
+    plot_date = new Date(yyyy,MM-1,dd); // as loaded in page template config_ values;
+
+    //alert("plot_date " + plot_date);
+
+    // set plot_date_minus_1 to the day before
+    plot_date_minus_1 = new Date(plot_date);
+    plot_date_minus_1.setDate(plot_date.getDate()-1);
+    var minus_1_url = DATA_PLOT_ZONE_URL;
+    minus_1_url = minus_1_url + "/" + plot_date_minus_1.getFullYear();
+    minus_1_url = minus_1_url + "/" + ("0" + (plot_date_minus_1.getMonth()+1)).slice(-2);
+    minus_1_url = minus_1_url + "/" + ("0" + plot_date_minus_1.getDate()).slice(-2);
+   
+    document.getElementById("date_minus_1").href = minus_1_url;
+   
+
+    // set plot_date_plus_1 to the day after
+    plot_date_plus_1 = plot_date_minus_1 = new Date(plot_date);
+    plot_date_plus_1.setDate(plot_date.getDate()+1);
+    var plus_1_url = DATA_PLOT_ZONE_URL;
+    plus_1_url = plus_1_url + "/" + plot_date_plus_1.getFullYear();
+    plus_1_url = plus_1_url + "/" + ("0" + (plot_date_plus_1.getMonth()+1)).slice(-2);
+    plus_1_url = plus_1_url + "/" + ("0" + plot_date_plus_1.getDate()).slice(-2);
+   
+    document.getElementById("date_plus_1").href = plus_1_url;
+   
+
+
+    var heading_date = document.getElementById("heading_date");
+
+    heading_date.textContent = day_of_week[plot_date.getDay()] + " " + dd + " " + month_of_year[MM] + " " + yyyy;
 
     var rita_data = new Array();
 
@@ -359,11 +410,16 @@ function write_console1(msg)
 <h1 class="header_title">
   <img src="/static/images/smart_cambridge_logo.jpg">Rita::Zone
   <span id="heading_zone_id">{{config_zone_id}}</span>
-  <span id="heading_date"></span>
   
 </h1>
 
-<div id="chart_title"></div>
+<div id="chart_title">
+  <h1>
+  <div class="time_shift"><a id="date_minus_1" href="_dummy"><img src="/static/images/chevron-left.png"></a></div>
+  <span id="heading_date"></span>
+  <div class="time_shift"><a id="date_plus_1" href="_dummy"><img src="/static/images/chevron-right.png"></a></div>
+    </h1>
+</div>
 
 <div class="chart" id="chart">
 </div>
