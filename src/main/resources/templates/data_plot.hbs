@@ -21,10 +21,11 @@
     <script src="/static/d3.v3.min.js" charset="utf-8"></script>
 
     <link rel="icon" href="/static/favicon.ico" type="image/x-icon" />    
-    <title>Rita::Zone Data Plot 0.65</title>
+    <title>Rita::Data Plot 0.66</title>
 <!--
 RELEASE INFO:
 
+2016-06-21 0.66 set fixed Y-axis scale 0..900 seconds, points capped @900 = red
 2016-07-03 0.64 migrated to DataServer to serve historical data without sockets
 2016-06-21 0.63 changes for Nginx reverse proxy compatibility
 2016-06-12 moved d3.v3.min.js to Rita static webserver
@@ -117,7 +118,7 @@ var chart_yScale;
 var chart_yAxis;
 var chart_yValue;
 var chart_yMap;
-var chart_cValue; // value from current data point to determine color of circle (i.e. route_id)
+//var chart_cValue; // value from current data point to determine color of circle (i.e. route_id)
 var chart_color;  // color chosen for current circle on scatterplaot
 var chart_tooltip;
 
@@ -126,7 +127,7 @@ var CHART_START_TIME = 0; // start chart at midnight
 var CHART_END_TIME = 24;  // end chart at midnight
 
 var CHART_DOT_RADIUS = 6; // size of dots on scatterplot
-
+var CHART_Y_MAX = 900; // FIX limit of Y axis at 900 seconds
 
 // **********************************************
 // Initialize this page (called in body:onload())
@@ -251,7 +252,7 @@ function handle_zone_completion(msg)
 // ******************************************
 function init_chart()
 {
-    var margin = {top: 20, right: 50, bottom: 30, left: 40};
+    var margin = {top: 20, right: 50, bottom: 30, left: 60};
     chart_width = window.innerWidth * 0.8 - margin.left - margin.right;
     chart_height = window.innerHeight * 0.6 - margin.top - margin.bottom;
 
@@ -269,15 +270,27 @@ function init_chart()
     chart_xMap = function(d) { return chart_xScale(chart_xValue(d));}; // data -> display
 
     // setup fill color
-    chart_cValue = function(d) { return d.route_id; },
-    chart_color = function (x) { return x=="" ? "gray" : "yellow" ; };
+    //chart_cValue = function(d) { return d.route_id; },
+    chart_color = function (d) {
+        var color = 'yellow';
+        if (d.duration > CHART_Y_MAX)
+        {
+          color = 'red';
+        }
+        else if (d.route_id=='')
+        {
+          color='gray';
+        }
+        
+        return color;
+    };
 
 
     // setup y
     chart_yScale = d3.scale.linear().range([chart_height, 0]); // value -> display
     chart_yAxis = d3.svg.axis().scale(chart_yScale).orient("left");
     chart_yValue = function(d) { return d.duration;}, // data -> value
-    chart_yMap = function(d) { return chart_yScale(chart_yValue(d));}; // data -> display
+    chart_yMap = function(d) { return chart_yScale(Math.min(chart_yValue(d), CHART_Y_MAX));}; // data -> display
 
     // initialize x axis to TODAY - will redraw when data received
     var min_date = new Date();
@@ -289,7 +302,7 @@ function init_chart()
     max_date.setHours(CHART_END_TIME);
 
     chart_xScale.domain([min_date, max_date]);
-    chart_yScale.domain([0, 500]);
+    chart_yScale.domain([0, CHART_Y_MAX]);
 
     // x-axis
     chart_svg.append("g")
@@ -313,7 +326,7 @@ function init_chart()
       .attr("y", 6)
       .attr("dy", ".71em")
       .style("text-anchor", "end")
-      .text("Journey time");
+      .text("Journey time (seconds)");
 
     // add the tooltip area to the webpage
     chart_tooltip = d3.select("#chart").append("div")
@@ -355,7 +368,9 @@ function draw_chart(rita_data)
       max_date.setHours(CHART_END_TIME);
 
       chart_xScale.domain([min_date, max_date]);
-      chart_yScale.domain([0, d3.max(rita_data, chart_yValue)+1]);
+      // chart_yScale.domain([0, d3.max(rita_data, chart_yValue)+1]);
+      // debug y-scale hardcoded to 900 seconds so charts are comparable
+      chart_yScale.domain([0, CHART_Y_MAX]);
 
       chart_svg.select(".x.axis").call(chart_xAxis);
       chart_svg.select(".y.axis").call(chart_yAxis);
@@ -371,7 +386,7 @@ function draw_chart(rita_data)
           .attr("r", CHART_DOT_RADIUS)
           .attr("cx", chart_xMap)
           .attr("cy", chart_yMap)
-          .style("fill", function(d) { return chart_color(chart_cValue(d)); })
+          .style("fill", function(d) { return chart_color(d); })
           .on("mouseover", function(d) {
               chart_tooltip.transition()
                    .duration(500)
