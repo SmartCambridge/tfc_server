@@ -76,8 +76,9 @@ public class BatcherWorker extends AbstractVerticle {
                   fut.fail("BatcherWorker: failed to load initial config()");
               }
 
-        System.out.println("BatcherWorker: " + MODULE_NAME + "." + MODULE_ID + " started on " + BATCHER_ADDRESS);
-
+        System.out.println(MODULE_NAME+"."+MODULE_ID+": started on " + BATCHER_ADDRESS);
+        System.out.println(MODULE_NAME+"."+MODULE_ID+": "+TFC_DATA_BIN+","+START_TS+","+FINISH_TS);
+        
         eb = vertx.eventBus();
 
         // SYNCHRONOUSLY step through the filesystem, sending files as messages
@@ -298,22 +299,38 @@ public class BatcherWorker extends AbstractVerticle {
         //   tfc.module_id - unique module reference to be used by this verticle
         //   eb.system_status - String eventbus address for system status messages
 
+        //debug printing whole config()
+        System.out.println("BatcherWorker config()=");
+        System.out.println(config().toString());
+        
         MODULE_NAME = config().getString("module.name"); // "batcherworker"
         if (MODULE_NAME==null)
             {
+                System.err.println("BatcherWorker config() error: failed to load module.name");
                 return false;
             }
         
         MODULE_ID = config().getString("module.id"); // A, B, ...
+        if (MODULE_ID==null)
+            {
+                System.err.println(MODULE_NAME+" config() error: failed to load module.id");
+                return false;
+            }
 
-        BATCHER_ADDRESS = config().getString(MODULE_NAME+".address"); // eventbus address for controller verticle
-
+        BATCHER_ADDRESS = config().getString("batcher.address"); // eventbus address for control from Batcher
+        if (BATCHER_ADDRESS==null)
+            {
+                System.err.println(MODULE_NAME+"."+MODULE_ID+" config() error: failed to load batcher.address");
+                return false;
+            }
         //debug - this should be coming from a dynamic request, probably...
         TFC_DATA_BIN = config().getString(MODULE_NAME+".files");
 
+        System.out.println(MODULE_NAME+"."+MODULE_ID+": readind config() "+MODULE_NAME+".start_ts");
         START_TS = config().getLong(MODULE_NAME+".start_ts");
+        System.out.println(MODULE_NAME+"."+MODULE_ID+": read config() "+MODULE_NAME+".start_ts="+START_TS);
 
-        FINISH_TS = config().getLong(MODULE_NAME+".finish_ts"); //debug not used yet
+        FINISH_TS = config().getLong(MODULE_NAME+".finish_ts");
 
         return true;
     }

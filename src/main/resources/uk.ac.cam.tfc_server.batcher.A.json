@@ -8,7 +8,7 @@
             "module.name":           "batcher",
             "module.id":             "A",
 
-            "eb.system_status":      "system_status",
+            "eb.system_status":      "tfc.system_status",
 
             "batcher.address" :      "tfc.batcher.A",
 

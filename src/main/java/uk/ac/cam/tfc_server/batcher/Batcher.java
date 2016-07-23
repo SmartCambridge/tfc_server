@@ -1,4 +1,4 @@
-package uk.ac.cam.tfc_server.feedplayer;
+package uk.ac.cam.tfc_server.batcher;
 
 // *************************************************************************************************
 // *************************************************************************************************
@@ -99,7 +99,7 @@ public class Batcher extends AbstractVerticle {
     {
         System.out.println(MODULE_NAME+"."+MODULE_ID+": deploying "+BW_MODULE_NAME+"."+bwc.MODULE_ID);
         System.out.println(MODULE_NAME+"."+MODULE_ID+": "+bwc.FILES+","+bwc.START_TS+","+bwc.FINISH_TS);
-        
+
         // build config options for this BatcherWorker as Json object
         JsonObject conf = new JsonObject();
 
@@ -111,16 +111,20 @@ public class Batcher extends AbstractVerticle {
 
         conf.put(BW_MODULE_NAME+".files", bwc.FILES);
 
-        conf.put(BW_MODULE_NAME+".ts_start", bwc.START_TS);
+        conf.put(BW_MODULE_NAME+".start_ts", bwc.START_TS);
 
-        conf.put(BW_MODULE_NAME+".ts_finish", bwc.FINISH_TS);
+        conf.put(BW_MODULE_NAME+".finish_ts", bwc.FINISH_TS);
 
         // Load config JsonObject into a DeploymentOptions object
-        DeploymentOptions batcherworker_options = new DeploymentOptions(conf);
+        DeploymentOptions batcherworker_options = new DeploymentOptions().setConfig(conf);
 
         // set as WORKER verticle (i.e. synchronous, not non-blocking)
         batcherworker_options.setWorker(true);
 
+        //debug printing whole BatcherWorker config()
+        System.out.println("Batcher: new BatcherWorker config() after setWorker=");
+        System.out.println(batcherworker_options.toJson().toString());
+        
         // note the BatcherWorker json config() file has MODULE_ID of this BATCHER
         vertx.deployVerticle("service:uk.ac.cam.tfc_server.batcherworker."+MODULE_ID,
                              batcherworker_options,
