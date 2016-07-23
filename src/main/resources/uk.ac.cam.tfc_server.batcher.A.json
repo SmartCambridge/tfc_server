@@ -1,0 +1,22 @@
+                                                                                
+{
+    "main":    "uk.ac.cam.tfc_server.batcher.Batcher",
+    "options":
+        { "config":
+          {
+
+            "module.name":           "batcher",
+            "module.id":             "A",
+
+            "eb.system_status":      "system_status",
+
+            "batcher.address" :      "tfc.batcher.A",
+
+            "batcher.batcherworkers": [ "A" ],
+
+            "batcherworker.A.files":      "/home/ijl20/tfc_server_data/data_bin",
+            "batcherworker.A.start_ts" :  1448668801,
+            "batcherworker.A.finish_ts" : 1448755170
+          }
+        }
+}
