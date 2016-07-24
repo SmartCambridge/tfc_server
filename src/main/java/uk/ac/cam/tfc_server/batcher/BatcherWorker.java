@@ -41,7 +41,9 @@ import java.time.*;
 import java.time.format.*;
 import java.util.*;
 import java.text.SimpleDateFormat;
-    
+import java.nio.file.*;
+import java.util.stream.Collectors;
+
 import uk.ac.cam.tfc_server.util.GTFS;
 import uk.ac.cam.tfc_server.util.Constants;
 
@@ -82,44 +84,79 @@ public class BatcherWorker extends AbstractVerticle {
         eb = vertx.eventBus();
 
         // SYNCHRONOUSLY step through the filesystem, sending files as messages
-        process_files( START_TS, FINISH_TS );
+        process_bin_files( START_TS, FINISH_TS );
         
       } // end start()
 
 
-    // iterate through the filesystem, sending files as messages
-    void process_files(Long start_ts, Long finish_ts) throws Exception
+    // iterate through the filesystem, processing files between start_ts and finish_ts
+    void process_bin_files(Long start_ts, Long finish_ts) throws Exception
     {
-        Date d = new Date(start_ts * 1000);
+        // next_start_ts will increment through the days, starting with start_ts
+        Long next_start_ts = start_ts;
+        
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd");
 
-        //debug does this pick up the timezone?
-        String yyyymmdd =  new SimpleDateFormat("yyyy/MM/dd").format(d);
+        while (next_start_ts < finish_ts)
+            {
+                Instant i = Instant.ofEpochSecond(next_start_ts); // convert UNIX ts to java Instant
 
-        process_gtfs_dir(start_ts, finish_ts, TFC_DATA_BIN+"/"+yyyymmdd);
-    } // end publish_files()
+                ZonedDateTime zoned_datetime = i.atZone(ZoneId.systemDefault()); // convert Instant to local Date
+                
+                System.out.println("start_ts " + zoned_datetime.toString());
 
-    void process_gtfs_dir(long start_ts, Long finish_ts, String bin_path) throws Exception
+
+                //debug does conversion of start_ts to yyyy/MM/dd this pick up the local timezone?
+                String yyyymmdd =  zoned_datetime.format(formatter);
+
+                System.out.println("yyyymmdd "+yyyymmdd);
+
+                // iterate through current bin file directory
+                process_bin_dir(next_start_ts, finish_ts, TFC_DATA_BIN+"/"+yyyymmdd);
+                
+                ZonedDateTime next_day = zoned_datetime.plusDays(1L).withHour(0).withMinute(0).withSecond(0); // add a day
+
+                System.out.println("next_day " + next_day.toString());
+
+                System.out.println("next_yyyymmdd " + next_day.format(formatter));
+
+                next_start_ts = next_day.toEpochSecond();
+
+                System.out.println("next_day timestamp "+next_start_ts);
+        
+            }
+
+        System.out.println("finished at "+next_start_ts);
+
+    } // end process_bin_files()
+
+    // iterate through bin files, starting at bin_path
+    void process_bin_dir(long start_ts, Long finish_ts, String bin_path) throws Exception
     {
 
         System.out.println("BatcherWorker."+MODULE_ID+" processing "+bin_path);
         
-        // check if date is already past finish_ts
-        String yyyymmdd = get_date(bin_path+"/x");
+        List<Path> file_paths = Files.walk(Paths.get(bin_path))
+            .filter(Files::isRegularFile)
+            .collect(Collectors.toList());
 
-        Date d = new SimpleDateFormat("yyyy/MM/dd").parse(yyyymmdd);
+        Collections.sort(file_paths);
         
-        //Date d = LocalDateTime.parse(yyyymmdd, DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+        file_paths.forEach(file_path -> {
+        
+                // filenames are <UTC-TS>_YYYY_MM_DD_hh_mm_ss.bin
+                // with the hh_mm_ss in local time
 
-        Long dir_ts = d.getTime() / 1000; // unix timestamp is java millisecs / 1000
-
-        // if directory is beyond required time, then end playback (i.e. do nothing & return)
-        if (dir_ts > finish_ts)
-            {
-                System.out.println("BatcherWorker."+MODULE_ID+" ending, dir "+yyyymmdd+" later than finish timestamp");
-                return;
-            }
-
-        System.out.println("Reading dir "+bin_path);
+                // get UTC timestamp from filename
+                Long file_ts = get_ts(file_path);
+                
+                if (start_ts < file_ts && finish_ts > file_ts)
+                    {
+                        System.out.println(file_path);
+                    }
+        
+            });
+        
         /*
         // read list of days filenames from directory
         vertx.fileSystem().readDir(bin_path, res -> {
@@ -128,8 +165,6 @@ public class BatcherWorker extends AbstractVerticle {
                         // process the gtfs binary files, starting at file 0
                         try
                             {
-                                // filenames are <UTC-TS>_YYYY_MM_DD_hh_mm_ss.bin
-                                // with the hh_mm_ss in local time
                                 
                                 // sort the files from the directory into timestamp order
                                 Collections.sort(res.result());
@@ -188,7 +223,7 @@ public class BatcherWorker extends AbstractVerticle {
                     // Recursive call to process_gtfs_dir, with next day as data directory
                     // Note we are passing first arg 'start_ts' as zero as it is not relevant except
                     // on the original call to process_gtfs_dir()
-                    process_gtfs_dir(0, finish_ts, TFC_DATA_BIN+"/"+next_yyyymmdd);
+                    process_bin_dir(0, finish_ts, TFC_DATA_BIN+"/"+next_yyyymmdd);
                   }
                 catch (Exception e)
                   {
@@ -197,11 +232,13 @@ public class BatcherWorker extends AbstractVerticle {
                   }
                 return;
             }
+        /*
         if (get_ts(files.get(i)) > finish_ts)
             {
                 System.out.println("FilePlayer: "+MODULE_ID+" ending, file replay reached finish time "+finish_ts);
                 return;
             }
+        */
         // process current file
         
         process_gtfs_file(files.get(i));
@@ -255,17 +292,19 @@ public class BatcherWorker extends AbstractVerticle {
   
     // pick out the Long timestamp embedded in the file name
     // e.g. <bin_path>/2016/03/07/1457334014_2016-03-07-07-00-14.bin -> 1457334014
-    Long get_ts(String filepath)
+    Long get_ts(Path filepath)
     {
 
+        String fs = filepath.toString();
+        
         // starting char index of timestamp (either index after last '/', or 0)
-        int ts_start = filepath.lastIndexOf('/') + 1;
+        int ts_start = fs.lastIndexOf('/') + 1;
 
         // length of utc timestamp e.g. "1457334014" = 10
-        int ts_length = filepath.lastIndexOf('_') - ts_start;
+        int ts_length = fs.lastIndexOf('_') - ts_start;
 
         // extract substring i.e. "1457334014"
-        String ts_string = filepath.substring(ts_start, ts_start+ts_length);
+        String ts_string = fs.substring(ts_start, ts_start+ts_length);
         
         return Long.parseLong(ts_string);
     }
