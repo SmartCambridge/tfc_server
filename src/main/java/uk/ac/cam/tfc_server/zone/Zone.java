@@ -121,10 +121,12 @@ public class Zone extends AbstractVerticle {
     // zone_msg_buffer has a MsgBuffer entry for each zone.address
     private HashMap<String, MsgBuffer> zone_msg_buffer; // stores zone completion messages since start of day
 
+    /*
     public Zone(ZoneConfig zone_config)
     {
         System.out.println(zone_config.MODULE_NAME+"."+zone_config.MODULE_ID+" Zone object created");
     }
+    */
     
   // **************************************************************************************
   // Zone Verticle Startup procedure

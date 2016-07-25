@@ -309,7 +309,7 @@ public class BatcherWorker extends AbstractVerticle {
                         ZoneConfig zone_config = new ZoneConfig();
                         zone_config.MODULE_NAME = "zone";
                         zone_config.MODULE_ID = zone_list.getString(j);
-                        ZONES.add(new Zone(zone_config));
+                        //ZONES.add(new Zone(zone_config));
                     }
             }
         System.out.println(Arrays.toString(ZONE_NAMES.toArray()));
