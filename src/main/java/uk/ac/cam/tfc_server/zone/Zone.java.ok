@@ -75,11 +75,9 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
 
 import java.io.*;
-/* import java.util.HashMap; */
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.ArrayList;
 
-/*
 // time/date crapola
 import java.util.Date;
 import java.text.SimpleDateFormat; // for timestamp conversion to HH:MM:SS
@@ -89,14 +87,10 @@ import java.util.TimeZone;
 import uk.ac.cam.tfc_server.util.Position;
 import uk.ac.cam.tfc_server.util.Constants;
 import uk.ac.cam.tfc_server.util.Log;
-*/
-import uk.ac.cam.tfc_server.util.Log;
 import uk.ac.cam.tfc_server.zone.ZoneConfig; // also used by BatcherWorker for synchronous compute
 import uk.ac.cam.tfc_server.zone.ZoneCompute;// also used by BatcherWorker for synchronous compute
 import uk.ac.cam.tfc_server.zone.Vehicle;
 import uk.ac.cam.tfc_server.util.MsgHandler; // Interface to provide handle_msg routine
-import uk.ac.cam.tfc_server.util.Constants;
-import uk.ac.cam.tfc_server.util.Position;
 
 // ********************************************************************************************
 // ********************************************************************************************
@@ -113,9 +107,7 @@ public class Zone extends AbstractVerticle implements MsgHandler {
     private String EB_SYSTEM_STATUS;  // vertx config eb.system_status
     private String EB_MANAGER;        // vertx config eb.manager
 
-    /*
     private Box box;
-    */
     
     //private final String ENV_VAR_ZONE_PATH = "TFC_DATA_ZONE"; // Linux var containing filepath root for csv files
 
@@ -127,14 +119,12 @@ public class Zone extends AbstractVerticle implements MsgHandler {
     
     private EventBus eb = null;
     private String tfc_data_zone = null;
-    /*
     //debug need a vehicles data hashmap for each monitoring instance
     private HashMap<String, Vehicle> vehicles; // dictionary to store vehicle status updated from feed
-    */
     // zone_msg_buffer has a MsgBuffer entry for each zone.address
     private HashMap<String, MsgBuffer> zone_msg_buffer; // stores zone completion messages since start of day
-    /*
 
+    /*
     public Zone(ZoneConfig zone_config)
     {
         System.out.println(zone_config.MODULE_NAME+"."+zone_config.MODULE_ID+" Zone object created");
@@ -158,22 +148,19 @@ public class Zone extends AbstractVerticle implements MsgHandler {
       
     System.out.println("Zone."+zone_config.MODULE_ID+": started");
 
-    /*
     // create box object with boundaries of rectangle that includes this zone polygon
     box = new Box();
-    */
-    
+
     zone_msg_buffer = new HashMap<String, MsgBuffer>();
-        
+    
     // Initialization from config() complete
     
     eb = vertx.eventBus();
 
-    /*
     // **********  Define the data structure for updated vehicle data  ***********************
 
     vehicles = new HashMap<String, Vehicle>();
-    */
+
 
     // **********  Set up connection to EventBus  ********************************************
     // set up a handler for manager messages
@@ -384,23 +371,17 @@ public class Zone extends AbstractVerticle implements MsgHandler {
 
                   JsonObject feed_message = new JsonObject(eb_message.body().toString());
 
-                  zc.handle_feed(feed_message);
+                  handle_feed(feed_message, zc);
               });
     }
 
     // general handle_msg function, called by ZoneCompute
-    public void handle_msg(JsonObject msg, String ZONE_ADDRESS)
+    public void handle_msg(JsonObject msg, String address)
     {
-        if (msg.getString("msg_type").equals(Constants.ZONE_COMPLETION))
-            {
-              // accumulate this Completion message in the ring buffer
-              zone_msg_buffer.get(ZONE_ADDRESS).add(msg);
-            }
-        //System.out.println("Zone handle_msg called with " + address);
-        vertx.eventBus().publish(ZONE_ADDRESS, msg);
+        System.out.println("Zone handle_msg called with " + address);
+        //vertx.eventBus().publish(address, msg);
     }
-
-    /*
+    
     // return true if Position p is INSIDE the Zone
     // http://stackoverflow.com/questions/13950062/checking-if-a-longitude-latitude-coordinate-resides-inside-a-complex-polygon-in
     public boolean inside(Position p) {
@@ -505,15 +486,14 @@ public class Zone extends AbstractVerticle implements MsgHandler {
 
         return i; // lines don't intersect
     } // end intersect()
-    */    
+    
 // ***************************************************************************************
 // **********                            *************************************************
 // **********  Here is where we handle   *************************************************
 // **********  each feed update          *************************************************
 // **********                            *************************************************
 // ***************************************************************************************
-
-    /*
+  
     private void handle_feed(JsonObject feed_message, ZoneCompute zc)
     {
         JsonArray entities = feed_message.getJsonArray("entities");
@@ -531,7 +511,7 @@ public class Zone extends AbstractVerticle implements MsgHandler {
 
         //System.out.println("Zone "+ String.valueOf(vehicles.size()) + " records in vehicles HashMap)");
         //debug
-        
+        /*
 
         FileSystem fs = vertx.fileSystem();
         
@@ -567,7 +547,7 @@ public class Zone extends AbstractVerticle implements MsgHandler {
                         });
                 }
         });
-
+        */
     }
 
     // Update the vehicles[vehicle_id] record with this feed entry
@@ -658,7 +638,7 @@ public class Zone extends AbstractVerticle implements MsgHandler {
               v.start_ts = 0L;
               v.start_ts_delta = 0L;
           }
-      }
+    }
 
     // ******************************************************************************************
     // ******************************************************************************************
@@ -841,7 +821,7 @@ public class Zone extends AbstractVerticle implements MsgHandler {
         // d_time is either "HH:mm" or "HH:mm:ss" so pad ":00" if needed
         return d_time.length() == 5 ? d_time + ":00" : d_time ;
     }
-*/
+
   private void write_file(FileSystem fs, Buffer buf, String file_path)
   {
     fs.writeFile(file_path, 
@@ -855,7 +835,6 @@ public class Zone extends AbstractVerticle implements MsgHandler {
     });
   } // end write_file
 
-    /*
     //*************************************************************************************
     // Class Box - rectangle surrounding zone polygon, for fast 'within zone' exclusion
     //*************************************************************************************
@@ -881,7 +860,6 @@ public class Zone extends AbstractVerticle implements MsgHandler {
         }
     }
 
-    
     //*************************************************************************************
     // Class Intersect
     //*************************************************************************************
@@ -897,7 +875,7 @@ public class Zone extends AbstractVerticle implements MsgHandler {
             success = false;
         }
     } // end class Intersect
-    */
+
     //*************************************************************************************
     // Class MsgBuffer
     //*************************************************************************************
