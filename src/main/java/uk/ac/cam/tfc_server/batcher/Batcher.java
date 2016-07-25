@@ -117,15 +117,17 @@ public class Batcher extends AbstractVerticle {
 
         conf.put(BW_MODULE_NAME+".finish_ts", bwc.FINISH_TS);
 
+        conf.put(BW_MODULE_NAME+".zones", bwc.ZONES);
+
         // Load config JsonObject into a DeploymentOptions object
         DeploymentOptions batcherworker_options = new DeploymentOptions().setConfig(conf);
 
         // set as WORKER verticle (i.e. synchronous, not non-blocking)
         batcherworker_options.setWorker(true);
 
-        //debug printing whole BatcherWorker config()
-        System.out.println("Batcher: new BatcherWorker config() after setWorker=");
-        System.out.println(batcherworker_options.toJson().toString());
+        // debug printing whole BatcherWorker config()
+        //System.out.println("Batcher: new BatcherWorker config() after setWorker=");
+        //System.out.println(batcherworker_options.toJson().toString());
         
         // note the BatcherWorker json config() file has MODULE_ID of this BATCHER
         vertx.deployVerticle("service:uk.ac.cam.tfc_server.batcherworker."+MODULE_ID,
@@ -149,6 +151,9 @@ public class Batcher extends AbstractVerticle {
         //   tfc.module_id - unique module reference to be used by this verticle
         //   eb.system_status - String eventbus address for system status messages
 
+        System.out.println("Batcher config()=");
+        System.out.println(config().toString());
+        
         MODULE_NAME = config().getString("module.name"); // "batcher"
         if (MODULE_NAME==null)
             {
@@ -190,14 +195,23 @@ public class Batcher extends AbstractVerticle {
                         
                         BatcherWorkerConfig bwc = new BatcherWorkerConfig(batcherworker_id);
                         
-                        bwc.DATA_BIN = config().getString("batcherworker."+batcherworker_id+".data_bin");
+                        bwc.DATA_BIN = config().getString(BW_MODULE_NAME+"."+batcherworker_id+".data_bin");
 
-                        bwc.DATA_ZONE = config().getString("batcherworker."+batcherworker_id+".data_zone");
+                        bwc.DATA_ZONE = config().getString(BW_MODULE_NAME+"."+batcherworker_id+".data_zone");
 
-                        bwc.START_TS = config().getLong("batcherworker."+batcherworker_id+".start_ts");
+                        bwc.START_TS = config().getLong(BW_MODULE_NAME+"."+batcherworker_id+".start_ts");
 
-                        bwc.FINISH_TS = config().getLong("batcherworker."+batcherworker_id+".finish_ts");
-                        
+                        bwc.FINISH_TS = config().getLong(BW_MODULE_NAME+"."+batcherworker_id+".finish_ts");
+
+                        bwc.ZONES = new ArrayList<String>();
+                        JsonArray zone_list = config().getJsonArray(BW_MODULE_NAME+"."+batcherworker_id+".zones");
+                        if (zone_list!=null)
+                            {
+                                for (int j=0; j<zone_list.size(); j++)
+                                    {
+                                        bwc.ZONES.add(zone_list.getString(j));
+                                    }
+                            }
                         BATCHERWORKERS.put(batcherworker_id, bwc);
                     }
             }
@@ -211,6 +225,7 @@ public class Batcher extends AbstractVerticle {
         public String DATA_ZONE;     // path to root of zone completion files without ending '/'
         public Long START_TS;    // unix timestamp of start of data
         public Long FINISH_TS;   // unix timestamp of end of data
+        public ArrayList<String> ZONES;
 
         public BatcherWorkerConfig(String id)
         {

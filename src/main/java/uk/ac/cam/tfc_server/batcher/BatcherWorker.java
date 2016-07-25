@@ -47,6 +47,9 @@ import java.util.stream.Collectors;
 import uk.ac.cam.tfc_server.util.GTFS;
 import uk.ac.cam.tfc_server.util.Constants;
 
+import uk.ac.cam.tfc_server.zone.ZoneConfig; // Config to be passed to Zone
+import uk.ac.cam.tfc_server.zone.Zone; // BatchWorker will call methods in Zone directly
+
 // ********************************************************************************************
 // ********************************************************************************************
 // ********************************************************************************************
@@ -66,6 +69,8 @@ public class BatcherWorker extends AbstractVerticle {
     private String TFC_DATA_ZONE; // root of zone completion times files
     private Long   START_TS;   // UTC timestamp for first position record file to publish
     private Long   FINISH_TS;  // UTC timestamp to end feed
+    private ArrayList<String> ZONE_NAMES; // zone names to run against bin gtfs files
+    private ArrayList<Zone> ZONES; // actual Zone objects
     
     private EventBus eb = null;
     
@@ -83,6 +88,8 @@ public class BatcherWorker extends AbstractVerticle {
         System.out.println(MODULE_NAME+"."+MODULE_ID+": time boundaries "+START_TS+","+FINISH_TS);
         System.out.println(MODULE_NAME+"."+MODULE_ID+": input bin files "+TFC_DATA_BIN);
         System.out.println(MODULE_NAME+"."+MODULE_ID+": output zone files "+TFC_DATA_ZONE);
+        System.out.println(MODULE_NAME+"."+MODULE_ID+": zones "+Arrays.toString(ZONES.toArray()));
+
         
         eb = vertx.eventBus();
 
@@ -193,7 +200,7 @@ public class BatcherWorker extends AbstractVerticle {
             String basename = get_basename(fs);
             String yyyymmdd = get_date(fs);
 
-            System.out.println(MODULE_NAME+"."+MODULE_ID+": processing gtfs file "+yyyymmdd+"/"+basename);
+            //System.out.println(MODULE_NAME+"."+MODULE_ID+": processing gtfs file "+yyyymmdd+"/"+basename);
 
             JsonObject msg = GTFS.buf_to_json(file_data, basename, yyyymmdd);
 
@@ -283,12 +290,30 @@ public class BatcherWorker extends AbstractVerticle {
         TFC_DATA_BIN = config().getString(MODULE_NAME+".data_bin");
         TFC_DATA_ZONE = config().getString(MODULE_NAME+".data_zone");
 
-        System.out.println(MODULE_NAME+"."+MODULE_ID+": readind config() "+MODULE_NAME+".start_ts");
+        // System.out.println(MODULE_NAME+"."+MODULE_ID+": reading config() "+MODULE_NAME+".start_ts");
         START_TS = config().getLong(MODULE_NAME+".start_ts");
         System.out.println(MODULE_NAME+"."+MODULE_ID+": read config() "+MODULE_NAME+".start_ts="+START_TS);
 
         FINISH_TS = config().getLong(MODULE_NAME+".finish_ts");
 
+        ZONE_NAMES = new ArrayList<String>();
+        ZONES = new ArrayList<Zone>();
+        
+        JsonArray zone_list = config().getJsonArray(MODULE_NAME+".zones");
+        System.out.println(zone_list.toString());
+        if (zone_list!=null)
+            {
+                for (int j=0; j<zone_list.size(); j++)
+                    {
+                        ZONE_NAMES.add(zone_list.getString(j));
+                        ZoneConfig zone_config = new ZoneConfig();
+                        zone_config.MODULE_NAME = "zone";
+                        zone_config.MODULE_ID = zone_list.getString(j);
+                        ZONES.add(new Zone(zone_config));
+                    }
+            }
+        System.out.println(Arrays.toString(ZONE_NAMES.toArray()));
+        
         return true;
     }
     

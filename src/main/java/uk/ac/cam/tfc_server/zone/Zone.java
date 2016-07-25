@@ -87,6 +87,7 @@ import java.util.TimeZone;
 import uk.ac.cam.tfc_server.util.Position;
 import uk.ac.cam.tfc_server.util.Constants;
 import uk.ac.cam.tfc_server.util.Log;
+import uk.ac.cam.tfc_server.zone.ZoneConfig;
 
 // ********************************************************************************************
 // ********************************************************************************************
@@ -98,17 +99,10 @@ import uk.ac.cam.tfc_server.util.Log;
 
 public class Zone extends AbstractVerticle {
 
-    // from config()
-    private String MODULE_NAME;       // config module.name
-    private String MODULE_ID;         // config module.id
-    
-    private String ZONE_NAME;         // config zone.name
-    private ArrayList<Position> PATH; // config zone.path
-    private Position CENTER;          // config zone.center
-    private int ZOOM;                 // config zone.zoom
-    private int FINISH_INDEX;         // config zone.finish_index
-    private String EB_SYSTEM_STATUS;  // config eb.system_status
-    private String EB_MANAGER;        // config eb.manager
+    private ZoneConfig zone_config;        // initialized in get_config()
+
+    private String EB_SYSTEM_STATUS;  // vertx config eb.system_status
+    private String EB_MANAGER;        // vertx config eb.manager
 
     private Box box;
     
@@ -126,7 +120,12 @@ public class Zone extends AbstractVerticle {
     private HashMap<String, Vehicle> vehicles; // dictionary to store vehicle status updated from feed
     // zone_msg_buffer has a MsgBuffer entry for each zone.address
     private HashMap<String, MsgBuffer> zone_msg_buffer; // stores zone completion messages since start of day
-  
+
+    public Zone(ZoneConfig zone_config)
+    {
+        System.out.println(zone_config.MODULE_NAME+"."+zone_config.MODULE_ID+" Zone object created");
+    }
+    
   // **************************************************************************************
   // Zone Verticle Startup procedure
   @Override
@@ -142,7 +141,7 @@ public class Zone extends AbstractVerticle {
               return;
           }
       
-    System.out.println("Zone."+MODULE_ID+": started");
+    System.out.println("Zone."+zone_config.MODULE_ID+": started");
 
     // create box object with boundaries of rectangle that includes this zone polygon
     box = new Box();
@@ -163,9 +162,9 @@ public class Zone extends AbstractVerticle {
 
     eb.consumer(EB_MANAGER, eb_message -> {
             JsonObject msg = new JsonObject(eb_message.body().toString());
-            System.out.println("Zone."+MODULE_ID+": manager msg received "+msg.toString());
-            if (msg.getString("to_module_name").equals(MODULE_NAME) &&
-                msg.getString("to_module_id").equals(MODULE_ID))
+            System.out.println("Zone."+zone_config.MODULE_ID+": manager msg received "+msg.toString());
+            if (msg.getString("to_module_name").equals(zone_config.MODULE_NAME) &&
+                msg.getString("to_module_id").equals(zone_config.MODULE_ID))
             {
                 manager_msg(msg);
             }
@@ -181,10 +180,10 @@ public class Zone extends AbstractVerticle {
 
     // send periodic "system_status" messages
     vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> {
-            System.out.println("Zone."+MODULE_ID+": sending UP status to "+EB_SYSTEM_STATUS);
+            System.out.println("Zone."+zone_config.MODULE_ID+": sending UP status to "+EB_SYSTEM_STATUS);
       eb.publish(EB_SYSTEM_STATUS,
-                 "{ \"module_name\": \""+MODULE_NAME+"\"," +
-                   "\"module_id\": \""+MODULE_ID+"\"," +
+                 "{ \"module_name\": \""+zone_config.MODULE_NAME+"\"," +
+                   "\"module_id\": \""+zone_config.MODULE_ID+"\"," +
                    "\"status\": \"UP\"," +
                    "\"status_amber_seconds\": "+String.valueOf( SYSTEM_STATUS_AMBER_SECONDS ) + "," +
                    "\"status_red_seconds\": "+String.valueOf( SYSTEM_STATUS_RED_SECONDS ) +
@@ -211,16 +210,18 @@ public class Zone extends AbstractVerticle {
         //   zone.center - Position
         //   zone.zoom - int
         //   zone.finish_index - int
+
+        zone_config = new ZoneConfig();
         
-        MODULE_NAME = config().getString("module.name"); // "zonemanager"
-        if (MODULE_NAME==null)
+        zone_config.MODULE_NAME = config().getString("module.name"); // "zonemanager"
+        if (zone_config.MODULE_NAME==null)
             {
                 Log.log_err("Zone: no module.name in config()");
                 return false;
             }
         
-        MODULE_ID = config().getString("module.id"); // A, B, ...
-        if (MODULE_ID==null)
+        zone_config.MODULE_ID = config().getString("module.id"); // A, B, ...
+        if (zone_config.MODULE_ID==null)
             {
                 Log.log_err("Zone: no module.id in config()");
                 return false;
@@ -229,32 +230,32 @@ public class Zone extends AbstractVerticle {
         EB_SYSTEM_STATUS = config().getString("eb.system_status");
         if (EB_SYSTEM_STATUS==null)
             {
-                Log.log_err("Zone."+MODULE_ID+": no eb.system_status in config()");
+                Log.log_err("Zone."+zone_config.MODULE_ID+": no eb.system_status in config()");
                 return false;
             }
 
         EB_MANAGER = config().getString("eb.manager");
         if (EB_MANAGER==null)
             {
-                Log.log_err("Zone."+MODULE_ID+": no eb.manager in config()");
+                Log.log_err("Zone."+zone_config.MODULE_ID+": no eb.manager in config()");
                 return false;
             }
 
-        ZONE_NAME = config().getString("zone.name");
+        zone_config.ZONE_NAME = config().getString("zone.name");
 
-        PATH = new ArrayList<Position>();
+        zone_config.PATH = new ArrayList<Position>();
         JsonArray json_path = config().getJsonArray("zone.path", new JsonArray());
         for (int i=0; i < json_path.size(); i++) {
-            PATH.add(new Position(json_path.getJsonObject(i)));
+            zone_config.PATH.add(new Position(json_path.getJsonObject(i)));
         }
 
-        CENTER = new Position(config().getJsonObject("zone.center"));
+        zone_config.CENTER = new Position(config().getJsonObject("zone.center"));
         
-        ZOOM = config().getInteger("zone.zoom");
+        zone_config.ZOOM = config().getInteger("zone.zoom");
         
-        FINISH_INDEX = config().getInteger("zone.finish_index");
+        zone_config.FINISH_INDEX = config().getInteger("zone.finish_index");
 
-        //System.out.println("Zone: "+MODULE_NAME+"."+MODULE_ID+" get_config(): ZONE_NAME is "+String.valueOf(ZONE_NAME));
+        //System.out.println("Zone: "+zone_config.MODULE_NAME+"."+zone_config.MODULE_ID+" get_config(): ZONE_NAME is "+String.valueOf(ZONE_NAME));
         
         return true;
     }
@@ -293,7 +294,7 @@ public class Zone extends AbstractVerticle {
     // so should broadcast a message with all the completion messages for the day so far
     private void handle_update_request(JsonObject request_msg)
     {
-        System.out.println("Zone."+MODULE_ID+": sending Zone update");
+        System.out.println("Zone."+zone_config.MODULE_ID+": sending Zone update");
         // ****************************************
         // Send ZONE_UPDATE message to ZONE_ADDRESS
         // ****************************************
@@ -302,8 +303,8 @@ public class Zone extends AbstractVerticle {
 
         JsonObject msg = new JsonObject();
 
-        msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
-        msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
+        msg.put("module_name", zone_config.MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
+        msg.put("module_id", zone_config.MODULE_ID);     // e.g. "madingley_road_in"
         msg.put("msg_type", Constants.ZONE_UPDATE);
         msg.put("msgs", zone_msg_buffer.get(ZONE_ADDRESS).json_array());
 
@@ -315,7 +316,7 @@ public class Zone extends AbstractVerticle {
     // so should broadcast a message with the zone details
     private void handle_info_request(JsonObject request_msg)
     {
-        System.out.println("Zone."+MODULE_ID+": sending Zone info");
+        System.out.println("Zone."+zone_config.MODULE_ID+": sending Zone info");
         // ****************************************
         // Send ZONE_INFO message to ZONE_ADDRESS
         // ****************************************
@@ -324,16 +325,16 @@ public class Zone extends AbstractVerticle {
 
         JsonObject msg = new JsonObject();
 
-        msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
-        msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
+        msg.put("module_name", zone_config.MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
+        msg.put("module_id", zone_config.MODULE_ID);     // e.g. "madingley_road_in"
         msg.put("msg_type", Constants.ZONE_INFO);
-        msg.put("center", CENTER.toJsonObject());
-        msg.put("finish_index", FINISH_INDEX );
-        msg.put("zoom", ZOOM);
+        msg.put("center", zone_config.CENTER.toJsonObject());
+        msg.put("finish_index", zone_config.FINISH_INDEX );
+        msg.put("zoom", zone_config.ZOOM);
         JsonArray json_path = new JsonArray();
-        for (int i=0; i < PATH.size(); i++)
+        for (int i=0; i < zone_config.PATH.size(); i++)
             {
-                json_path.add(PATH.get(i).toJsonObject());
+                json_path.add(zone_config.PATH.get(i).toJsonObject());
             }
         msg.put("path", json_path);
         
@@ -345,7 +346,8 @@ public class Zone extends AbstractVerticle {
     // Called in start()
     private void monitor_feed(String ZONE_FEED, String ZONE_ADDRESS)
     {
-              System.out.println("Zone: " + MODULE_NAME + "." + MODULE_ID +  " subscribing to "+ ZONE_FEED);
+              System.out.println("Zone: " + zone_config.MODULE_NAME + "." + zone_config.MODULE_ID +
+                                 " subscribing to "+ ZONE_FEED);
 
               // Create new MsgBuffer if not already existing for this ZONE_ADDRESS
               if (!zone_msg_buffer.containsKey(ZONE_ADDRESS))
@@ -368,12 +370,12 @@ public class Zone extends AbstractVerticle {
         if (p.lat > box.north || p.lat < box.south || p.lng < box.west || p.lng > box.east)
         return false;
 
-        Position lastPoint = PATH.get(PATH.size() - 1);
+        Position lastPoint = zone_config.PATH.get(zone_config.PATH.size() - 1);
         boolean isInside = false;
         double x = p.lng;
-        for (int i=0; i<PATH.size(); i++)
+        for (int i=0; i<zone_config.PATH.size(); i++)
         {
-            Position point = PATH.get(i);
+            Position point = zone_config.PATH.get(i);
             double x1 = lastPoint.lng;
             double x2 = point.lng;
             double dx = x2 - x1;
@@ -423,7 +425,7 @@ public class Zone extends AbstractVerticle {
     // as above, for finish line
     public Intersect finish_line(Vehicle v)
     {
-        return intersect(FINISH_INDEX, v);
+        return intersect(zone_config.FINISH_INDEX, v);
     }
     
     // http://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
@@ -438,8 +440,8 @@ public class Zone extends AbstractVerticle {
         Position A = v.prev_position;
         Position B = v.position;
 
-        Position C = PATH.get(path_index);
-        Position D = PATH.get(path_index+1);
+        Position C = zone_config.PATH.get(path_index);
+        Position D = zone_config.PATH.get(path_index+1);
 
         double s1_lat = B.lat - A.lat;
         double s1_lng = B.lng - A.lng;
@@ -480,7 +482,7 @@ public class Zone extends AbstractVerticle {
         String filename = feed_message.getString("filename");
         String filepath = feed_message.getString("filepath");
 
-        //System.out.println("Zone: "+MODULE_NAME+"."+MODULE_ID+" ("+ String.valueOf(entities.size()) + "): " + filename);
+        //System.out.println("Zone: "+zone_config.MODULE_NAME+"."+zone_config.MODULE_ID+" ("+ String.valueOf(entities.size()) + "): " + filename);
 
         for (int i = 0; i < entities.size(); i++)
             {
@@ -626,7 +628,7 @@ public class Zone extends AbstractVerticle {
 
     private void zone_start(String ZONE_ADDRESS, Vehicle v)
     {
-      System.out.println( "Zone: ,"+MODULE_ID+",vehicle_id("+v.vehicle_id+
+      System.out.println( "Zone: ,"+zone_config.MODULE_ID+",vehicle_id("+v.vehicle_id+
                           ") clean start at "+ts_to_time_str(v.start_ts) +
                           " start_ts_delta " + v.start_ts_delta);
 
@@ -636,8 +638,8 @@ public class Zone extends AbstractVerticle {
 
       JsonObject msg = new JsonObject();
 
-      msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
-      msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
+      msg.put("module_name", zone_config.MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
+      msg.put("module_id", zone_config.MODULE_ID);     // e.g. "madingley_road_in"
       msg.put("msg_type", Constants.ZONE_START);
       msg.put("vehicle_id", v.vehicle_id);
       msg.put("route_id", v.route_id);
@@ -650,7 +652,7 @@ public class Zone extends AbstractVerticle {
 
     private void zone_entry(String ZONE_ADDRESS, Vehicle v)
     {
-      System.out.println("Zone: ,"+MODULE_ID+",vehicle_id("+v.vehicle_id+
+      System.out.println("Zone: ,"+zone_config.MODULE_ID+",vehicle_id("+v.vehicle_id+
                          ") early entry at "+ts_to_time_str(v.position.ts)+
                          " ts_delta " + (v.position.ts - v.prev_position.ts));
       // ****************************************
@@ -659,8 +661,8 @@ public class Zone extends AbstractVerticle {
 
       JsonObject msg = new JsonObject();
 
-      msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
-      msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
+      msg.put("module_name", zone_config.MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
+      msg.put("module_id", zone_config.MODULE_ID);     // e.g. "madingley_road_in"
       msg.put("msg_type", Constants.ZONE_ENTRY);
       msg.put("vehicle_id", v.vehicle_id);
       msg.put("route_id", v.route_id);
@@ -682,7 +684,7 @@ public class Zone extends AbstractVerticle {
       
       // Build console string and output
       // e.g. 2016-03-16 15:19:08,Cam Test,315,no_route,00:00:29,0.58,COMPLETED,15:11:41,15:18:55,00:07:14
-      String completed_log = "Zone: ,"+MODULE_ID+",";
+      String completed_log = "Zone: ,"+zone_config.MODULE_ID+",";
       completed_log += "COMPLETED,";
       completed_log += v.vehicle_id+",";
       completed_log += v.route_id + ",";
@@ -702,8 +704,8 @@ public class Zone extends AbstractVerticle {
 
       JsonObject msg = new JsonObject();
 
-      msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
-      msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
+      msg.put("module_name", zone_config.MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
+      msg.put("module_id", zone_config.MODULE_ID);     // e.g. "madingley_road_in"
       msg.put("msg_type", Constants.ZONE_COMPLETION);
       msg.put("vehicle_id", v.vehicle_id);
       msg.put("route_id", v.route_id);
@@ -722,7 +724,7 @@ public class Zone extends AbstractVerticle {
     private void zone_finish_no_start(String ZONE_ADDRESS, Vehicle v, Long finish_ts)
     {
       // output clean exit (no start) message
-      System.out.println("Zone: ,"+MODULE_ID+",vehicle_id("+v.vehicle_id+
+      System.out.println("Zone: ,"+zone_config.MODULE_ID+",vehicle_id("+v.vehicle_id+
                          ") clean exit (no start) at "+ts_to_time_str(finish_ts) +
                          " ts_delta " + (v.position.ts - v.prev_position.ts));
       // ****************************************
@@ -731,8 +733,8 @@ public class Zone extends AbstractVerticle {
 
       JsonObject msg = new JsonObject();
 
-      msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
-      msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
+      msg.put("module_name", zone_config.MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
+      msg.put("module_id", zone_config.MODULE_ID);     // e.g. "madingley_road_in"
       msg.put("msg_type", Constants.ZONE_EXIT);
       msg.put("vehicle_id", v.vehicle_id);
       msg.put("route_id", v.route_id);
@@ -745,7 +747,7 @@ public class Zone extends AbstractVerticle {
     
     private void zone_exit(String ZONE_ADDRESS, Vehicle v)
     {
-      System.out.println("Zone: ,"+MODULE_ID+",vehicle_id("+v.vehicle_id+
+      System.out.println("Zone: ,"+zone_config.MODULE_ID+",vehicle_id("+v.vehicle_id+
                          ") early exit at "+ts_to_time_str(v.position.ts)+
                          " ts_delta " + (v.position.ts - v.prev_position.ts));
       // ****************************************
@@ -754,8 +756,8 @@ public class Zone extends AbstractVerticle {
 
       JsonObject msg = new JsonObject();
 
-      msg.put("module_name", MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
-      msg.put("module_id", MODULE_ID);     // e.g. "madingley_road_in"
+      msg.put("module_name", zone_config.MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
+      msg.put("module_id", zone_config.MODULE_ID);     // e.g. "madingley_road_in"
       msg.put("msg_type", Constants.ZONE_EXIT);
       msg.put("vehicle_id", v.vehicle_id);
       msg.put("route_id", v.route_id);
@@ -791,7 +793,7 @@ public class Zone extends AbstractVerticle {
     {
         if (d >= 24 * 60 * 60)
             {
-                Log.log_err("Zone: "+MODULE_ID+" ERROR duration "+d+" > 24 hours");
+                Log.log_err("Zone: "+zone_config.MODULE_ID+" ERROR duration "+d+" > 24 hours");
             }
         String d_time = LocalTime.ofSecondOfDay(d).toString();
 
@@ -807,7 +809,7 @@ public class Zone extends AbstractVerticle {
       if (result.succeeded()) {
         System.out.println("File "+file_path+" written");
       } else {
-        Log.log_err("Zone."+MODULE_ID+": write_file error ..." + result.cause());
+        Log.log_err("Zone."+zone_config.MODULE_ID+": write_file error ..." + result.cause());
       }
     });
   } // end write_file
@@ -827,12 +829,12 @@ public class Zone extends AbstractVerticle {
         double west = 180;
 
         Box() {
-            for (int i=0; i<PATH.size(); i++)
+            for (int i=0; i<zone_config.PATH.size(); i++)
             {
-                if (PATH.get(i).lat > north) north = PATH.get(i).lat;
-                if (PATH.get(i).lat < south) south = PATH.get(i).lat;
-                if (PATH.get(i).lng > east) east = PATH.get(i).lng;
-                if (PATH.get(i).lng < west) west = PATH.get(i).lng;
+                if (zone_config.PATH.get(i).lat > north) north = zone_config.PATH.get(i).lat;
+                if (zone_config.PATH.get(i).lat < south) south = zone_config.PATH.get(i).lat;
+                if (zone_config.PATH.get(i).lng > east) east = zone_config.PATH.get(i).lng;
+                if (zone_config.PATH.get(i).lng < west) west = zone_config.PATH.get(i).lng;
             }
         }
     }

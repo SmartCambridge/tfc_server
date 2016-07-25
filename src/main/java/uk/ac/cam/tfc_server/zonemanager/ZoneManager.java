@@ -162,7 +162,7 @@ public class ZoneManager extends AbstractVerticle {
                 return false;
             }
 
-        //debug test for bad config
+        //debug test for bad START_ZONES config
 
         START_ZONES = new ArrayList<String>();
         JsonArray zone_list = config().getJsonArray(MODULE_NAME+".start");
