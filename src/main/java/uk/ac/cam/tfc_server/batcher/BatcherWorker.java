@@ -63,6 +63,7 @@ public class BatcherWorker extends AbstractVerticle {
     private String BATCHER_ADDRESS; // eventbus address to communicate with Batcher controller
 
     private String TFC_DATA_BIN; // root of bin files
+    private String TFC_DATA_ZONE; // root of zone completion times files
     private Long   START_TS;   // UTC timestamp for first position record file to publish
     private Long   FINISH_TS;  // UTC timestamp to end feed
     
@@ -79,7 +80,9 @@ public class BatcherWorker extends AbstractVerticle {
               }
 
         System.out.println(MODULE_NAME+"."+MODULE_ID+": started on " + BATCHER_ADDRESS);
-        System.out.println(MODULE_NAME+"."+MODULE_ID+": "+TFC_DATA_BIN+","+START_TS+","+FINISH_TS);
+        System.out.println(MODULE_NAME+"."+MODULE_ID+": time boundaries "+START_TS+","+FINISH_TS);
+        System.out.println(MODULE_NAME+"."+MODULE_ID+": input bin files "+TFC_DATA_BIN);
+        System.out.println(MODULE_NAME+"."+MODULE_ID+": output zone files "+TFC_DATA_ZONE);
         
         eb = vertx.eventBus();
 
@@ -103,26 +106,26 @@ public class BatcherWorker extends AbstractVerticle {
 
                 ZonedDateTime zoned_datetime = i.atZone(ZoneId.systemDefault()); // convert Instant to local Date
                 
-                System.out.println("start_ts " + zoned_datetime.toString());
+                //System.out.println("start_ts " + zoned_datetime.toString());
 
 
                 //debug does conversion of start_ts to yyyy/MM/dd this pick up the local timezone?
                 String yyyymmdd =  zoned_datetime.format(formatter);
 
-                System.out.println("yyyymmdd "+yyyymmdd);
+                System.out.println(MODULE_NAME+"."+MODULE_ID+": processing date "+yyyymmdd);
 
                 // iterate through current bin file directory
                 process_bin_dir(next_start_ts, finish_ts, TFC_DATA_BIN+"/"+yyyymmdd);
                 
                 ZonedDateTime next_day = zoned_datetime.plusDays(1L).withHour(0).withMinute(0).withSecond(0); // add a day
 
-                System.out.println("next_day " + next_day.toString());
+                //System.out.println("next_day " + next_day.toString());
 
-                System.out.println("next_yyyymmdd " + next_day.format(formatter));
+                //System.out.println("next_yyyymmdd " + next_day.format(formatter));
 
                 next_start_ts = next_day.toEpochSecond();
 
-                System.out.println("next_day timestamp "+next_start_ts);
+                //System.out.println("next_day timestamp "+next_start_ts);
         
             }
 
@@ -130,11 +133,11 @@ public class BatcherWorker extends AbstractVerticle {
 
     } // end process_bin_files()
 
-    // iterate through bin files, starting at bin_path
+    // iterate through bin files in directory <bin_path>
     void process_bin_dir(long start_ts, Long finish_ts, String bin_path) throws Exception
     {
 
-        System.out.println("BatcherWorker."+MODULE_ID+" processing "+bin_path);
+        //System.out.println("BatcherWorker."+MODULE_ID+" processing "+bin_path);
         
         List<Path> file_paths = Files.walk(Paths.get(bin_path))
             .filter(Files::isRegularFile)
@@ -148,155 +151,69 @@ public class BatcherWorker extends AbstractVerticle {
                 // with the hh_mm_ss in local time
 
                 // get UTC timestamp from filename
-                Long file_ts = get_ts(file_path);
+                Long file_ts = get_ts(file_path.toString());
                 
                 if (start_ts < file_ts && finish_ts > file_ts)
                     {
-                        System.out.println(file_path);
-                    }
-        
-            });
-        
-        /*
-        // read list of days filenames from directory
-        vertx.fileSystem().readDir(bin_path, res -> {
-                if (res.succeeded())
-                    {
-                        // process the gtfs binary files, starting at file 0
                         try
                             {
-                                
-                                // sort the files from the directory into timestamp order
-                                Collections.sort(res.result());
-
-                                // skip forward to first file newer than start_ts
-                                int file_index = 0;
-                                while (file_index < res.result().size() &&
-                                       start_ts > get_ts(res.result().get(file_index))
-                                      )
-                                    {
-                                        file_index++;
-                                    }
-                                System.out.println("BatcherWorker: starting with "+bin_path+" file #"+file_index);
-                                // process files starting with start_ts or newer
-                                process_gtfs_files( res.result(), file_index, finish_ts);
+                                process_gtfs_file(file_path);
                             }
                         catch (Exception e)
                             {
-                                System.err.println("BatcherWorker: exception in process_gtfs_files() " + e.getMessage());
+                                System.err.println(MODULE_NAME+"."+MODULE_ID+
+                                                       ": process_gtfs_file exception "+file_path.toString());
                             }
                     }
-                else
-                    {
-                        System.err.println(res.cause());
-                    }
+        
             });
-        */
+        
       } // end process_gtfs_dir()
 
-        
-    // Iterate through the list of files
-    // Note this procedure is tail-recursive
-    // i.e. the style is "process first file".. "set timer to process remaining files"
-    void process_gtfs_files(List<String> files, int i, Long finish_ts) throws Exception
+    // process single gtfs binary file
+    void process_gtfs_file(Path file_path) throws Exception
     {
-
-        // test if we've reached end of files for current day
-        if (i >= files.size())
+        Buffer file_data;
+        
+        // Read the file
+        try
             {
-                try
-                  {
-                    // at end of files in current directory, so move on to next day
-                    String yyyymmdd = get_date(files.get(0));
-                    System.out.println("BatcherWorker."+MODULE_ID+": " + yyyymmdd + " file list completed");
-
-                    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd");
-
-                    LocalDate current_date =  LocalDate.parse(yyyymmdd, dtf);
-
-                    LocalDate next_date = current_date.plusDays(1); 
-
-                    String next_yyyymmdd = next_date.format(dtf);
-
-                    System.out.println("BatcherWorker."+MODULE_ID+": moving on to "+next_yyyymmdd);
-
-                    // Recursive call to process_gtfs_dir, with next day as data directory
-                    // Note we are passing first arg 'start_ts' as zero as it is not relevant except
-                    // on the original call to process_gtfs_dir()
-                    process_bin_dir(0, finish_ts, TFC_DATA_BIN+"/"+next_yyyymmdd);
-                  }
-                catch (Exception e)
-                  {
-                    System.out.println("BatcherWorker."+MODULE_ID+": exception in process_gtfs_files changing dir");
-                    e.printStackTrace();
-                  }
+                file_data = vertx.fileSystem().readFileBlocking(file_path.toString());
+            }
+        catch (Exception e)
+            {
+                System.err.println(MODULE_NAME+"."+MODULE_ID+": error reading "+file_path.toString());
+                e.printStackTrace();
                 return;
             }
-        /*
-        if (get_ts(files.get(i)) > finish_ts)
-            {
-                System.out.println("FilePlayer: "+MODULE_ID+" ending, file replay reached finish time "+finish_ts);
-                return;
-            }
-        */
-        // process current file
-        
-        process_gtfs_file(files.get(i));
 
-        // process remaining files
-        vertx.setTimer(1000, id -> {
-                try
-                    {
-                        process_gtfs_files(files, i + 1, finish_ts);
-                    }
-                catch (Exception e)
-                    {
-                        System.err.println("BatcherWorker: "+MODULE_ID+" exception in process_gtfs_files()");
-                    }
-            });
-    }
-    
-    // publish single file as message
-    void process_gtfs_file(String filepath) throws Exception
-    {
-        // Read a file
-        vertx.fileSystem().readFile(filepath, res -> {
-                if (res.succeeded())
-                {
-                    try
-                    {
-                        String basename = get_basename(filepath);
-                        String yyyymmdd = get_date(filepath);
-                        
-                        System.out.println("BatcherWorker."+MODULE_ID+" publishing "+yyyymmdd+"/"+basename);
-                        
-                      JsonObject msg = GTFS.buf_to_json(res.result(), basename, yyyymmdd);
+        try
+        {
+            String fs = file_path.toString();
+            String basename = get_basename(fs);
+            String yyyymmdd = get_date(fs);
 
-                      msg.put("module_name", MODULE_NAME);
-                      msg.put("module_id", MODULE_ID);
-                      msg.put("msg_type", Constants.FEED_BUS_POSITION);
-        
-                      //eb.publish(FEEDPLAYER_ADDRESS, msg);
-                      //System.out.println("BatcherWorker: ."+MODULE_ID+" published to "+FEEDPLAYER_ADDRESS);
-                    } catch (Exception e)
-                    {
-                        System.err.println("BatcherWorker: exception in GTFS.buf_to_json()");
-                    }
-                } else
-                {
-                    System.err.println("BatcherWorker: " + res.cause());
-                }
-            });
+            System.out.println(MODULE_NAME+"."+MODULE_ID+": processing gtfs file "+yyyymmdd+"/"+basename);
+
+            JsonObject msg = GTFS.buf_to_json(file_data, basename, yyyymmdd);
+
+            msg.put("module_name", MODULE_NAME);
+            msg.put("module_id", MODULE_ID);
+            msg.put("msg_type", Constants.FEED_BUS_POSITION);
+
+          //eb.publish(FEEDPLAYER_ADDRESS, msg);
+          //System.out.println("BatcherWorker: ."+MODULE_ID+" published to "+FEEDPLAYER_ADDRESS);
+        } catch (Exception e)
+        {
+            System.err.println(MODULE_NAME+"."+MODULE_ID+": exception processing gtfs file "+file_path.toString());
+        }
         
     } // end process_gtfs_file()
   
     // pick out the Long timestamp embedded in the file name
     // e.g. <bin_path>/2016/03/07/1457334014_2016-03-07-07-00-14.bin -> 1457334014
-    Long get_ts(Path filepath)
+    Long get_ts(String fs)
     {
-
-        String fs = filepath.toString();
-        
         // starting char index of timestamp (either index after last '/', or 0)
         int ts_start = fs.lastIndexOf('/') + 1;
 
@@ -311,9 +228,9 @@ public class BatcherWorker extends AbstractVerticle {
 
     // get base filename from filepath
     //  e.g. "<bin_path>/2016/03/07/1457334014_2016-03-07-07-00-14.bin" -> "1457334014_2016-03-07-07-00-14"
-    String get_basename(String filepath)
+    String get_basename(String fs)
     {
-        String[] parts = filepath.split("/");
+        String[] parts = fs.split("/");
 
         String filename_bin = parts[parts.length - 1];
 
@@ -324,9 +241,9 @@ public class BatcherWorker extends AbstractVerticle {
 
     // get YYYY/MM/DD from filepath
     //  e.g. "<bin_path>/2016/03/07/1457334014_2016-03-07-07-00-14.bin" -> "2016/03/07"
-    String get_date(String filepath)
+    String get_date(String fs)
     {
-        String [] parts = filepath.split("/");
+        String [] parts = fs.split("/");
         return parts[parts.length-4]+"/"+parts[parts.length-3]+"/"+parts[parts.length-2];
     }
 
@@ -363,7 +280,8 @@ public class BatcherWorker extends AbstractVerticle {
                 return false;
             }
         //debug - this should be coming from a dynamic request, probably...
-        TFC_DATA_BIN = config().getString(MODULE_NAME+".files");
+        TFC_DATA_BIN = config().getString(MODULE_NAME+".data_bin");
+        TFC_DATA_ZONE = config().getString(MODULE_NAME+".data_zone");
 
         System.out.println(MODULE_NAME+"."+MODULE_ID+": readind config() "+MODULE_NAME+".start_ts");
         START_TS = config().getLong(MODULE_NAME+".start_ts");

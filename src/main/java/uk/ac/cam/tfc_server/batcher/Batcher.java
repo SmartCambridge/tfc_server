@@ -98,7 +98,7 @@ public class Batcher extends AbstractVerticle {
     private void deploy_batcherworker(BatcherWorkerConfig bwc)
     {
         System.out.println(MODULE_NAME+"."+MODULE_ID+": deploying "+BW_MODULE_NAME+"."+bwc.MODULE_ID);
-        System.out.println(MODULE_NAME+"."+MODULE_ID+": "+bwc.FILES+","+bwc.START_TS+","+bwc.FINISH_TS);
+        System.out.println(MODULE_NAME+"."+MODULE_ID+": "+bwc.DATA_BIN+","+bwc.START_TS+","+bwc.FINISH_TS);
 
         // build config options for this BatcherWorker as Json object
         JsonObject conf = new JsonObject();
@@ -109,7 +109,9 @@ public class Batcher extends AbstractVerticle {
 
         conf.put("batcher.address", BATCHER_ADDRESS);
 
-        conf.put(BW_MODULE_NAME+".files", bwc.FILES);
+        conf.put(BW_MODULE_NAME+".data_bin", bwc.DATA_BIN);
+
+        conf.put(BW_MODULE_NAME+".data_zone", bwc.DATA_ZONE);
 
         conf.put(BW_MODULE_NAME+".start_ts", bwc.START_TS);
 
@@ -188,7 +190,9 @@ public class Batcher extends AbstractVerticle {
                         
                         BatcherWorkerConfig bwc = new BatcherWorkerConfig(batcherworker_id);
                         
-                        bwc.FILES = config().getString("batcherworker."+batcherworker_id+".files");
+                        bwc.DATA_BIN = config().getString("batcherworker."+batcherworker_id+".data_bin");
+
+                        bwc.DATA_ZONE = config().getString("batcherworker."+batcherworker_id+".data_zone");
 
                         bwc.START_TS = config().getLong("batcherworker."+batcherworker_id+".start_ts");
 
@@ -203,7 +207,8 @@ public class Batcher extends AbstractVerticle {
 
     private class BatcherWorkerConfig {
         public String MODULE_ID; // id of worker module e.g. "A"
-        public String FILES;     // path to root of bin files without ending '/'
+        public String DATA_BIN;     // path to root of bin files without ending '/'
+        public String DATA_ZONE;     // path to root of zone completion files without ending '/'
         public Long START_TS;    // unix timestamp of start of data
         public Long FINISH_TS;   // unix timestamp of end of data
 
