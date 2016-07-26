@@ -3,7 +3,7 @@
 Zone is part of the RITA Realtime Intelligent Traffic Analysis platform,
 supported by the Smart Cambridge programme.
 
-## Overview
+### Overview
 
 A zone is an area of arbitrary shape, typically a segment of some route such as
 a rectangle surrounding a length of road, such that vehicles can be monitored within it. The
@@ -24,7 +24,7 @@ the consecutive pair of points defining a finishline. This allows the Zone to ac
 transit times across the Zone in a particular direction (i.e. startline to finishline) and detect
 when these are abnormal.
 
-## Zone sends the following messages to zone.address:
+### Zone sends the following messages to zone.address:
 
 When a vehicle completes a transit of the Zone, startline..finishline:
 ```
@@ -70,4 +70,38 @@ When a vehicle enters the Zone but NOT via the start line
     "ts", position_ts // this is the timestamp of the first point INSIDE the zone
   }
 ```
+
+### Structure of the zone package
+
+Zone processing is required both in a Verticle (for real-time or replay processing)
+and also as historical batch processing, for example if a new zone is defined it
+will be reasonable to calculate transit times for this new zone using all the
+historical position data.
+
+Note that the Zone Verticle is designed to operate in asynchronous mode, taking
+full advantage of the Vert.x libraries for message passing and real-time
+processing. The same Zone Verticle can also be configured to listen to the
+historical position data broadcast by a FeedPlayer vertical at many times
+'normal' speed.
+
+However, for the fastest possible batch processing, we require the zone calculations
+to be performed in 'synchronous' mode, i.e. the directories of binary gtfs position
+data are scanned and zone calculations performed synchronously on each file found.
+
+For this reason, the calculations performed in a Zone are separated into a
+separate ZoneCompute class, which can be instantiated independently by a
+BatcherWorker worker Verticle and methods within it called directly (and
+synchronously).
+
+Because the BatcherWorker will also have to pass a 'config' to the zone, there
+is also a ZoneConfig class definition that can be shared between the Zone,
+ZoneCompute and BatcherWorker classes.
+
+So in summary there are three classes in the zone package:
+
+- Zone: the Vert.x verticle that subscribes to position feed messages and publishes
+zone transit messages
+- ZoneCompute: the general java class that provides the zone entry/exit and transit
+time calculations
+- ZoneConfig: simple class that holds the zone configuration parameters
 

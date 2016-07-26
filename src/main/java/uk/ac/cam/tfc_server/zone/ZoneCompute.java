@@ -7,7 +7,6 @@ package uk.ac.cam.tfc_server.zone;
 //
 import uk.ac.cam.tfc_server.zone.ZoneConfig;
 import uk.ac.cam.tfc_server.zone.Vehicle;
-import uk.ac.cam.tfc_server.util.MsgHandler;
 import uk.ac.cam.tfc_server.util.Position;
 import uk.ac.cam.tfc_server.util.Constants;
 import uk.ac.cam.tfc_server.util.Log;
@@ -21,11 +20,13 @@ import java.time.LocalTime; // for timestamp duration conversion to HH:mm:ss
 import java.util.TimeZone;
 import java.util.HashMap;
 
+import uk.ac.cam.tfc_server.util.IMsgHandler; // Interface for message handling in caller
+
 public class ZoneCompute {
 
     private ZoneConfig zone_config;
 
-    public MsgHandler HANDLE_MSG; // will be called when Zone events occur
+    public IMsgHandler HANDLE_MSG; // will be called when Zone events occur
 
     public String ZONE_ADDRESS;
 
@@ -45,11 +46,6 @@ public class ZoneCompute {
         box = new Box();
         //zone_msg_buffer = new HashMap<String, MsgBuffer>();
 
-    }
-
-    public void echo()
-    {
-        HANDLE_MSG.handle_msg(new JsonObject(), "hello world");
     }
 
     public void handle_feed(JsonObject feed_message)
