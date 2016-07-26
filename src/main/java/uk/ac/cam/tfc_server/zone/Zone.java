@@ -4,7 +4,7 @@ package uk.ac.cam.tfc_server.zone;
 // *************************************************************************************************
 // *************************************************************************************************
 // Zone.java
-// Version 0.13
+// Version 0.14
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
@@ -95,7 +95,7 @@ import uk.ac.cam.tfc_server.util.IMsgHandler; // Interface to provide handle_msg
 // ********************************************************************************************
 // ********************************************************************************************
 
-public class Zone extends AbstractVerticle implements IMsgHandler {
+public class Zone extends AbstractVerticle {
 
     private ZoneConfig zone_config;        // initialized in get_config()
 
@@ -110,8 +110,8 @@ public class Zone extends AbstractVerticle implements IMsgHandler {
     
     private EventBus eb = null;
     private String tfc_data_zone = null;
-    // zone_msg_buffer has a MsgBuffer entry for each zone.address
-    private HashMap<String, MsgBuffer> zone_msg_buffer; // stores zone completion messages since start of day
+
+    private HashMap<String, MsgHandler> msg_handlers;
     
   // **************************************************************************************
   // Zone Verticle Startup procedure
@@ -130,11 +130,11 @@ public class Zone extends AbstractVerticle implements IMsgHandler {
       
     System.out.println("Zone."+zone_config.MODULE_ID+": started");
 
-    zone_msg_buffer = new HashMap<String, MsgBuffer>();
-        
     // Initialization from config() complete
     
     eb = vertx.eventBus();
+
+    msg_handlers = new HashMap<String, MsgHandler>();
 
     // **********  Set up connection to EventBus  ********************************************
     // set up a handler for manager messages
@@ -283,7 +283,7 @@ public class Zone extends AbstractVerticle implements IMsgHandler {
         msg.put("module_name", zone_config.MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
         msg.put("module_id", zone_config.MODULE_ID);     // e.g. "madingley_road_in"
         msg.put("msg_type", Constants.ZONE_UPDATE);
-        msg.put("msgs", zone_msg_buffer.get(ZONE_ADDRESS).json_array());
+        msg.put("msgs", msg_handlers.get(ZONE_ADDRESS).get_update());
 
         // Send zone_completed message to common zone.address
         vertx.eventBus().publish(ZONE_ADDRESS, msg);
@@ -323,20 +323,18 @@ public class Zone extends AbstractVerticle implements IMsgHandler {
     // Called in start()
     private void monitor_feed(String ZONE_FEED, String ZONE_ADDRESS)
     {
-              System.out.println("Zone: " + zone_config.MODULE_NAME + "." + zone_config.MODULE_ID +
-                                 " subscribing to "+ ZONE_FEED);
+      System.out.println("Zone: " + zone_config.MODULE_NAME + "." + zone_config.MODULE_ID +
+                         " subscribing to "+ ZONE_FEED);
 
-              // Create new MsgBuffer if not already existing for this ZONE_ADDRESS
-              if (!zone_msg_buffer.containsKey(ZONE_ADDRESS))
-                  {
-                      zone_msg_buffer.put(ZONE_ADDRESS, new MsgBuffer(Constants.ZONE_BUFFER_SIZE));
-                  }
+      // Create new MsgHandler if not already existing for this ZONE_ADDRESS
+      if (!msg_handlers.containsKey(ZONE_ADDRESS))
+          {
+              MsgHandler mh = new MsgHandler(ZONE_ADDRESS);
 
               // set up ZoneCompute object
-              ZoneCompute zc = new ZoneCompute(zone_config);
+              ZoneCompute zc = new ZoneCompute(zone_config, mh);
 
-              zc.ZONE_ADDRESS = ZONE_ADDRESS;
-              zc.HANDLE_MSG = this;
+              msg_handlers.put(ZONE_ADDRESS, mh);
 
               // set up a handler for the actual vehicle position feed messages
               vertx.eventBus().consumer(ZONE_FEED, eb_message -> {
@@ -345,32 +343,8 @@ public class Zone extends AbstractVerticle implements IMsgHandler {
 
                   zc.handle_feed(feed_message);
               });
+          }
     }
-
-    // general handle_msg function, called by ZoneCompute
-    public void handle_msg(JsonObject msg, String ZONE_ADDRESS)
-    {
-        if (msg.getString("msg_type").equals(Constants.ZONE_COMPLETION))
-            {
-              // accumulate this Completion message in the ring buffer
-              zone_msg_buffer.get(ZONE_ADDRESS).add(msg);
-            }
-        //System.out.println("Zone handle_msg called with " + address);
-        vertx.eventBus().publish(ZONE_ADDRESS, msg);
-    }
-
-  private void write_file(FileSystem fs, Buffer buf, String file_path)
-  {
-    fs.writeFile(file_path, 
-                 buf, 
-                 result -> {
-      if (result.succeeded()) {
-        System.out.println("File "+file_path+" written");
-      } else {
-        Log.log_err("Zone."+zone_config.MODULE_ID+": write_file error ..." + result.cause());
-      }
-    });
-  } // end write_file
 
     //*************************************************************************************
     // Class MsgBuffer
@@ -424,4 +398,49 @@ public class Zone extends AbstractVerticle implements IMsgHandler {
         }
         
     } // end class MsgBuffer
+
+    //*************************************************************************************
+    // Class MsgHandler
+    //*************************************************************************************
+    //
+    // passed to ZoneCompute for callback to handle zone event messages
+    //
+    // MsgHandler is initialized with the eventbus address than messages should be
+    // broadcast to.
+    //
+    class MsgHandler implements IMsgHandler {
+
+        String ZONE_ADDRESS;
+
+        MsgBuffer msg_buffer;
+
+        MsgHandler(String s)
+        {
+            ZONE_ADDRESS = s;
+            
+            msg_buffer = new MsgBuffer(Constants.ZONE_BUFFER_SIZE);
+            
+        }
+        
+        // general handle_msg function, called by ZoneCompute
+        public void handle_msg(JsonObject msg)
+        {
+            if (msg.getString("msg_type").equals(Constants.ZONE_COMPLETION))
+                {
+                  // accumulate this Completion message in the ring buffer
+                  msg_buffer.add(msg);
+                }
+            //System.out.println("Zone handle_msg called with " + address);
+            vertx.eventBus().publish(ZONE_ADDRESS, msg);
+        }
+
+        // Zone has received a ZONE_UPDATE_REQUEST message on the eb.manager eventbus address
+        // so return a JsonArray containing current message cache
+        public JsonArray get_update()
+        {
+            return msg_buffer.json_array();
+        }
+
+    } // end class MsgHandler
+    
 } // end class Zone

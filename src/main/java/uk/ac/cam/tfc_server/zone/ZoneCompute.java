@@ -26,9 +26,7 @@ public class ZoneCompute {
 
     private ZoneConfig zone_config;
 
-    public IMsgHandler HANDLE_MSG; // will be called when Zone events occur
-
-    public String ZONE_ADDRESS;
+    public IMsgHandler msg_handler; // will be called when Zone events occur
 
     private HashMap<String, Vehicle> vehicles; // dictionary to store vehicle status updated from feed
     
@@ -37,10 +35,12 @@ public class ZoneCompute {
     // zone_msg_buffer has a MsgBuffer entry for each zone.address
     //private HashMap<String, MsgBuffer> zone_msg_buffer; // stores zone completion messages since start of day
 
-    ZoneCompute(ZoneConfig zc)
+    ZoneCompute(ZoneConfig zc, IMsgHandler mh)
     {
         zone_config = zc;
-        ZONE_ADDRESS = null;
+
+        msg_handler = mh;
+
         vehicles = new HashMap<String, Vehicle>();
         // create box object with boundaries of rectangle that includes this zone polygon
         box = new Box();
@@ -101,13 +101,13 @@ public class ZoneCompute {
                       v.start_ts_delta = v.position.ts - v.prev_position.ts;
 
                       // ZONE_START (entry via start line)
-                      zone_start(ZONE_ADDRESS, v);
+                      zone_start(v);
                       
                   }
               else
                   {
                       // ZONE_ENTRY (entry but not via start line)
-                      zone_entry(ZONE_ADDRESS, v);
+                      zone_entry(v);
                   }
           }
       // IS VEHICLE TRAVELLING WITHIN ZONE?
@@ -131,18 +131,18 @@ public class ZoneCompute {
                       if (v.start_ts>0L)
                         {
                             // ZONE_COMPLETION
-                            zone_completion(ZONE_ADDRESS, v, finish_ts);
+                            zone_completion(v, finish_ts);
                         }
                       else
                         {
                             // ZONE_EXIT via finish line but no prior good start
-                            zone_finish_no_start(ZONE_ADDRESS, v, finish_ts);
+                            zone_finish_no_start(v, finish_ts);
                         }
                   }
               else
                   {
                       // ZONE EXIT but not via finish line
-                      zone_exit(ZONE_ADDRESS, v);
+                      zone_exit(v);
                   }
               
               // Reset the Zone start time for this vehicle
@@ -263,19 +263,19 @@ public class ZoneCompute {
     // ******************************************************************************************
     // ******************************************************************************************
 
-    private void zone_start(String ZONE_ADDRESS, Vehicle v)
+    private void zone_start(Vehicle v)
     {
       System.out.println( "Zone: ,"+zone_config.MODULE_ID+",vehicle_id("+v.vehicle_id+
                           ") clean start at "+ts_to_time_str(v.start_ts) +
                           " start_ts_delta " + v.start_ts_delta);
 
       // ****************************************
-      // Send Zone event message to ZONE_ADDRESS
+      // Send ZONE_START msg
       // ****************************************
 
       JsonObject msg = new JsonObject();
 
-      msg.put("module_name", zone_config.MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
+      msg.put("module_name", zone_config.MODULE_NAME); 
       msg.put("module_id", zone_config.MODULE_ID);     // e.g. "madingley_road_in"
       msg.put("msg_type", Constants.ZONE_START);
       msg.put("vehicle_id", v.vehicle_id);
@@ -284,21 +284,21 @@ public class ZoneCompute {
       msg.put("ts_delta", v.start_ts_delta);
 
       // Send zone_start message to common zone.address
-      HANDLE_MSG.handle_msg(msg, ZONE_ADDRESS);
+      msg_handler.handle_msg(msg);
     }
 
-    private void zone_entry(String ZONE_ADDRESS, Vehicle v)
+    private void zone_entry(Vehicle v)
     {
       System.out.println("Zone: ,"+zone_config.MODULE_ID+",vehicle_id("+v.vehicle_id+
                          ") early entry at "+ts_to_time_str(v.position.ts)+
                          " ts_delta " + (v.position.ts - v.prev_position.ts));
       // ****************************************
-      // Send Zone event message to ZONE_ADDRESS
+      // Send ZONE_ENTRY msg
       // ****************************************
 
       JsonObject msg = new JsonObject();
 
-      msg.put("module_name", zone_config.MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
+      msg.put("module_name", zone_config.MODULE_NAME); // e.g. "zone"
       msg.put("module_id", zone_config.MODULE_ID);     // e.g. "madingley_road_in"
       msg.put("msg_type", Constants.ZONE_ENTRY);
       msg.put("vehicle_id", v.vehicle_id);
@@ -307,10 +307,10 @@ public class ZoneCompute {
       msg.put("ts_delta", v.position.ts - v.prev_position.ts);
 
       // Send zone_entry message to common zone.address
-      HANDLE_MSG.handle_msg(msg, ZONE_ADDRESS);
+      msg_handler.handle_msg(msg);
     }
     
-    private void zone_completion(String ZONE_ADDRESS, Vehicle v, Long finish_ts)
+    private void zone_completion(Vehicle v, Long finish_ts)
     {
 
       // exit completion message
@@ -336,12 +336,12 @@ public class ZoneCompute {
       System.out.println(completed_log);
 
       // ****************************************
-      // Send Zone event message to ZONE_ADDRESS
+      // Send ZONE_COMPLETION msg
       // ****************************************
 
       JsonObject msg = new JsonObject();
 
-      msg.put("module_name", zone_config.MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
+      msg.put("module_name", zone_config.MODULE_NAME); // "zone"
       msg.put("module_id", zone_config.MODULE_ID);     // e.g. "madingley_road_in"
       msg.put("msg_type", Constants.ZONE_COMPLETION);
       msg.put("vehicle_id", v.vehicle_id);
@@ -351,28 +351,23 @@ public class ZoneCompute {
       // note we send start_ts_delta + finish_ts_delta as the 'confidence' factor
       msg.put("ts_delta", finish_ts_delta + v.start_ts_delta);
 
-      /*
-      // accumulate this Completion message in the ring buffer
-      zone_msg_buffer.get(ZONE_ADDRESS).add(msg);
-      */
-      
       // Send zone_completed message to common zone.address
-      HANDLE_MSG.handle_msg(msg, ZONE_ADDRESS);
+      msg_handler.handle_msg(msg);
     }
     
-    private void zone_finish_no_start(String ZONE_ADDRESS, Vehicle v, Long finish_ts)
+    private void zone_finish_no_start(Vehicle v, Long finish_ts)
     {
       // output clean exit (no start) message
       System.out.println("Zone: ,"+zone_config.MODULE_ID+",vehicle_id("+v.vehicle_id+
                          ") clean exit (no start) at "+ts_to_time_str(finish_ts) +
                          " ts_delta " + (v.position.ts - v.prev_position.ts));
       // ****************************************
-      // Send Zone event message to ZONE_ADDRESS
+      // Send ZONE_EXIT msg
       // ****************************************
 
       JsonObject msg = new JsonObject();
 
-      msg.put("module_name", zone_config.MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
+      msg.put("module_name", zone_config.MODULE_NAME); // "zone"
       msg.put("module_id", zone_config.MODULE_ID);     // e.g. "madingley_road_in"
       msg.put("msg_type", Constants.ZONE_EXIT);
       msg.put("vehicle_id", v.vehicle_id);
@@ -381,21 +376,21 @@ public class ZoneCompute {
       msg.put("ts_delta", v.position.ts - v.prev_position.ts);
 
       // Send zone_completed message to common zone.address
-      HANDLE_MSG.handle_msg(msg, ZONE_ADDRESS);
+      msg_handler.handle_msg(msg);
     }
     
-    private void zone_exit(String ZONE_ADDRESS, Vehicle v)
+    private void zone_exit(Vehicle v)
     {
       System.out.println("Zone: ,"+zone_config.MODULE_ID+",vehicle_id("+v.vehicle_id+
                          ") early exit at "+ts_to_time_str(v.position.ts)+
                          " ts_delta " + (v.position.ts - v.prev_position.ts));
       // ****************************************
-      // Send ZONE_EXIT event message to ZONE_ADDRESS
+      // Send ZONE_EXIT event message
       // ****************************************
 
       JsonObject msg = new JsonObject();
 
-      msg.put("module_name", zone_config.MODULE_NAME); // "zone" don't really need this on ZONE_ADDRESS
+      msg.put("module_name", zone_config.MODULE_NAME); // "zone"
       msg.put("module_id", zone_config.MODULE_ID);     // e.g. "madingley_road_in"
       msg.put("msg_type", Constants.ZONE_EXIT);
       msg.put("vehicle_id", v.vehicle_id);
@@ -404,7 +399,7 @@ public class ZoneCompute {
       msg.put("ts_delta", v.position.ts - v.prev_position.ts);
 
       // Send zone_completed message to common zone.address
-      HANDLE_MSG.handle_msg(msg, ZONE_ADDRESS);
+      msg_handler.handle_msg(msg);
     }
     
     // ******************************************************************************************

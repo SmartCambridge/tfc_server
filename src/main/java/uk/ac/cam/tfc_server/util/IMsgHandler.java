@@ -10,6 +10,6 @@ package uk.ac.cam.tfc_server.util;
 import io.vertx.core.json.JsonObject;
 
 public interface IMsgHandler {
-    public void handle_msg(JsonObject msg, String address);
+    public void handle_msg(JsonObject msg);
 }
 
