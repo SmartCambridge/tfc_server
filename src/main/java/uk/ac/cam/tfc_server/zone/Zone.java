@@ -190,22 +190,8 @@ public class Zone extends AbstractVerticle {
         //   zone.zoom - int
         //   zone.finish_index - int
 
-        zone_config = new ZoneConfig();
+        zone_config = new ZoneConfig(config());
         
-        zone_config.MODULE_NAME = config().getString("module.name"); // "zonemanager"
-        if (zone_config.MODULE_NAME==null)
-            {
-                Log.log_err("Zone: no module.name in config()");
-                return false;
-            }
-        
-        zone_config.MODULE_ID = config().getString("module.id"); // A, B, ...
-        if (zone_config.MODULE_ID==null)
-            {
-                Log.log_err("Zone: no module.id in config()");
-                return false;
-            }
-
         EB_SYSTEM_STATUS = config().getString("eb.system_status");
         if (EB_SYSTEM_STATUS==null)
             {
@@ -219,22 +205,8 @@ public class Zone extends AbstractVerticle {
                 Log.log_err("Zone."+zone_config.MODULE_ID+": no eb.manager in config()");
                 return false;
             }
-
-        zone_config.ZONE_NAME = config().getString("zone.name");
-
-        zone_config.PATH = new ArrayList<Position>();
-        JsonArray json_path = config().getJsonArray("zone.path", new JsonArray());
-        for (int i=0; i < json_path.size(); i++) {
-            zone_config.PATH.add(new Position(json_path.getJsonObject(i)));
-        }
-
-        zone_config.CENTER = new Position(config().getJsonObject("zone.center"));
         
-        zone_config.ZOOM = config().getInteger("zone.zoom");
-        
-        zone_config.FINISH_INDEX = config().getInteger("zone.finish_index");
-
-        return true;
+        return zone_config.valid;
     }
     
     // Process a manager message to this module

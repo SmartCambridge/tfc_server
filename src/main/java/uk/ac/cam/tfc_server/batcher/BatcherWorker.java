@@ -32,7 +32,6 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.Handler;
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.eventbus.EventBus;
-//import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
 
@@ -48,7 +47,10 @@ import uk.ac.cam.tfc_server.util.GTFS;
 import uk.ac.cam.tfc_server.util.Constants;
 
 import uk.ac.cam.tfc_server.zone.ZoneConfig; // Config to be passed to Zone
-import uk.ac.cam.tfc_server.zone.Zone; // BatchWorker will call methods in Zone directly
+import uk.ac.cam.tfc_server.zone.ZoneCompute; // BatchWorker will call methods in Zone directly
+
+import uk.ac.cam.tfc_server.util.IMsgHandler; // Interface for message handling in caller
+
 
 // ********************************************************************************************
 // ********************************************************************************************
@@ -69,9 +71,10 @@ public class BatcherWorker extends AbstractVerticle {
     private String TFC_DATA_ZONE; // root of zone completion times files
     private Long   START_TS;   // UTC timestamp for first position record file to publish
     private Long   FINISH_TS;  // UTC timestamp to end feed
-    private ArrayList<String> ZONE_NAMES; // zone names to run against bin gtfs files
-    private ArrayList<Zone> ZONES; // actual Zone objects
+    private ArrayList<String> ZONE_NAMES; // from config() MODULE_NAME.zones
     
+    private HashMap<String, ZoneCompute> ZONES; // zones to run against bin gtfs records
+
     private EventBus eb = null;
     
     @Override
@@ -88,9 +91,10 @@ public class BatcherWorker extends AbstractVerticle {
         System.out.println(MODULE_NAME+"."+MODULE_ID+": time boundaries "+START_TS+","+FINISH_TS);
         System.out.println(MODULE_NAME+"."+MODULE_ID+": input bin files "+TFC_DATA_BIN);
         System.out.println(MODULE_NAME+"."+MODULE_ID+": output zone files "+TFC_DATA_ZONE);
-        System.out.println(MODULE_NAME+"."+MODULE_ID+": zones "+Arrays.toString(ZONES.toArray()));
-
+        System.out.println(MODULE_NAME+"."+MODULE_ID+": zones "+ZONE_NAMES.toArray().toString());
         
+        ZONES = create_zones(ZONE_NAMES, new MsgHandler());
+
         eb = vertx.eventBus();
 
         // SYNCHRONOUSLY step through the filesystem, sending files as messages
@@ -98,6 +102,58 @@ public class BatcherWorker extends AbstractVerticle {
         
       } // end start()
 
+    // ************************************************************************
+    // *************** create_zones( zone_list)   *****************************
+    // **************  and create_zone( zone_id ) *****************************
+    // ************************************************************************
+    //
+    // Given a list of strings containing the zone_id's
+    // create a HashMap of zone_id -> ZoneCompute
+    //
+    HashMap<String, ZoneCompute> create_zones(ArrayList<String> zone_list, MsgHandler msg_handler)
+    {
+        HashMap<String, ZoneCompute> zc_list = new HashMap<String, ZoneCompute>();
+
+        for (int i=0; i<zone_list.size(); i++)
+            {
+                String zone_id = zone_list.get(i);
+        
+                zc_list.put(zone_id, create_zone(zone_id, msg_handler));
+
+                System.out.println(MODULE_NAME+"."+MODULE_ID+": ZoneCompute("+zone_id+") created");
+            }
+        return zc_list;
+    }
+
+    // create_zone
+    //
+    // read the zone_id json config and return a ZoneCompute for this zone_id
+    ZoneCompute create_zone(String zone_id, MsgHandler msg_handler)
+    {
+    
+        String json_path = "/uk.ac.cam.tfc_server.zone."+zone_id+".json";
+        
+        StringBuffer sb = new StringBuffer();
+        try {
+                BufferedReader br = new BufferedReader(
+                                     new InputStreamReader(
+                                      getClass().getResourceAsStream(json_path),
+                                      "UTF-8"));
+                for (int c = br.read(); c != -1; c = br.read()) sb.append((char)c);
+        } catch (Exception e)
+            {
+                System.err.println(MODULE_NAME+"."+MODULE_ID+": Exception reading zone config "+json_path);
+            }
+        
+        JsonObject json_config = (new JsonObject(sb.toString()))
+                                    .getJsonObject("options")
+                                    .getJsonObject("config");
+
+        ZoneConfig zone_config = new ZoneConfig(json_config);
+
+        return new ZoneCompute(zone_config, msg_handler);
+
+    }
 
     // iterate through the filesystem, processing files between start_ts and finish_ts
     void process_bin_files(Long start_ts, Long finish_ts) throws Exception
@@ -113,10 +169,6 @@ public class BatcherWorker extends AbstractVerticle {
 
                 ZonedDateTime zoned_datetime = i.atZone(ZoneId.systemDefault()); // convert Instant to local Date
                 
-                //System.out.println("start_ts " + zoned_datetime.toString());
-
-
-                //debug does conversion of start_ts to yyyy/MM/dd this pick up the local timezone?
                 String yyyymmdd =  zoned_datetime.format(formatter);
 
                 System.out.println(MODULE_NAME+"."+MODULE_ID+": processing date "+yyyymmdd);
@@ -126,14 +178,8 @@ public class BatcherWorker extends AbstractVerticle {
                 
                 ZonedDateTime next_day = zoned_datetime.plusDays(1L).withHour(0).withMinute(0).withSecond(0); // add a day
 
-                //System.out.println("next_day " + next_day.toString());
-
-                //System.out.println("next_yyyymmdd " + next_day.format(formatter));
-
                 next_start_ts = next_day.toEpochSecond();
 
-                //System.out.println("next_day timestamp "+next_start_ts);
-        
             }
 
         System.out.println("finished at "+next_start_ts);
@@ -297,7 +343,6 @@ public class BatcherWorker extends AbstractVerticle {
         FINISH_TS = config().getLong(MODULE_NAME+".finish_ts");
 
         ZONE_NAMES = new ArrayList<String>();
-        ZONES = new ArrayList<Zone>();
         
         JsonArray zone_list = config().getJsonArray(MODULE_NAME+".zones");
         System.out.println(zone_list.toString());
@@ -306,15 +351,28 @@ public class BatcherWorker extends AbstractVerticle {
                 for (int j=0; j<zone_list.size(); j++)
                     {
                         ZONE_NAMES.add(zone_list.getString(j));
-                        ZoneConfig zone_config = new ZoneConfig();
-                        zone_config.MODULE_NAME = "zone";
-                        zone_config.MODULE_ID = zone_list.getString(j);
-                        //ZONES.add(new Zone(zone_config));
                     }
             }
         System.out.println(Arrays.toString(ZONE_NAMES.toArray()));
         
         return true;
     }
+
+    //*************************************************************************************
+    // Class MsgHandler
+    //*************************************************************************************
+    //
+    // passed to ZoneCompute for callback to handle zone event messages
+    //
+    class MsgHandler implements IMsgHandler {
+
+        // general handle_msg function, called by ZoneCompute
+        public void handle_msg(JsonObject msg)
+        {
+            System.out.println(msg.getLong("ts"));
+        }
+
+    } // end class MsgHandler
     
+
 } // end BatcherWorker class

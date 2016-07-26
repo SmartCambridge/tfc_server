@@ -35,7 +35,7 @@ public class ZoneCompute {
     // zone_msg_buffer has a MsgBuffer entry for each zone.address
     //private HashMap<String, MsgBuffer> zone_msg_buffer; // stores zone completion messages since start of day
 
-    ZoneCompute(ZoneConfig zc, IMsgHandler mh)
+    public ZoneCompute(ZoneConfig zc, IMsgHandler mh)
     {
         zone_config = zc;
 
