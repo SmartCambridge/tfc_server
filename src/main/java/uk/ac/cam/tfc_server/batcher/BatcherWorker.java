@@ -73,7 +73,7 @@ public class BatcherWorker extends AbstractVerticle {
     private Long   FINISH_TS;  // UTC timestamp to end feed
     private ArrayList<String> ZONE_NAMES; // from config() MODULE_NAME.zones
     
-    private HashMap<String, ZoneCompute> ZONES; // zones to run against bin gtfs records
+    private HashMap<String, ZoneCompute> zones; // zones to run against bin gtfs records
 
     private EventBus eb = null;
     
@@ -93,7 +93,7 @@ public class BatcherWorker extends AbstractVerticle {
         System.out.println(MODULE_NAME+"."+MODULE_ID+": output zone files "+TFC_DATA_ZONE);
         System.out.println(MODULE_NAME+"."+MODULE_ID+": zones "+ZONE_NAMES.toArray().toString());
         
-        ZONES = create_zones(ZONE_NAMES, new MsgHandler());
+        zones = create_zones(ZONE_NAMES, new MsgHandler());
 
         eb = vertx.eventBus();
 
@@ -254,6 +254,12 @@ public class BatcherWorker extends AbstractVerticle {
             msg.put("module_id", MODULE_ID);
             msg.put("msg_type", Constants.FEED_BUS_POSITION);
 
+            // Here is where we pass the current feed data through the configured zones
+            for (String zone_id: zones.keySet())
+                {
+                    zones.get(zone_id).handle_feed(msg);
+                }
+
           //eb.publish(FEEDPLAYER_ADDRESS, msg);
           //System.out.println("BatcherWorker: ."+MODULE_ID+" published to "+FEEDPLAYER_ADDRESS);
         } catch (Exception e)
@@ -369,7 +375,8 @@ public class BatcherWorker extends AbstractVerticle {
         // general handle_msg function, called by ZoneCompute
         public void handle_msg(JsonObject msg)
         {
-            System.out.println(msg.getLong("ts"));
+            //debug! not implemented handle_msg yet
+            System.out.println(msg.toString());
         }
 
     } // end class MsgHandler

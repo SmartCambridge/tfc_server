@@ -3,7 +3,7 @@
     <script src='/static/sockjs.min.js'></script>
     <script src='/static/vertx-eventbus.js'></script>
     <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico"/>
-    <title>RITA Console 0.32</title>
+    <title>RITA Console 0.33</title>
 <style>
 body {
    font-family: Tahoma, Verdana, Segoe, sans-serif;
@@ -27,6 +27,12 @@ img {
     margin: 10px;
     padding: 5px;
 }
+
+#console1 {
+    height: 400px;
+    overflow: scroll;
+}
+
 </style>
 
 <script>
@@ -41,6 +47,16 @@ img {
   //     "status_amber_seconds": 35,
   //     "status_red_seconds": 65 }
   //   where the status_amber-seconds and status_red_seconds are optional
+  //
+  // Current module status is maintained in the object 'module_status' e.g.
+  // module_status["console.A"] = { name: "console",
+  //                                id:   "A",
+  //                                status_amber_seconds: 15,
+  //                                status_red_seconds: 25,
+  //                                el:   <reference to page status element for this module>,
+  //                                heartbeat: <javascript timestamp of most recent UP message>,
+  //                                status: "UP"|"AMBER"|"RED"
+  //                               }
   //
   // Where possible, the console (server-side java and client javascript) doesn't need prior definition
   // of the 'status reporting' modules, i.e. it will dynamically create a display block for any new module
@@ -128,6 +144,8 @@ function handle_status(error,message)
     // and add a status area on the page for it.
     if (!module_status.hasOwnProperty(module_ref))
     {
+      log(console1, module_ref + " new module recognized as UP");
+    
       // create a new module_status object
       module_status[module_ref] = { };
 
@@ -147,9 +165,11 @@ function handle_status(error,message)
       module_status[module_ref].el = document.getElementById(module_ref);
     }
     
-    // put timestamp into module_status
+    // put timestamp into module_status, and set status as "UP"
     module_status[module_ref].heartbeat = new Date();
-    
+        
+    module_status[module_ref].status = "UP";
+            
     // Set the "status_amber_seconds" and "status_red_seconds" properties for current module
     // either obtaining these values from the status message, or using the defaults on this page
     // status_amber_seconds:
@@ -210,14 +230,29 @@ function update_status(module_ref)
       var seconds_since_heartbeat = ((new Date()).getTime() - module_status[module_ref].heartbeat.getTime())/1000;
       if (seconds_since_heartbeat > module_status[module_ref].status_red_seconds)
       {
+        if (module_status[module_ref].status!="RED")
+        {
+            module_status[module_ref].status = "RED";
+            log(console1, module_ref + " status now RED");
+        }
         module_status[module_ref].el.setAttribute("style", "background-color: red");
       }
       else if (seconds_since_heartbeat > module_status[module_ref].status_amber_seconds)
       {
+        if (module_status[module_ref].status!="AMBER")
+        {
+            module_status[module_ref].status = "AMBER";
+            log(console1, module_ref + " status now AMBER");
+        }
         module_status[module_ref].el.setAttribute("style", "background-color: yellow");
       }
       else
       {
+        if (module_status[module_ref].status!="UP")
+        {
+            module_status[module_ref].status = "UP";
+            log(console1, module_ref + " status now UP");
+        }
         module_status[module_ref].el.setAttribute("style", "background-color: green");
       }
 } // end update_status()
@@ -242,7 +277,18 @@ function update_all_status()
 function log(console_div, text)
   {
     //console.log(text);
-    console_div.innerHTML = console_div.innerHTML + (new Date().toTimeString())+' '+text+'<br/>';
+    var dateobj = new Date();
+    var year = dateobj.getFullYear();
+    var month= ("0" + (dateobj.getMonth()+1)).slice(-2);
+    var date = ("0" + dateobj.getDate()).slice(-2);
+    var hours = ("0" + dateobj.getHours()).slice(-2);
+    var minutes = ("0" + dateobj.getMinutes()).slice(-2);
+    var seconds = ("0" + dateobj.getSeconds()).slice(-2);
+
+    var log_date = year+'-'+month+'-'+date+' '+hours+':'+minutes+':'+seconds;
+                      
+    console_div.innerHTML = console_div.innerHTML + log_date +' '+text+'<br/>';
+    console_div.scrollTop = console_div.scrollHeight;
   }
 
 
@@ -254,8 +300,8 @@ function log(console_div, text)
     <div id="status_areas">
       <h4>Module Status <span id="clock"></span></h4>
     </div>
+    <h4>Console messages</h4>
     <div id="console1">
-      <h4>Console messages</h4>
     </div>
   </body>
 </html>

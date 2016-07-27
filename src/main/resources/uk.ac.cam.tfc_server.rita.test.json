@@ -12,8 +12,8 @@
 
             "rita.address":     "tfc.rita.test",
 
-            "rita.feedplayers": [ "2016-03-07-week" ],
-            "rita.zonemanagers": [ "madingley_road_in" ],
+            "rita.feedplayers": [ "test" ],
+            "rita.zonemanagers": [ "cambridge" ],
             "rita.feedplayer.address":    "tfc.feedplayer.test",
             "rita.zone.address": "tfc.zone.test",
             "rita.zone.feed": "tfc.feedplayer.test",

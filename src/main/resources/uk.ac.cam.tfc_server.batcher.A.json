@@ -16,8 +16,8 @@
 
             "batcherworker.A.data_bin":      "/home/ijl20/tfc_server_data/data_bin",
             "batcherworker.A.data_zone":      "/home/ijl20/tfc_server_data/data_zone_test",
-            "batcherworker.A.start_ts" :  1465204440,
-            "batcherworker.A.finish_ts" : 1465389240,
+            "batcherworker.A.start_ts" :  1465603200,
+            "batcherworker.A.finish_ts" : 1465686000,
             "batcherworker.A.zones" : [ "madingley_road_in" ]
           }
         }
