@@ -111,13 +111,13 @@ public class Batcher extends AbstractVerticle {
 
         conf.put(BW_MODULE_NAME+".data_bin", bwc.DATA_BIN);
 
-        conf.put(BW_MODULE_NAME+".data_zone", bwc.DATA_ZONE);
-
         conf.put(BW_MODULE_NAME+".start_ts", bwc.START_TS);
 
         conf.put(BW_MODULE_NAME+".finish_ts", bwc.FINISH_TS);
 
         conf.put(BW_MODULE_NAME+".zones", bwc.ZONES);
+
+        conf.put(BW_MODULE_NAME+".filers", bwc.FILERS);
 
         // Load config JsonObject into a DeploymentOptions object
         DeploymentOptions batcherworker_options = new DeploymentOptions().setConfig(conf);
@@ -197,8 +197,6 @@ public class Batcher extends AbstractVerticle {
                         
                         bwc.DATA_BIN = config().getString(BW_MODULE_NAME+"."+batcherworker_id+".data_bin");
 
-                        bwc.DATA_ZONE = config().getString(BW_MODULE_NAME+"."+batcherworker_id+".data_zone");
-
                         bwc.START_TS = config().getLong(BW_MODULE_NAME+"."+batcherworker_id+".start_ts");
 
                         bwc.FINISH_TS = config().getLong(BW_MODULE_NAME+"."+batcherworker_id+".finish_ts");
@@ -212,6 +210,9 @@ public class Batcher extends AbstractVerticle {
                                         bwc.ZONES.add(zone_list.getString(j));
                                     }
                             }
+
+                        bwc.FILERS = config().getJsonArray(BW_MODULE_NAME+"."+batcherworker_id+".filers");
+
                         BATCHERWORKERS.put(batcherworker_id, bwc);
                     }
             }
@@ -226,6 +227,7 @@ public class Batcher extends AbstractVerticle {
         public Long START_TS;    // unix timestamp of start of data
         public Long FINISH_TS;   // unix timestamp of end of data
         public ArrayList<String> ZONES;
+        public JsonArray FILERS;
 
         public BatcherWorkerConfig(String id)
         {

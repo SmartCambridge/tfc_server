@@ -56,6 +56,11 @@ public class FilerUtils {
     // **********************************
     public void store_msg(JsonObject msg)
     {
+        // skip this message if if doesn't match the source_filter
+        if (filer_config.source_filter != null && !(filer_config.source_filter.match(msg)))
+            {
+                return;
+            }
         System.out.println("MsgFiler."+filer_config.module_id+": store_msg " +
                            filer_config.store_mode + " " + filer_config.store_path + " " + filer_config.store_name );
         System.out.println(msg);
@@ -96,6 +101,55 @@ public class FilerUtils {
                         });
                 }
         });
+    } // end store_msg()
+
+    // *************************************************
+    // store_msgBlocking()
+    // Store the message SYNCHRONOUSLY to the filesystem
+    // *************************************************
+    //
+    public void store_msgBlocking(JsonObject msg)
+    {
+        // skip this message if if doesn't match the source_filter
+        if (filer_config.source_filter != null && !(filer_config.source_filter.match(msg)))
+            {
+                return;
+            }
+        System.out.println("MsgFiler."+filer_config.module_id+": store_msgBlocking " +
+                           filer_config.store_mode + " " + filer_config.store_path + " " + filer_config.store_name );
+        System.out.println(msg);
+
+        // map the message values into the {{..}} placeholders in path and name
+
+        String filepath = build_string(filer_config.store_path, msg);
+        String filename = build_string(filer_config.store_name, msg);
+
+        System.out.println("MsgFiler."+filer_config.module_id+": "+filer_config.store_mode+ " " +filepath+"/"+filename);
+
+        String msg_str = msg.toString();
+        
+        FileSystem fs = vertx.fileSystem();
+        
+        // if full directory path exists, then write file
+        // otherwise create full path first
+        
+        if (fs.existsBlocking(filepath))
+        {
+            System.out.println("MsgFiler."+filer_config.module_id+": path "+filepath+" exists");
+            write_fileBlocking(msg_str, filepath+"/"+filename, filer_config.store_mode);
+        }
+        else
+        {
+            try {
+                System.out.println("MsgFiler."+filer_config.module_id+": creating directory "+filepath);
+                fs.mkdirsBlocking(filepath);
+                write_fileBlocking(msg_str, filepath+"/"+filename, filer_config.store_mode);
+            }
+            catch (Exception e) {
+                Log.log_err("MsgFiler."+filer_config.module_id+": error creating path "+filepath);
+            }
+        }
+
     } // end store_msg()
 
     // ************************************************************************************
@@ -235,6 +289,21 @@ public class FilerUtils {
             }
     }        
         
+    // *****************************************************************
+    // write_fileBlocking()
+    // either overwrite or append in SYNCHRONOUS mode
+    private void write_fileBlocking(String msg, String file_path, String config_mode)
+    {
+        if (config_mode.equals(Constants.FILE_WRITE))
+            {
+                overwrite_fileBlocking(msg, file_path);
+            }
+        else // append - this is a SYNCHRONOUS operation...
+            {
+                append_file(msg, file_path); // is always SYNCHRONOUS anyway
+            }
+    }        
+        
     // **********************************************************
     // overwrite_file()
     // will do an ASYNCHRONOUS operation, i.e. return immediately
@@ -248,15 +317,31 @@ public class FilerUtils {
           if (result.succeeded()) {
             System.out.println("MsgFiler: File "+file_path+" written");
           } else {
-            Log.log_err("MsgFiler."+filer_config.module_id+": write_file error ..." + result.cause());
+            Log.log_err("MsgFiler."+filer_config.module_id+": overwrite_file error ..." + result.cause());
           }
         });
-    } // end write_file
+    } // end overwrite_file
+
+    // **********************************************************
+    // overwrite_fileBlocking()
+    // will do a SYNCHRONOUS operation
+    private void overwrite_fileBlocking(String msg, String file_path)
+    {
+        FileSystem fs = vertx.fileSystem();
+        Buffer buf = Buffer.buffer(msg);
+        try {
+            fs.writeFileBlocking(file_path, buf);
+            System.out.println("MsgFiler: File "+file_path+" written");
+        } catch (Exception e) {
+            Log.log_err("MsgFiler."+filer_config.module_id+": overwrite_fileBlocking error");
+        }
+
+    } // end overwrite_fileBlocking
 
     // *********************************************************************
     // append_file()
     // BLOCKING code that will open and append 'msg'+'\n' to file 'filepath'
-    private void append_file(String msg, String file_path)
+    public void append_file(String msg, String file_path)
     {
         System.out.println("MsgFiler."+filer_config.module_id+": append_file "+ file_path);
 

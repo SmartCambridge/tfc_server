@@ -119,10 +119,9 @@ public class MsgFiler extends AbstractVerticle {
             
             System.out.println(msg.toString());
 
-            if (filer_config.source_filter == null || filer_config.source_filter.match(msg))
-                {
-                    filer_utils.store_msg(msg);
-                };
+            // store this message if it matches the filter within the FilerConfig
+            filer_utils.store_msg(msg);
+
         });
     
     } // end start_filer

@@ -45,10 +45,10 @@ import java.util.stream.Collectors;
 
 import uk.ac.cam.tfc_server.util.GTFS;
 import uk.ac.cam.tfc_server.util.Constants;
-
 import uk.ac.cam.tfc_server.zone.ZoneConfig; // Config to be passed to Zone
-import uk.ac.cam.tfc_server.zone.ZoneCompute; // BatchWorker will call methods in Zone directly
-
+import uk.ac.cam.tfc_server.zone.ZoneCompute; // BatcherWorker will call methods in Zone directly
+import uk.ac.cam.tfc_server.msgfiler.FilerConfig; // BatcherWorker will instantiate FilerUtils
+import uk.ac.cam.tfc_server.msgfiler.FilerUtils; // BatcherWorker will instantiate FilerUtils
 import uk.ac.cam.tfc_server.util.IMsgHandler; // Interface for message handling in caller
 
 
@@ -67,14 +67,17 @@ public class BatcherWorker extends AbstractVerticle {
 
     private String BATCHER_ADDRESS; // eventbus address to communicate with Batcher controller
 
-    private String TFC_DATA_BIN; // root of bin files
-    private String TFC_DATA_ZONE; // root of zone completion times files
+    private String TFC_DATA_BIN; // root of bin input files
     private Long   START_TS;   // UTC timestamp for first position record file to publish
     private Long   FINISH_TS;  // UTC timestamp to end feed
     private ArrayList<String> ZONE_NAMES; // from config() MODULE_NAME.zones
+    private ArrayList<FilerConfig> FILERS; // config() MODULE_NAME.filers parameters
+    
     
     private HashMap<String, ZoneCompute> zones; // zones to run against bin gtfs records
 
+    private ArrayList<FilerUtils> filers; // filers to call to store messages
+    
     private EventBus eb = null;
     
     @Override
@@ -90,10 +93,11 @@ public class BatcherWorker extends AbstractVerticle {
         System.out.println(MODULE_NAME+"."+MODULE_ID+": started on " + BATCHER_ADDRESS);
         System.out.println(MODULE_NAME+"."+MODULE_ID+": time boundaries "+START_TS+","+FINISH_TS);
         System.out.println(MODULE_NAME+"."+MODULE_ID+": input bin files "+TFC_DATA_BIN);
-        System.out.println(MODULE_NAME+"."+MODULE_ID+": output zone files "+TFC_DATA_ZONE);
         System.out.println(MODULE_NAME+"."+MODULE_ID+": zones "+ZONE_NAMES.toArray().toString());
         
         zones = create_zones(ZONE_NAMES, new MsgHandler());
+
+        filers = create_filers(FILERS); // create list of FilerUtils from FilerConfig list
 
         eb = vertx.eventBus();
 
@@ -153,6 +157,23 @@ public class BatcherWorker extends AbstractVerticle {
 
         return new ZoneCompute(zone_config, msg_handler);
 
+    }
+
+    // ************************************************************************
+    // *************** create_filers( filerconfig_list)   *********************
+    // ************************************************************************
+    //
+    // Given a list of FilerConfigs create an ArrayList of FilerUtils
+    //
+    ArrayList create_filers(ArrayList<FilerConfig> filerconfig_list)
+    {
+        ArrayList filer_list = new ArrayList<FilerUtils>();
+
+        for (int i=0; i<filerconfig_list.size(); i++)
+            {
+                filer_list.add( new FilerUtils(vertx, filerconfig_list.get(i)) );
+            }
+        return filer_list;
     }
 
     // iterate through the filesystem, processing files between start_ts and finish_ts
@@ -338,13 +359,16 @@ public class BatcherWorker extends AbstractVerticle {
                 System.err.println(MODULE_NAME+"."+MODULE_ID+" config() error: failed to load batcher.address");
                 return false;
             }
-        //debug - this should be coming from a dynamic request, probably...
-        TFC_DATA_BIN = config().getString(MODULE_NAME+".data_bin");
-        TFC_DATA_ZONE = config().getString(MODULE_NAME+".data_zone");
 
-        // System.out.println(MODULE_NAME+"."+MODULE_ID+": reading config() "+MODULE_NAME+".start_ts");
+        TFC_DATA_BIN = config().getString(MODULE_NAME+".data_bin");
+        if (TFC_DATA_BIN==null)
+            {
+                System.err.println(MODULE_NAME+"."+MODULE_ID+" config() error: failed to load "+MODULE_NAME+".data_bin");
+                return false;
+            }
+
+
         START_TS = config().getLong(MODULE_NAME+".start_ts");
-        System.out.println(MODULE_NAME+"."+MODULE_ID+": read config() "+MODULE_NAME+".start_ts="+START_TS);
 
         FINISH_TS = config().getLong(MODULE_NAME+".finish_ts");
 
@@ -359,8 +383,23 @@ public class BatcherWorker extends AbstractVerticle {
                         ZONE_NAMES.add(zone_list.getString(j));
                     }
             }
-        System.out.println(Arrays.toString(ZONE_NAMES.toArray()));
         
+        // iterate through the MODULE_NAME.filers config values
+        FILERS = new ArrayList<FilerConfig>();
+        JsonArray config_filer_list = config().getJsonArray(MODULE_NAME+".filers");
+        for (int i=0; i<config_filer_list.size(); i++)
+            {
+                JsonObject config_json = config_filer_list.getJsonObject(i);
+
+                // add MODULE_NAME, MODULE_ID to every FilerConfig
+                config_json.put("module_name", MODULE_NAME);
+                config_json.put("module_id", MODULE_ID);
+                
+                FilerConfig filer_config = new FilerConfig(config_json);
+                
+                FILERS.add(filer_config);
+            }
+
         return true;
     }
 
@@ -375,8 +414,12 @@ public class BatcherWorker extends AbstractVerticle {
         // general handle_msg function, called by ZoneCompute
         public void handle_msg(JsonObject msg)
         {
-            //debug! not implemented handle_msg yet
-            System.out.println(msg.toString());
+            // Pass this message to each of the Filers
+            System.out.println(MODULE_NAME+"."+MODULE_ID+" storing "+msg.toString());
+            for (int i=0; i<filers.size(); i++)
+                {
+                    filers.get(i).store_msgBlocking(msg);
+                }
         }
 
     } // end class MsgHandler
