@@ -57,20 +57,28 @@ import java.util.*;
 
 // other tfc_server classes
 import uk.ac.cam.tfc_server.util.Constants;
+import uk.ac.cam.tfc_server.util.Log;
 
 public class Rita extends AbstractVerticle {
 
-    private Integer HTTP_PORT; // from config()
-    private String RITA_ADDRESS; // from config()
-    private String EB_SYSTEM_STATUS; // from config()
-    private String EB_MANAGER; // from config()
-    private String MODULE_NAME; // from config()
-    private String MODULE_ID; // from config()
-    private String WEBROOT; // from config()
+    // values from config()
+    private Integer HTTP_PORT;
+    private String RITA_ADDRESS;
+    private String EB_SYSTEM_STATUS;
+    private String EB_MANAGER;
+    private String MODULE_NAME;
+    private String MODULE_ID;
+    private String WEBROOT;
+    private int    LOG_LEVEL;
     
-    //debug - these may come from user commands
+    
+    //debug - feedplayers and zonemanagers may come from user commands
     private ArrayList<String> FEEDPLAYERS; // optional from config()
     private ArrayList<String> ZONEMANAGERS; // optional from config()
+
+    // default MODULE_NAME values for deployed verticles
+    private final String FEEDPLAYER_NAME = "feedplayer";
+    private final String ZONEMANAGER_NAME = "zonemanager";
 
     private String ZONE_ADDRESS; // optional from config()
     private String ZONE_FEED; // optional from config()
@@ -82,6 +90,9 @@ public class Rita extends AbstractVerticle {
     private final int SYSTEM_STATUS_AMBER_SECONDS = 15;
     private final int SYSTEM_STATUS_RED_SECONDS = 25;
 
+    // Log
+    private Log logger;
+   
     // Vertx event bus
     private EventBus eb = null;
 
@@ -100,13 +111,17 @@ public class Rita extends AbstractVerticle {
             return;
         }
 
-    System.out.println("Rita starting as "+MODULE_NAME+"."+MODULE_ID+
-                       " on port "+HTTP_PORT );
+    logger = new Log(LOG_LEVEL);
+        
+    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": config()=");
+    logger.log(Constants.LOG_DEBUG, config().toString());
+        
+    logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": starting on port "+HTTP_PORT );
 
     BASE_URI = MODULE_NAME; // typically 'rita'
 
     // initialize object to hold socket connection data for each connected session
-    client_table = new ClientTable(MODULE_ID);
+    client_table = new ClientTable();
     
     eb = vertx.eventBus();
 
@@ -145,11 +160,11 @@ public class Rita extends AbstractVerticle {
 
     sock_handler.socketHandler( sock -> {
             // Rita received new socket connection
-            System.out.println("Rita."+MODULE_ID+": sock connection received with "+sock.writeHandlerID());
+            logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": sock connection received with "+sock.writeHandlerID());
             
             // Assign a handler funtion to receive data if send
             sock.handler( buf -> {
-               System.out.println("Rita."+MODULE_ID+": sock received '"+buf+"'");
+               logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": sock received '"+buf+"'");
 
                JsonObject sock_msg = new JsonObject(buf.toString());
 
@@ -168,7 +183,7 @@ public class Rita extends AbstractVerticle {
             });
 
             sock.endHandler( (Void v) -> {
-                    System.out.println("Rita."+MODULE_ID+": sock closed "+sock.writeHandlerID());
+                    logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": sock closed "+sock.writeHandlerID());
                 });
       });
 
@@ -198,7 +213,7 @@ public class Rita extends AbstractVerticle {
     // add outbound address for feed messages
     if (ZONE_FEED != null)
     {
-        System.out.println("Rita."+MODULE_ID+": permitting eventbus "+ZONE_FEED+" to browser");
+        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": permitting eventbus "+ZONE_FEED+" to browser");
         bridge_options.addOutboundPermitted( new PermittedOptions().setAddress(ZONE_FEED) );
     }
 
@@ -236,7 +251,7 @@ public class Rita extends AbstractVerticle {
             
             String zone_id = ctx.request().getParam("zoneid");
 
-            System.out.println("Rita."+MODULE_ID+": serving zone_plot.hbs for "+zone_id);
+            logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": serving zone_plot.hbs for "+zone_id);
             
             ctx.put("config_zone_id",zone_id); // pass zone_id from URL into template var
             ctx.put("config_UUID", get_UUID());// add template var for Unique User ID
@@ -317,7 +332,7 @@ public class Rita extends AbstractVerticle {
     static_handler.setCachingEnabled(false);
     router.route(HttpMethod.GET, "/static/*").handler( static_handler );
 
-    System.out.println("Rita."+MODULE_ID+" static handler using "+WEBROOT);
+    logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+" static handler using "+WEBROOT);
     
     // ********************************
     // connect router to http_server
@@ -332,67 +347,58 @@ public class Rita extends AbstractVerticle {
     // *******************************************************************************
     
     // Deploy FeedPlayer verticle
-    private void deploy_feed_player(String feed_player_id)
+    private void deploy_feed_player(String feedplayer_id)
     {
         DeploymentOptions feedplayer_options = new DeploymentOptions();
         JsonObject conf = new JsonObject();
-        if (EB_SYSTEM_STATUS != null)
-            {
-                conf.put("eb.system_status", EB_SYSTEM_STATUS);
-            }
-        if (EB_MANAGER != null)
-            {
-                conf.put("eb.manager", EB_MANAGER);
-            }
-        if (FEEDPLAYER_ADDRESS != null)
-            {
-                conf.put("feedplayer.address", FEEDPLAYER_ADDRESS);
-            }
+
+        conf.put("module.name", FEEDPLAYER_NAME);
+        conf.put("module.id", feedplayer_id);
+        conf.put(FEEDPLAYER_NAME+".log_level", LOG_LEVEL);
+        conf.put("eb.system_status", EB_SYSTEM_STATUS);
+        conf.put("eb.manager", EB_MANAGER);
+        conf.put(FEEDPLAYER_NAME+".address", FEEDPLAYER_ADDRESS);
+
         feedplayer_options.setConfig(conf);
-        vertx.deployVerticle("service:uk.ac.cam.tfc_server.feedplayer."+feed_player_id,
+        
+        vertx.deployVerticle("service:uk.ac.cam.tfc_server.feedplayer."+feedplayer_id,
                              feedplayer_options,
                              res -> {
                 if (res.succeeded()) {
-                    System.out.println("Rita"+MODULE_ID+": FeedPlayer "+feed_player_id+ "started");
+                    logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
+                               ": FeedPlayer "+FEEDPLAYER_NAME+"."+feedplayer_id+ " started");
                 } else {
-                    System.err.println("Rita"+MODULE_ID+": failed to start FeedPlayer " + feed_player_id);
+                    System.err.println(MODULE_NAME+"."+MODULE_ID+
+                                       ": failed to start FeedPlayer " + feedplayer_id);
                     //fut.fail(res.cause());
                 }
             });
     }
     
     // Deploy ZoneManager verticle
-    private void deploy_zone_manager(String zone_manager_id)
+    private void deploy_zone_manager(String zonemanager_id)
     {
         DeploymentOptions zonemanager_options = new DeploymentOptions();
         JsonObject conf = new JsonObject();
-        if (EB_SYSTEM_STATUS != null)
-            {
-                conf.put("eb.system_status", EB_SYSTEM_STATUS);
-            }
-        if (EB_MANAGER != null)
-            {
-                conf.put("eb.manager", EB_MANAGER);
-            }
-        if (ZONE_ADDRESS != null)
-            {
-                conf.put("zonemanager.zone.address", ZONE_ADDRESS);
-            }
-        if (ZONE_FEED != null)
-            {
-                // note if FeedPlayers are also started, this will usually be
-                // the same as FEEDPLAYER_ADDRESS so the Zones listen to the
-                // FeedPlayers
-                conf.put("zonemanager.zone.feed", ZONE_FEED);
-            }
+        conf.put("module.name", ZONEMANAGER_NAME);
+        conf.put("module.id", zonemanager_id);
+        conf.put(ZONEMANAGER_NAME+".log_level", LOG_LEVEL);
+        conf.put("eb.system_status", EB_SYSTEM_STATUS);
+        conf.put("eb.manager", EB_MANAGER);
+        conf.put(ZONEMANAGER_NAME+".zone.address", ZONE_ADDRESS);
+        conf.put(ZONEMANAGER_NAME+".zone.feed", ZONE_FEED);
+
         zonemanager_options.setConfig(conf);
-        vertx.deployVerticle("service:uk.ac.cam.tfc_server.zonemanager."+zone_manager_id,
+        
+        vertx.deployVerticle("service:uk.ac.cam.tfc_server.zonemanager."+zonemanager_id,
                              zonemanager_options,
                              res -> {
                 if (res.succeeded()) {
-                    System.out.println("Rita"+MODULE_ID+": ZoneManager "+zone_manager_id+ "started");
+                    logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
+                               ": ZoneManager "+ZONEMANAGER_NAME+"."+zonemanager_id+" started");
                 } else {
-                    System.err.println("Rita"+MODULE_ID+": failed to start ZoneManager " + zone_manager_id);
+                    System.err.println(MODULE_NAME+"."+MODULE_ID+
+                                       ": failed to start ZoneManager " + zonemanager_id);
                     //fut.fail(res.cause());
                 }
             });
@@ -428,7 +434,8 @@ public class Rita extends AbstractVerticle {
 
         String this_zone_address = ZONE_ADDRESS+"."+zone_id;
         
-        System.out.println("Rita."+MODULE_ID+": subscribing client to "+this_zone_address);
+        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": subscribing client to "+this_zone_address);
+        
         eb.consumer(this_zone_address, message -> {
                 send_client(sock, message.body().toString());
                 });
@@ -443,7 +450,7 @@ public class Rita extends AbstractVerticle {
         msg.put("zone.address", this_zone_address);
         msg.put("msg_type", Constants.ZONE_UPDATE_REQUEST);
 
-        System.out.println("Rita."+MODULE_ID+": sending EB_MANAGER msg "+msg.toString());
+        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": sending EB_MANAGER msg "+msg.toString());
         
         // request a ZONE_UPDATE from relevant zone
         eb.publish(EB_MANAGER, msg);
@@ -465,7 +472,8 @@ public class Rita extends AbstractVerticle {
 
         String this_zone_address = ZONE_ADDRESS+"."+zone_id;
         
-        System.out.println("Rita."+MODULE_ID+": subscribing client to "+this_zone_address);
+        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": subscribing client to "+this_zone_address);
+        
         eb.consumer(this_zone_address, message -> {
                 send_client(sock, message.body().toString());
                 });
@@ -480,7 +488,7 @@ public class Rita extends AbstractVerticle {
         msg.put("zone.address", this_zone_address);
         msg.put("msg_type", Constants.ZONE_INFO_REQUEST);
 
-        System.out.println("Rita."+MODULE_ID+": sending EB_MANAGER msg "+msg.toString());
+        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": sending EB_MANAGER msg "+msg.toString());
         
         // request a ZONE_INFO from relevant zone
         eb.publish(EB_MANAGER, msg);
@@ -489,7 +497,7 @@ public class Rita extends AbstractVerticle {
     // Serve the templates/zone_map.hbs web page
     private void serve_zone_map(RoutingContext ctx, String zone_id, HandlebarsTemplateEngine engine)
     {
-        System.out.println("Rita."+MODULE_ID+": serving zone_map.hbs for "+zone_id);
+        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": serving zone_map.hbs for "+zone_id);
             
         ctx.put("config_zone_id",zone_id); // pass zone_id from URL into template var
         ctx.put("config_UUID", get_UUID());// add template var for Unique User ID
@@ -576,6 +584,12 @@ public class Rita extends AbstractVerticle {
                 return false;
             }
 
+        LOG_LEVEL = config().getInteger(MODULE_NAME+".log_level", 0);
+        if (LOG_LEVEL==0)
+            {
+                LOG_LEVEL = Constants.LOG_INFO;
+            }
+        
         // common system status reporting address, e.g. for UP messages
         // picked up by Console
         EB_SYSTEM_STATUS = config().getString("eb.system_status");
@@ -647,82 +661,80 @@ public class Rita extends AbstractVerticle {
     {
         return String.valueOf(System.currentTimeMillis());
     }
+
+    // Data for each socket connection
+    // session_id is in sock.webSession().id()
+    class ClientConfig {
+        public String UUID;         // unique ID for this connection
+        public SockJSSocket sock;   // actual socket reference
+        public ArrayList<String> zone_ids; // zone_ids relevant to this client connection
+    }
+
+    // Object to store data for all current socket connections
+    class ClientTable {
+
+        private Hashtable<String,ClientConfig> client_table;
+
+        // initialize new SockInfo object
+        ClientTable () {
+            client_table = new Hashtable<String,ClientConfig>();
+        }
+
+        // Add new connection to known list, with zone_ids in buf
+        // returns UUID of entry added
+        public String add(SockJSSocket sock, JsonObject sock_msg)
+        {
+            if (sock == null)
+                {
+                    System.err.println("Rita."+MODULE_ID+": ClientTable.add() called with sock==null");
+                    return null;
+                }
+
+            // create new entry for sock_data
+            ClientConfig entry = new ClientConfig();
+            entry.sock = sock;
+
+            entry.zone_ids = new ArrayList<String>();
+
+            JsonArray zones_ja = sock_msg.getJsonArray("zone_ids");
+            for (int i=0; i<zones_ja.size(); i++)
+                {
+                    entry.zone_ids.add(zones_ja.getString(i));
+                }
+            logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
+                       ": ClientTable.add "+sock_msg.getString("UUID")+ " " +entry.zone_ids.toString());
+            // push this entry onto the array
+            String UUID = sock_msg.getString("UUID");        
+            client_table.put(UUID,entry);
+            return UUID;
+        }
+
+        public ClientConfig get(String UUID)
+        {
+            // retrieve data for current socket, if it exists
+            ClientConfig client_config = client_table.get(UUID);
+
+            if (client_config != null)
+                {
+                    return client_config;
+                }
+            System.err.println("Rita."+MODULE_ID+": ClientTable.get '"+UUID+"' entry not found in client_table");
+            return null;
+        }
+
+        public void remove(String UUID)
+        {
+            ClientConfig client_config = client_table.remove(UUID);
+            if (client_config == null)
+                {
+                    System.err.println("Rita."+MODULE_ID+": ClientTable.remove non-existent session_id "+UUID);
+                }
+        }
+
+        public Set<String> keys()
+        {
+            return client_table.keySet();
+        }
+    } // end class ClientTable
+    
 } // end class Rita
-
-// Data for each socket connection
-// session_id is in sock.webSession().id()
-class ClientConfig {
-    public String UUID;         // unique ID for this connection
-    public SockJSSocket sock;   // actual socket reference
-    public ArrayList<String> zone_ids; // zone_ids relevant to this client connection
-}
-
-// Object to store data for all current socket connections
-class ClientTable {
-
-    private Hashtable<String,ClientConfig> client_table;
-
-    // for error messages we will include MODULE_ID from Rita class
-    private String MODULE_ID;
-
-    // initialize new SockInfo object
-    ClientTable (String rita_module_id) {
-        MODULE_ID = rita_module_id;
-        client_table = new Hashtable<String,ClientConfig>();
-    }
-
-    // Add new connection to known list, with zone_ids in buf
-    // returns UUID of entry added
-    public String add(SockJSSocket sock, JsonObject sock_msg)
-    {
-        if (sock == null)
-            {
-                System.err.println("Rita."+MODULE_ID+": ClientTable.add() called with sock==null");
-                return null;
-            }
-
-        // create new entry for sock_data
-        ClientConfig entry = new ClientConfig();
-        entry.sock = sock;
-        
-        entry.zone_ids = new ArrayList<String>();
-
-        JsonArray zones_ja = sock_msg.getJsonArray("zone_ids");
-        for (int i=0; i<zones_ja.size(); i++)
-            {
-                entry.zone_ids.add(zones_ja.getString(i));
-            }
-        System.out.println("Rita."+MODULE_ID+": ClientTable.add "+sock_msg.getString("UUID")+ " " +entry.zone_ids.toString());
-        // push this entry onto the array
-        String UUID = sock_msg.getString("UUID");        
-        client_table.put(UUID,entry);
-        return UUID;
-    }
-
-    public ClientConfig get(String UUID)
-    {
-        // retrieve data for current socket, if it exists
-        ClientConfig client_config = client_table.get(UUID);
-        
-        if (client_config != null)
-            {
-                return client_config;
-            }
-        System.err.println("Rita."+MODULE_ID+": ClientTable.get '"+UUID+"' entry not found in client_table");
-        return null;
-    }
-
-    public void remove(String UUID)
-    {
-        ClientConfig client_config = client_table.remove(UUID);
-        if (client_config == null)
-            {
-                System.err.println("Rita."+MODULE_ID+": ClientTable.remove non-existent session_id "+UUID);
-            }
-    }
-
-    public Set<String> keys()
-    {
-        return client_table.keySet();
-    }
-}

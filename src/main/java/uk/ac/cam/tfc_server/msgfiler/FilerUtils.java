@@ -61,9 +61,9 @@ public class FilerUtils {
             {
                 return;
             }
-        System.out.println("MsgFiler."+filer_config.module_id+": store_msg " +
-                           filer_config.store_mode + " " + filer_config.store_path + " " + filer_config.store_name );
-        System.out.println(msg);
+        //System.out.println("MsgFiler."+filer_config.module_id+": store_msg " +
+        //                   filer_config.store_mode + " " + filer_config.store_path + " " + filer_config.store_name );
+        //System.out.println(msg);
 
         // map the message values into the {{..}} placeholders in path and name
         String filepath;
@@ -71,7 +71,7 @@ public class FilerUtils {
         filepath = build_string(filer_config.store_path, msg);
         filename = build_string(filer_config.store_name, msg);
 
-        System.out.println("MsgFiler."+filer_config.module_id+": "+filer_config.store_mode+ " " +filepath+"/"+filename);
+        //System.out.println("MsgFiler."+filer_config.module_id+": "+filer_config.store_mode+ " " +filepath+"/"+filename);
 
         String msg_str = msg.toString();
         
@@ -83,7 +83,7 @@ public class FilerUtils {
         fs.exists(filepath, result -> {
             if (result.succeeded() && result.result())
                 {
-                    System.out.println("MsgFiler."+filer_config.module_id+": path "+filepath+" exists");
+                    //System.out.println("MsgFiler."+filer_config.module_id+": path "+filepath+" exists");
                     write_file(msg_str, filepath+"/"+filename, filer_config.store_mode);
                 }
             else
@@ -115,16 +115,16 @@ public class FilerUtils {
             {
                 return;
             }
-        System.out.println("MsgFiler."+filer_config.module_id+": store_msgBlocking " +
-                           filer_config.store_mode + " " + filer_config.store_path + " " + filer_config.store_name );
-        System.out.println(msg);
+        //System.out.println("MsgFiler."+filer_config.module_id+": store_msgBlocking " +
+        //                   filer_config.store_mode + " " + filer_config.store_path + " " + filer_config.store_name );
+        //System.out.println(msg);
 
         // map the message values into the {{..}} placeholders in path and name
 
         String filepath = build_string(filer_config.store_path, msg);
         String filename = build_string(filer_config.store_name, msg);
 
-        System.out.println("MsgFiler."+filer_config.module_id+": "+filer_config.store_mode+ " " +filepath+"/"+filename);
+        //System.out.println("MsgFiler."+filer_config.module_id+": "+filer_config.store_mode+ " " +filepath+"/"+filename);
 
         String msg_str = msg.toString();
         
@@ -135,7 +135,7 @@ public class FilerUtils {
         
         if (fs.existsBlocking(filepath))
         {
-            System.out.println("MsgFiler."+filer_config.module_id+": path "+filepath+" exists");
+            //System.out.println("MsgFiler."+filer_config.module_id+": path "+filepath+" exists");
             write_fileBlocking(msg_str, filepath+"/"+filename, filer_config.store_mode);
         }
         else
@@ -315,7 +315,7 @@ public class FilerUtils {
                      buf, 
                      result -> {
           if (result.succeeded()) {
-            System.out.println("MsgFiler: File "+file_path+" written");
+              //System.out.println("MsgFiler: File "+file_path+" written");
           } else {
             Log.log_err("MsgFiler."+filer_config.module_id+": overwrite_file error ..." + result.cause());
           }
@@ -331,7 +331,7 @@ public class FilerUtils {
         Buffer buf = Buffer.buffer(msg);
         try {
             fs.writeFileBlocking(file_path, buf);
-            System.out.println("MsgFiler: File "+file_path+" written");
+            //System.out.println("MsgFiler: File "+file_path+" written");
         } catch (Exception e) {
             Log.log_err("MsgFiler."+filer_config.module_id+": overwrite_fileBlocking error");
         }
@@ -343,7 +343,7 @@ public class FilerUtils {
     // BLOCKING code that will open and append 'msg'+'\n' to file 'filepath'
     public void append_file(String msg, String file_path)
     {
-        System.out.println("MsgFiler."+filer_config.module_id+": append_file "+ file_path);
+        //System.out.println("MsgFiler."+filer_config.module_id+": append_file "+ file_path);
 
         BufferedWriter bw = null;
 

@@ -36,6 +36,7 @@ import java.text.SimpleDateFormat;
     
 import uk.ac.cam.tfc_server.util.GTFS;
 import uk.ac.cam.tfc_server.util.Constants;
+import uk.ac.cam.tfc_server.util.Log;
 
 // ********************************************************************************************
 // ********************************************************************************************
@@ -50,6 +51,7 @@ public class FeedPlayer extends AbstractVerticle {
     private String MODULE_NAME; // from config()
     private String MODULE_ID; // from config()
     private String EB_SYSTEM_STATUS; // eventbus status reporting address
+    private int    LOG_LEVEL;
 
     private String FEEDPLAYER_ADDRESS; // eventbus address for JSON feed position updates
 
@@ -62,6 +64,9 @@ public class FeedPlayer extends AbstractVerticle {
     private final int SYSTEM_STATUS_AMBER_SECONDS = 15; // delay before flagging system as AMBER
     private final int SYSTEM_STATUS_RED_SECONDS = 25; // delay before flagging system as RED
 
+    // Log
+    private Log logger;
+   
     private EventBus eb = null;
     
     @Override
@@ -74,7 +79,12 @@ public class FeedPlayer extends AbstractVerticle {
                   fut.fail("FeedPlayer: failed to load initial config()");
               }
 
-        System.out.println("FeedPlayer: " + MODULE_NAME + "." + MODULE_ID + " started on " + FEEDPLAYER_ADDRESS);
+        logger = new Log(LOG_LEVEL);
+
+        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": config()=");
+        logger.log(Constants.LOG_DEBUG, config().toString());
+
+        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": started on "+FEEDPLAYER_ADDRESS );
 
         eb = vertx.eventBus();
 
@@ -109,7 +119,7 @@ public class FeedPlayer extends AbstractVerticle {
     void process_gtfs_dir(long start_ts, Long finish_ts, String bin_path) throws Exception
     {
 
-        System.out.println("FeedPlayer."+MODULE_ID+" processing "+bin_path);
+        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+" processing "+bin_path);
         
         // check if date is already past finish_ts
         String yyyymmdd = get_date(bin_path+"/x");
@@ -123,7 +133,7 @@ public class FeedPlayer extends AbstractVerticle {
         // if directory is beyond required time, then end playback (i.e. do nothing & return)
         if (dir_ts > finish_ts)
             {
-                System.out.println("FeedPlayer."+MODULE_ID+" ending, dir "+yyyymmdd+" later than finish timestamp");
+                logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+" ending, dir "+yyyymmdd+" later than finish timestamp");
                 return;
             }
         
@@ -148,7 +158,8 @@ public class FeedPlayer extends AbstractVerticle {
                                     {
                                         file_index++;
                                     }
-                                System.out.println("FeedPlayer: starting with "+bin_path+" file #"+file_index);
+                                logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
+                                           ": starting with "+bin_path+" file #"+file_index);
                                 // process files starting with start_ts or newer
                                 process_gtfs_files( res.result(), file_index, finish_ts);
                             }
@@ -178,7 +189,7 @@ public class FeedPlayer extends AbstractVerticle {
                   {
                     // at end of files in current directory, so move on to next day
                     String yyyymmdd = get_date(files.get(0));
-                    System.out.println("FeedPlayer."+MODULE_ID+": " + yyyymmdd + " file list completed");
+                    logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": " + yyyymmdd + " file list completed");
 
                     DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd");
 
@@ -188,7 +199,7 @@ public class FeedPlayer extends AbstractVerticle {
 
                     String next_yyyymmdd = next_date.format(dtf);
 
-                    System.out.println("FeedPlayer."+MODULE_ID+": moving on to "+next_yyyymmdd);
+                    logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": moving on to "+next_yyyymmdd);
 
                     // Recursive call to process_gtfs_dir, with next day as data directory
                     // Note we are passing first arg 'start_ts' as zero as it is not relevant except
@@ -197,14 +208,14 @@ public class FeedPlayer extends AbstractVerticle {
                   }
                 catch (Exception e)
                   {
-                    System.out.println("FeedPlayer."+MODULE_ID+": exception in process_gtfs_files changing dir");
+                    logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": exception in process_gtfs_files changing dir");
                     e.printStackTrace();
                   }
                 return;
             }
         if (get_ts(files.get(i)) > finish_ts)
             {
-                System.out.println("FilePlayer: "+MODULE_ID+" ending, file replay reached finish time "+finish_ts);
+                logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+" ending, file replay reached finish time "+finish_ts);
                 return;
             }
         // process current file
@@ -236,7 +247,7 @@ public class FeedPlayer extends AbstractVerticle {
                         String basename = get_basename(filepath);
                         String yyyymmdd = get_date(filepath);
                         
-                        System.out.println("Feedplayer."+MODULE_ID+" publishing "+yyyymmdd+"/"+basename);
+                        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+" publishing "+yyyymmdd+"/"+basename);
                         
                       JsonObject msg = GTFS.buf_to_json(res.result(), basename, yyyymmdd);
 
@@ -307,24 +318,64 @@ public class FeedPlayer extends AbstractVerticle {
         MODULE_NAME = config().getString("module.name"); // "feedplayer"
         if (MODULE_NAME==null)
             {
+                System.err.println("FeedHandler: no module.name in config()");
                 return false;
             }
         
         MODULE_ID = config().getString("module.id"); // A, B, ...
-
-        EB_SYSTEM_STATUS = config().getString("eb.system_status");
-
+        if (MODULE_ID==null)
+            {
+                System.err.println("FeedHandler: no module.id in config()");
+                return false;
+            }
         
-        FEEDPLAYER_ADDRESS = config().getString(MODULE_NAME+".address"); // eventbus address to publish feed on
+        LOG_LEVEL = config().getInteger(MODULE_NAME+".log_level", 0);
+        if (LOG_LEVEL==0)
+            {
+                LOG_LEVEL = Constants.LOG_INFO;
+            }
+        
+        EB_SYSTEM_STATUS = config().getString("eb.system_status");
+        if (EB_SYSTEM_STATUS==null)
+            {
+                System.err.println(MODULE_NAME+"."+MODULE_ID+": no eb.system_status in config()");
+                return false;
+            }
 
-        //debug - this should be coming from a dynamic request, probably...
+        FEEDPLAYER_ADDRESS = config().getString(MODULE_NAME+".address"); // eventbus address to publish feed on
+        if (FEEDPLAYER_ADDRESS==null)
+            {
+                System.err.println(MODULE_NAME+"."+MODULE_ID+": no "+MODULE_NAME+".address in config()");
+                return false;
+            }
+
         TFC_DATA_BIN = config().getString(MODULE_NAME+".files");
+        if (TFC_DATA_BIN==null)
+            {
+                System.err.println(MODULE_NAME+"."+MODULE_ID+": no "+MODULE_NAME+".files in config()");
+                return false;
+            }
 
         START_TS = config().getLong(MODULE_NAME+".start_ts");
+        if (START_TS==null)
+            {
+                System.err.println(MODULE_NAME+"."+MODULE_ID+": no "+MODULE_NAME+".start_ts in config()");
+                return false;
+            }
 
         FINISH_TS = config().getLong(MODULE_NAME+".finish_ts"); //debug not used yet
+        if (FINISH_TS==null)
+            {
+                System.err.println(MODULE_NAME+"."+MODULE_ID+": no "+MODULE_NAME+".finish_ts in config()");
+                return false;
+            }
 
-        RATE = config().getInteger(MODULE_NAME+".rate");
+        RATE = config().getInteger(MODULE_NAME+".rate", 0);
+        if (RATE==0)
+            {
+                System.err.println(MODULE_NAME+"."+MODULE_ID+": no "+MODULE_NAME+".rate in config()");
+                return false;
+            }
 
         return true;
     }

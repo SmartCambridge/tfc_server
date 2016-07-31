@@ -14,6 +14,7 @@ import io.vertx.core.json.JsonArray;
 
 import uk.ac.cam.tfc_server.util.Position;
 import uk.ac.cam.tfc_server.util.Log;
+import uk.ac.cam.tfc_server.util.Constants;
 
 public class ZoneConfig {
 
@@ -24,6 +25,9 @@ public class ZoneConfig {
     public Position CENTER;          // config zone.center
     public int ZOOM;                 // config zone.zoom
     public int FINISH_INDEX;         // config zone.finish_index
+
+    public int LOG_LEVEL;
+    
     public boolean valid;
 
     public ZoneConfig(JsonObject config)
@@ -46,19 +50,26 @@ public class ZoneConfig {
                 return;
             }
 
-        ZONE_NAME = config.getString("zone.name");
+        LOG_LEVEL = config.getInteger(MODULE_NAME+".log_level", 0);
+        if (LOG_LEVEL==0)
+            {
+                LOG_LEVEL = Constants.LOG_INFO;
+            }
+        
+        ZONE_NAME = config.getString(MODULE_NAME+".name");
 
         PATH = new ArrayList<Position>();
-        JsonArray json_path = config.getJsonArray("zone.path", new JsonArray());
+        JsonArray json_path = config.getJsonArray(MODULE_NAME+".path", new JsonArray());
         for (int i=0; i < json_path.size(); i++) {
             PATH.add(new Position(json_path.getJsonObject(i)));
         }
 
-        CENTER = new Position(config.getJsonObject("zone.center"));
+        CENTER = new Position(config.getJsonObject(MODULE_NAME+".center"));
 
-        ZOOM = config.getInteger("zone.zoom");
+        ZOOM = config.getInteger(MODULE_NAME+".zoom");
         
-        FINISH_INDEX = config.getInteger("zone.finish_index");
+        FINISH_INDEX = config.getInteger(MODULE_NAME+".finish_index");
+
     }
     
 }

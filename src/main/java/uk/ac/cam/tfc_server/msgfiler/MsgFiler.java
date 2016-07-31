@@ -12,6 +12,12 @@ package uk.ac.cam.tfc_server.msgfiler;
 // MsgFiler is dedicated to reading messages from the eventbus and
 // storing them in the filesystem.
 //
+// MsgFiler uses FilerUtils to filter and store the messages.
+//
+// MsgFiler creates FilerConfig objects to configure the FilerUtils objects as required, e.g.
+// to specify the output data path, output filename format and whether to append records to
+// an existing file or write new files containing the data.
+//
 // Is given a list of 'filer' parameters in config() in "msgfiler.filers".  Each entry defines:
 //   "source_address": the eventbus address to listen to for messages
 //      e.g. "tfc.zone"
@@ -114,10 +120,10 @@ public class MsgFiler extends AbstractVerticle {
         // test messages with filer_config.source_filter
         // and call store_msg if current message passes filter
         eb.consumer(filer_config.source_address, message -> {
-            System.out.println("MsgFiler."+MODULE_ID+": got message from " + filer_config.source_address);
+            //System.out.println("MsgFiler."+MODULE_ID+": got message from " + filer_config.source_address);
             JsonObject msg = new JsonObject(message.body().toString());
             
-            System.out.println(msg.toString());
+            //System.out.println(msg.toString());
 
             // store this message if it matches the filter within the FilerConfig
             filer_utils.store_msg(msg);

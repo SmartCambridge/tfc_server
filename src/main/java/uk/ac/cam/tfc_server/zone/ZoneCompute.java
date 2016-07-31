@@ -31,6 +31,8 @@ public class ZoneCompute {
     private HashMap<String, Vehicle> vehicles; // dictionary to store vehicle status updated from feed
     
     private Box box;
+
+    private Log logger;
     
     // zone_msg_buffer has a MsgBuffer entry for each zone.address
     //private HashMap<String, MsgBuffer> zone_msg_buffer; // stores zone completion messages since start of day
@@ -45,6 +47,11 @@ public class ZoneCompute {
         // create box object with boundaries of rectangle that includes this zone polygon
         box = new Box();
         //zone_msg_buffer = new HashMap<String, MsgBuffer>();
+
+        logger = new Log(zc.LOG_LEVEL);
+
+        logger.log(Constants.LOG_INFO, zc.MODULE_NAME+"."+zc.MODULE_ID+
+                   ": started ZoneCompute(LOG_LEVEL "+zc.LOG_LEVEL+") for "+zc.ZONE_NAME);
 
     }
 
@@ -265,7 +272,7 @@ public class ZoneCompute {
 
     private void zone_start(Vehicle v)
     {
-      System.out.println( "Zone: ,"+zone_config.MODULE_ID+",vehicle_id("+v.vehicle_id+
+        logger.log(Constants.LOG_DEBUG, "Zone: ,"+zone_config.MODULE_ID+",vehicle_id("+v.vehicle_id+
                           ") clean start at "+ts_to_time_str(v.start_ts) +
                           " start_ts_delta " + v.start_ts_delta);
 
@@ -289,7 +296,7 @@ public class ZoneCompute {
 
     private void zone_entry(Vehicle v)
     {
-      System.out.println("Zone: ,"+zone_config.MODULE_ID+",vehicle_id("+v.vehicle_id+
+      logger.log(Constants.LOG_DEBUG, "Zone: ,"+zone_config.MODULE_ID+",vehicle_id("+v.vehicle_id+
                          ") early entry at "+ts_to_time_str(v.position.ts)+
                          " ts_delta " + (v.position.ts - v.prev_position.ts));
       // ****************************************
@@ -333,7 +340,7 @@ public class ZoneCompute {
       completed_log += duration_to_time_str(v.start_ts_delta) + ",";
       completed_log += duration_to_time_str(finish_ts_delta);
 
-      System.out.println(completed_log);
+      logger.log(Constants.LOG_DEBUG, completed_log);
 
       // ****************************************
       // Send ZONE_COMPLETION msg
@@ -358,7 +365,7 @@ public class ZoneCompute {
     private void zone_finish_no_start(Vehicle v, Long finish_ts)
     {
       // output clean exit (no start) message
-      System.out.println("Zone: ,"+zone_config.MODULE_ID+",vehicle_id("+v.vehicle_id+
+      logger.log(Constants.LOG_DEBUG, "Zone: ,"+zone_config.MODULE_ID+",vehicle_id("+v.vehicle_id+
                          ") clean exit (no start) at "+ts_to_time_str(finish_ts) +
                          " ts_delta " + (v.position.ts - v.prev_position.ts));
       // ****************************************
@@ -381,7 +388,7 @@ public class ZoneCompute {
     
     private void zone_exit(Vehicle v)
     {
-      System.out.println("Zone: ,"+zone_config.MODULE_ID+",vehicle_id("+v.vehicle_id+
+      logger.log(Constants.LOG_DEBUG, "Zone: ,"+zone_config.MODULE_ID+",vehicle_id("+v.vehicle_id+
                          ") early exit at "+ts_to_time_str(v.position.ts)+
                          " ts_delta " + (v.position.ts - v.prev_position.ts));
       // ****************************************

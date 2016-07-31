@@ -34,24 +34,31 @@ import java.time.format.*;
 import java.util.ArrayList;
 
 import uk.ac.cam.tfc_server.util.Constants;
+import uk.ac.cam.tfc_server.util.Log;
 
 public class ZoneManager extends AbstractVerticle {
 
-  private String EB_SYSTEM_STATUS; // from config()
-  private String EB_MANAGER; // from config()
-  private String MODULE_NAME; // from config()
-  private String MODULE_ID; // from config()
-  private ArrayList<String> START_ZONES; // from config()
-
-    // debug these should be coming from manager messages
-  private String ZONE_ADDRESS; // from config() - address for Zones to publish to
-  private String ZONE_FEED; // from config() - address for Zones to subscribe to
+    // config() vars
+    private String EB_SYSTEM_STATUS; // from config()
+    private String EB_MANAGER; // from config()
+    private String MODULE_NAME; // from config()
+    private String MODULE_ID; // from config()
+    private ArrayList<String> START_ZONES; // from config()
+    private int    LOG_LEVEL;
     
-  private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
-  private final int SYSTEM_STATUS_AMBER_SECONDS = 15;
-  private final int SYSTEM_STATUS_RED_SECONDS = 25;
+    private String ZONE_ADDRESS; // from config() - address for Zones to publish to
+    private String ZONE_FEED; // from config() - address for Zones to subscribe to
+    
+    //debug get ZONE_NAME from Rita
+    private final String ZONE_NAME = "zone"; 
+    
+    private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
+    private final int SYSTEM_STATUS_AMBER_SECONDS = 15;
+    private final int SYSTEM_STATUS_RED_SECONDS = 25;
 
-  private EventBus eb = null;
+    private Log logger;
+    
+    private EventBus eb = null;
 
   @Override
   public void start(Future<Void> fut) throws Exception {
@@ -64,24 +71,36 @@ public class ZoneManager extends AbstractVerticle {
             return;
         }
 
-    System.out.println("ZoneManager: started using "+MODULE_NAME+"."+MODULE_ID);
+    logger = new Log(LOG_LEVEL);
+    
+    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": config()=");
+    logger.log(Constants.LOG_DEBUG, config().toString());
+
+    logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": started" );
 
     eb = vertx.eventBus();
 
     //debug -- zone.address and zone.feed should come from manager messages
     JsonObject zone_conf = new JsonObject();
+    
+    zone_conf.put("module.name", ZONE_NAME);
     // All zones will use this address to transmit 'status up' messages
     zone_conf.put("eb.system_status", EB_SYSTEM_STATUS);
     // All zones will use this address to exchange management/control messages
     zone_conf.put("eb.manager", EB_MANAGER);
     // All zones will subscribe to this address to get vehicle position messages
-    zone_conf.put("zone.feed", ZONE_FEED);
+    zone_conf.put(ZONE_NAME+".feed", ZONE_FEED);
+
+    zone_conf.put(ZONE_NAME+".log_level", LOG_LEVEL);
 
     // iterate through all the zones to be started
     for (int i=0; i<START_ZONES.size(); i++)
         {
             // get zone_id for this zone
             final String zone_id = START_ZONES.get(i);
+
+            zone_conf.put("module.id", zone_id);
+            
             // Each zone has a unique 'local' eventbus address which will be used for
             // just this zone to send all its messages (e.g. vehicle entered, exitted, completed)
             String ZONE_ADDRESS_LOCAL = ZONE_ADDRESS+"."+zone_id;
@@ -89,16 +108,19 @@ public class ZoneManager extends AbstractVerticle {
                           
             DeploymentOptions zone_options = new DeploymentOptions();
             zone_options.setConfig(zone_conf);
-            //debug debug println statement should be removed
-            System.out.println("ZoneManager starting service zone."+zone_id+" with "+zone_conf.toString());
+
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                       ": starting service zone."+zone_id+" with "+zone_conf.toString());
 
             vertx.deployVerticle("service:uk.ac.cam.tfc_server.zone."+zone_id,
                                  zone_options,
                                  res -> {
                     if (res.succeeded()) {
-                        System.out.println("ZoneManager: Zone "+zone_id+ "started");
+                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                                   ": Zone "+zone_id+ "started");
                     } else {
-                        System.err.println("ZoneManager: failed to start Zone " + zone_id);
+                        System.err.println(MODULE_NAME+"."+MODULE_ID+
+                                           ": failed to start Zone " + zone_id);
                         fut.fail(res.cause());
                     }
                 });
@@ -147,18 +169,26 @@ public class ZoneManager extends AbstractVerticle {
                 System.err.println("ZoneManager: no module.id in config()");
                 return false;
             }
-
+        
+        LOG_LEVEL = config().getInteger(MODULE_NAME+".log_level", 0);
+        if (LOG_LEVEL==0)
+            {
+                LOG_LEVEL = Constants.LOG_INFO;
+            }
+        
         EB_SYSTEM_STATUS = config().getString("eb.system_status");
         if (EB_SYSTEM_STATUS==null)
             {
-                System.err.println("ZoneManager: no eb.system_status in config()");
+                System.err.println(MODULE_NAME+"."+MODULE_ID+
+                                   ": no eb.system_status in config()");
                 return false;
             }
 
         EB_MANAGER = config().getString("eb.manager");
         if (EB_MANAGER==null)
             {
-                System.err.println("ZoneManager: no eb.manager in config()");
+                System.err.println(MODULE_NAME+"."+MODULE_ID+
+                                   ": no eb.manager in config()");
                 return false;
             }
 
@@ -174,14 +204,16 @@ public class ZoneManager extends AbstractVerticle {
         ZONE_ADDRESS = config().getString(MODULE_NAME+".zone.address");
         if (ZONE_ADDRESS==null)
             {
-                System.err.println("ZoneManager: no "+MODULE_NAME+".zone.address in config()");
+                System.err.println(MODULE_NAME+"."+MODULE_ID+
+                                   ": no "+MODULE_NAME+".zone.address in config()");
                 return false;
             }
 
         ZONE_FEED = config().getString(MODULE_NAME+".zone.feed");
         if (ZONE_FEED==null)
             {
-                System.err.println("ZoneManager: no "+MODULE_NAME+".zone.feed in config()");
+                System.err.println(MODULE_NAME+"."+MODULE_ID+
+                                   ": no "+MODULE_NAME+".zone.feed in config()");
                 return false;
             }
         

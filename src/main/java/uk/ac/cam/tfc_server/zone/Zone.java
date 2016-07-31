@@ -112,6 +112,8 @@ public class Zone extends AbstractVerticle {
     private String tfc_data_zone = null;
 
     private HashMap<String, MsgHandler> msg_handlers;
+
+    private Log logger;
     
   // **************************************************************************************
   // Zone Verticle Startup procedure
@@ -128,7 +130,9 @@ public class Zone extends AbstractVerticle {
               return;
           }
       
-    System.out.println("Zone."+zone_config.MODULE_ID+": started");
+    logger = new Log(zone_config.LOG_LEVEL);
+    
+    logger.log(Constants.LOG_INFO, zone_config.MODULE_NAME+"."+zone_config.MODULE_ID+": started");
 
     // Initialization from config() complete
     
@@ -141,7 +145,8 @@ public class Zone extends AbstractVerticle {
 
     eb.consumer(EB_MANAGER, eb_message -> {
             JsonObject msg = new JsonObject(eb_message.body().toString());
-            System.out.println("Zone."+zone_config.MODULE_ID+": manager msg received "+msg.toString());
+            logger.log(Constants.LOG_INFO,zone_config.MODULE_NAME+"."+zone_config.MODULE_ID+
+                       ": manager msg received "+msg.toString());
             if (msg.getString("to_module_name").equals(zone_config.MODULE_NAME) &&
                 msg.getString("to_module_id").equals(zone_config.MODULE_ID))
             {
@@ -159,7 +164,7 @@ public class Zone extends AbstractVerticle {
 
     // send periodic "system_status" messages
     vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> {
-            System.out.println("Zone."+zone_config.MODULE_ID+": sending UP status to "+EB_SYSTEM_STATUS);
+      //System.out.println("Zone."+zone_config.MODULE_ID+": sending UP status to "+EB_SYSTEM_STATUS);
       eb.publish(EB_SYSTEM_STATUS,
                  "{ \"module_name\": \""+zone_config.MODULE_NAME+"\"," +
                    "\"module_id\": \""+zone_config.MODULE_ID+"\"," +
@@ -171,44 +176,6 @@ public class Zone extends AbstractVerticle {
 
   } // end start()
 
-    // Load initialization global constants defining this Zone from config()
-    private boolean get_config()
-    {
-        // config() values needed by all TFC modules are:
-        //   module.name - usually "zone"
-        //   module.id - unique module reference to be used by this verticle
-        //   eb.system_status - String eventbus address for system status messages
-        //   eb.manager - eventbus address for manager messages
-        
-        // Expected config() values defining this Zone are:
-        //   zone.feed (optional) address to subscribe for position feed
-        //   zone.address (optional) address for publishing zone update messages
-        //   zone.name - String
-        //   zone.id   - String
-        //   zone.path - Position[]
-        //   zone.center - Position
-        //   zone.zoom - int
-        //   zone.finish_index - int
-
-        zone_config = new ZoneConfig(config());
-        
-        EB_SYSTEM_STATUS = config().getString("eb.system_status");
-        if (EB_SYSTEM_STATUS==null)
-            {
-                Log.log_err("Zone."+zone_config.MODULE_ID+": no eb.system_status in config()");
-                return false;
-            }
-
-        EB_MANAGER = config().getString("eb.manager");
-        if (EB_MANAGER==null)
-            {
-                Log.log_err("Zone."+zone_config.MODULE_ID+": no eb.manager in config()");
-                return false;
-            }
-        
-        return zone_config.valid;
-    }
-    
     // Process a manager message to this module
     private void manager_msg(JsonObject msg)
     {
@@ -243,7 +210,8 @@ public class Zone extends AbstractVerticle {
     // so should broadcast a message with all the completion messages for the day so far
     private void handle_update_request(JsonObject request_msg)
     {
-        System.out.println("Zone."+zone_config.MODULE_ID+": sending Zone update");
+        logger.log(Constants.LOG_INFO,zone_config.MODULE_NAME+"."+zone_config.MODULE_ID+
+                   ": sending Zone update");
         // ****************************************
         // Send ZONE_UPDATE message to ZONE_ADDRESS
         // ****************************************
@@ -265,7 +233,8 @@ public class Zone extends AbstractVerticle {
     // so should broadcast a message with the zone details
     private void handle_info_request(JsonObject request_msg)
     {
-        System.out.println("Zone."+zone_config.MODULE_ID+": sending Zone info");
+        logger.log(Constants.LOG_INFO,zone_config.MODULE_NAME+"."+zone_config.MODULE_ID+
+                   ": sending Zone info");
         // ****************************************
         // Send ZONE_INFO message to ZONE_ADDRESS
         // ****************************************
@@ -295,8 +264,8 @@ public class Zone extends AbstractVerticle {
     // Called in start()
     private void monitor_feed(String ZONE_FEED, String ZONE_ADDRESS)
     {
-      System.out.println("Zone: " + zone_config.MODULE_NAME + "." + zone_config.MODULE_ID +
-                         " subscribing to "+ ZONE_FEED);
+      logger.log(Constants.LOG_INFO,zone_config.MODULE_NAME+"."+zone_config.MODULE_ID+
+                 ": subscribing to "+ ZONE_FEED);
 
       // Create new MsgHandler if not already existing for this ZONE_ADDRESS
       if (!msg_handlers.containsKey(ZONE_ADDRESS))
@@ -415,4 +384,42 @@ public class Zone extends AbstractVerticle {
 
     } // end class MsgHandler
     
+    // Load initialization global constants defining this Zone from config()
+    private boolean get_config()
+    {
+        // config() values needed by all TFC modules are:
+        //   module.name - usually "zone"
+        //   module.id - unique module reference to be used by this verticle
+        //   eb.system_status - String eventbus address for system status messages
+        //   eb.manager - eventbus address for manager messages
+        
+        // Expected config() values defining this Zone are:
+        //   zone.feed (optional) address to subscribe for position feed
+        //   zone.address (optional) address for publishing zone update messages
+        //   zone.name - String
+        //   zone.id   - String
+        //   zone.path - Position[]
+        //   zone.center - Position
+        //   zone.zoom - int
+        //   zone.finish_index - int
+
+        zone_config = new ZoneConfig(config());
+        
+        EB_SYSTEM_STATUS = config().getString("eb.system_status");
+        if (EB_SYSTEM_STATUS==null)
+            {
+                Log.log_err("Zone."+zone_config.MODULE_ID+": no eb.system_status in config()");
+                return false;
+            }
+
+        EB_MANAGER = config().getString("eb.manager");
+        if (EB_MANAGER==null)
+            {
+                Log.log_err("Zone."+zone_config.MODULE_ID+": no eb.manager in config()");
+                return false;
+            }
+        
+        return zone_config.valid;
+    }
+        
 } // end class Zone

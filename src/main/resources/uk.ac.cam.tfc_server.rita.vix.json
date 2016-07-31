@@ -10,6 +10,8 @@
             "eb.console_out":   "tfc.console_out",
             "eb.manager":       "tfc.manager",
 
+            "rita.log_level":   1,
+
             "rita.address":     "tfc.rita.vix",
 
             "rita.zonemanagers": [ "cambridge.vix" ],

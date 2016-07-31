@@ -34,6 +34,7 @@ import java.text.SimpleDateFormat;
     
 import uk.ac.cam.tfc_server.util.GTFS;
 import uk.ac.cam.tfc_server.util.Constants;
+import uk.ac.cam.tfc_server.util.Log;
 
 // ********************************************************************************************
 // ********************************************************************************************
@@ -49,6 +50,8 @@ public class Batcher extends AbstractVerticle {
     private String MODULE_ID; // from config()
     private String EB_SYSTEM_STATUS; // eventbus status reporting address
 
+    private int LOG_LEVEL;
+    
     private String BATCHER_ADDRESS; // eventbus address to talk to BatcherWorkers
 
     //debug not sure BatcherWorker module.name should be hardcoded
@@ -60,6 +63,8 @@ public class Batcher extends AbstractVerticle {
     private final int SYSTEM_STATUS_AMBER_SECONDS = 15; // delay before flagging system as AMBER
     private final int SYSTEM_STATUS_RED_SECONDS = 25; // delay before flagging system as RED
 
+    private Log logger;
+    
     private EventBus eb = null;
     
     @Override
@@ -72,7 +77,12 @@ public class Batcher extends AbstractVerticle {
                   fut.fail("Batcher: failed to load initial config()");
               }
 
-        System.out.println("Batcher: " + MODULE_NAME + "." + MODULE_ID + " started on " + BATCHER_ADDRESS);
+        logger = new Log(LOG_LEVEL);
+        
+        logger.log(Constants.LOG_DEBUG, "Batcher config()=");
+        logger.log(Constants.LOG_DEBUG, config().toString());
+        
+        logger.log(Constants.LOG_INFO, "Batcher: " + MODULE_NAME + "." + MODULE_ID + " started on " + BATCHER_ADDRESS);
 
         eb = vertx.eventBus();
 
@@ -97,8 +107,8 @@ public class Batcher extends AbstractVerticle {
     // Deploy BatcherWorker as a WORKER verticle
     private void deploy_batcherworker(BatcherWorkerConfig bwc)
     {
-        System.out.println(MODULE_NAME+"."+MODULE_ID+": deploying "+BW_MODULE_NAME+"."+bwc.MODULE_ID);
-        System.out.println(MODULE_NAME+"."+MODULE_ID+": "+bwc.DATA_BIN+","+bwc.START_TS+","+bwc.FINISH_TS);
+        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": deploying "+BW_MODULE_NAME+"."+bwc.MODULE_ID);
+        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": "+bwc.DATA_BIN+","+bwc.START_TS+","+bwc.FINISH_TS);
 
         // build config options for this BatcherWorker as Json object
         JsonObject conf = new JsonObject();
@@ -108,6 +118,8 @@ public class Batcher extends AbstractVerticle {
         conf.put("module.id", bwc.MODULE_ID);
 
         conf.put("batcher.address", BATCHER_ADDRESS);
+
+        conf.put(BW_MODULE_NAME+".log_level", bwc.LOG_LEVEL);
 
         conf.put(BW_MODULE_NAME+".data_bin", bwc.DATA_BIN);
 
@@ -126,15 +138,15 @@ public class Batcher extends AbstractVerticle {
         batcherworker_options.setWorker(true);
 
         // debug printing whole BatcherWorker config()
-        //System.out.println("Batcher: new BatcherWorker config() after setWorker=");
-        //System.out.println(batcherworker_options.toJson().toString());
+        //logger.log(Constants.LOG_DEBUG, "Batcher: new BatcherWorker config() after setWorker=");
+        //logger.log(Constants.LOG_DEBUG, batcherworker_options.toJson().toString());
         
         // note the BatcherWorker json config() file has MODULE_ID of this BATCHER
         vertx.deployVerticle("service:uk.ac.cam.tfc_server.batcherworker."+MODULE_ID,
                              batcherworker_options,
                              res -> {
                 if (res.succeeded()) {
-                    System.out.println("Batcher."+MODULE_ID+": BatcherWorker "+bwc.MODULE_ID+ "started");
+                    logger.log(Constants.LOG_INFO, "Batcher."+MODULE_ID+": BatcherWorker "+bwc.MODULE_ID+ "started");
                 } else {
                     System.err.println("Batcher."+MODULE_ID+": failed to start BatcherWorker " + bwc.MODULE_ID);
                     //fut.fail(res.cause());
@@ -151,9 +163,6 @@ public class Batcher extends AbstractVerticle {
         //   tfc.module_id - unique module reference to be used by this verticle
         //   eb.system_status - String eventbus address for system status messages
 
-        System.out.println("Batcher config()=");
-        System.out.println(config().toString());
-        
         MODULE_NAME = config().getString("module.name"); // "batcher"
         if (MODULE_NAME==null)
             {
@@ -175,6 +184,12 @@ public class Batcher extends AbstractVerticle {
                 return false;
             }
 
+        LOG_LEVEL = config().getInteger(MODULE_NAME+".log_level", 0);
+        if (LOG_LEVEL==0)
+            {
+                LOG_LEVEL = Constants.LOG_INFO;
+            }
+        
         BATCHER_ADDRESS = config().getString(MODULE_NAME+".address"); // eventbus address to publish feed on
         if (BATCHER_ADDRESS==null)
             {
@@ -194,6 +209,8 @@ public class Batcher extends AbstractVerticle {
                         String batcherworker_id = batcherworker_list.getString(i);
                         
                         BatcherWorkerConfig bwc = new BatcherWorkerConfig(batcherworker_id);
+
+                        bwc.LOG_LEVEL = LOG_LEVEL;
                         
                         bwc.DATA_BIN = config().getString(BW_MODULE_NAME+"."+batcherworker_id+".data_bin");
 
@@ -228,6 +245,7 @@ public class Batcher extends AbstractVerticle {
         public Long FINISH_TS;   // unix timestamp of end of data
         public ArrayList<String> ZONES;
         public JsonArray FILERS;
+        public int LOG_LEVEL;
 
         public BatcherWorkerConfig(String id)
         {
