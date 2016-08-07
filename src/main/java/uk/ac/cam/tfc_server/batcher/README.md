@@ -13,6 +13,30 @@ proceed as fast as possible.
 The (normal, asynchronous) Batcher verticle spawns one or more (synchronous) BatcherWorker
 verticles that are each designed to run on a worker thread.
 
+Batcher, and its main class BatcherWorker, provides the *synchronous* data processing capability of the
+Rita platform.
+
+Note that the verticles of the Rita platform (such as FeedHandler, Zone, MsgFiler) are designed to operate
+asynchronously, receiving and processing data and user requests and storing or presenting derived analytics.
+The Rita platform is designed to operate comfortably with the real-time data rates expected, and in fact the
+FeedPlayer verticle can replay data at much higher rates (such as 50x normal speed) with the platform
+continuing to function in the normal way. Actually the system has been run in this way at over 500x
+'real-time' speed but at these rates it should be recognised a better synchronous processing approach would
+be appropriate (hence Batcher / BatcherWorker).
+
+But at some level of acceleration, a limit will be reached where the *downstream* processing verticles
+can't keep up with the rapidity of the feed data, and the lightweight approach taken by both Rita and the
+Vertx platform is to assume data messages can simply be missed without the system falling apart.
+
+The Batcher module is designed to be used where the simple acceleration provided by a FeedPlayer running at,
+say, 50x normal speed is not enough. Batcher spawns worker threads (running a class called BatcherWorker)
+which *synchronously* read through historic feed data and call the Rita processing routines (such as Zone
+calculations) synchronously for each data point, synchronously storing analytics data as required.
+
+A BatcherWorker configured to process a day's worth of vehicle position data will (as a simple benchmark,
+processing the same set of Cambridge region Zones)
+acheive a processing speed up of approximately 7500x over the original real-time data rate.
+
 Vertx [config()](http://vertx.io/blog/vert-x-application-configuration/) parameters tell the Batcher
 which files to read and which synchronous routines (e.g. from Zones) to process the data with.
 

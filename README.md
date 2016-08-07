@@ -147,6 +147,32 @@ to provide WebSocket or EventBus bridging to these pages as is provided by Rita 
 All data is embedded into the page (as JSON data) before it is returned to the browser, like most traditional
 server-side scripted pages.
 
+### Batcher (see [Batcher README](src/main/java/uk/ac/cam/tfc_server/batcher))
+
+Batcher, and its main class BatcherWorker, provides the *synchronous* data processing capability of the
+Rita platform.
+
+Note that the verticles of the Rita platform (such as FeedHandler, Zone, MsgFiler) are designed to operate
+asynchronously, receiving and processing data and user requests and storing or presenting derived analytics.
+The Rita platform is designed to operate comfortably with the real-time data rates expected, and in fact the
+FeedPlayer verticle can replay data at much higher rates (such as 50x normal speed) with the platform
+continuing to function in the normal way. Actually the system has been run in this way at over 500x
+'real-time' speed but at these rates it should be recognised a better synchronous processing approach would
+be appropriate (hence Batcher / BatcherWorker).
+
+But at some level of acceleration, a limit will be reached where the *downstream* processing verticles
+can't keep up with the rapidity of the feed data, and the lightweight approach taken by both Rita and the
+Vertx platform is to assume data messages can simply be missed without the system falling apart.
+
+The Batcher module is designed to be used where the simple acceleration provided by a FeedPlayer running at,
+say, 50x normal speed is not enough. Batcher spawns worker threads (running a class called BatcherWorker)
+which *synchronously* read through historic feed data and call the Rita processing routines (such as Zone
+calculations) synchronously for each data point, synchronously storing analytics data as required.
+
+A BatcherWorker configured to process a day's worth of vehicle position data will (as a simple benchmark,
+processing the same set of Cambridge region Zones)
+acheive a processing speed up of approximately 7500x over the original real-time data rate.
+
 ### FeedComposer *(planned)*
 
 It is intended that a FeedComposer module will accept a request (via the eventbus) for a custom
