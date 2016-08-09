@@ -164,6 +164,7 @@ public class FeedHandler extends AbstractVerticle {
     router.route(HttpMethod.POST,"/"+BASE_URI).handler( ctx -> {
             ctx.request().bodyHandler( body_data -> {
                 try {
+		    System.out.println(MODULE_NAME+"."+MODULE_ID+": header="+ctx.request().getHeader("Authorization"));
                     process_gtfs(body_data);
                 }
                 catch (Exception ex) {
