@@ -103,13 +103,19 @@ public class FeedHandler extends AbstractVerticle {
     private String TFC_DATA_BIN = null;     // MODULE_NAME.tfc_data_bin
     private String TFC_DATA_MONITOR = null; // MODULE_NAME.tfc_data_monitor
 
+    public int LOG_LEVEL; // optional in config(), defaults to Constants.LOG_INFO
+
+    // local constants
     private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
     private final int SYSTEM_STATUS_AMBER_SECONDS = 15;
     private final int SYSTEM_STATUS_RED_SECONDS = 25;
-    
+
+    // global vars
     private HttpServer http_server = null;
     private EventBus eb = null;
 
+    private Log logger;
+    
     private String BASE_URI; // defined the http POST base for this FeedHandler
     
   @Override
@@ -124,8 +130,10 @@ public class FeedHandler extends AbstractVerticle {
               vertx.close();
               return;
           }
-      
-    System.out.println("FeedHandler: " + MODULE_ID + " started, sending to "+FEEDHANDLER_ADDRESS);
+
+    logger = new Log(LOG_LEVEL);
+    
+    logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": started on "+FEEDHANDLER_ADDRESS);
 
     // set up base URI that will be used for feed post, e.g. feedhandler/vix
     BASE_URI = MODULE_NAME + "/" + MODULE_ID;
@@ -164,7 +172,8 @@ public class FeedHandler extends AbstractVerticle {
     router.route(HttpMethod.POST,"/"+BASE_URI).handler( ctx -> {
             ctx.request().bodyHandler( body_data -> {
                 try {
-		    System.out.println(MODULE_NAME+"."+MODULE_ID+": header="+ctx.request().getHeader("Authorization"));
+                    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                               ": header="+ctx.request().getHeader("Authorization"));
                     process_gtfs(body_data);
                 }
                 catch (Exception ex) {
@@ -252,6 +261,12 @@ public class FeedHandler extends AbstractVerticle {
                 return false;
             }
 
+        LOG_LEVEL = config().getInteger(MODULE_NAME+".log_level", 0);
+        if (LOG_LEVEL==0)
+            {
+                LOG_LEVEL = Constants.LOG_INFO;
+            }
+        
         EB_SYSTEM_STATUS = config().getString("eb.system_status");
         if (EB_SYSTEM_STATUS == null)
             {
@@ -346,16 +361,19 @@ public class FeedHandler extends AbstractVerticle {
     // if full directory path exists, then write file
     // otherwise create full path first
     final String bin_path = TFC_DATA_BIN+"/"+filepath;
-    System.out.println("Writing "+bin_path+"/"+filename+".bin");
+    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+               ": Writing "+bin_path+"/"+filename+".bin");
     fs.exists(bin_path, result -> {
             if (result.succeeded() && result.result())
                 {
-                    System.out.println("process_gtfs: path "+bin_path+" exists");
+                    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                               ": process_gtfs: path "+bin_path+" exists");
                     write_file(fs, buf, bin_path+"/"+filename+".bin");
                 }
             else
                 {
-                    System.out.println("Creating directory "+bin_path);
+                    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                               ": Creating directory "+bin_path);
                     fs.mkdirs(bin_path, mkdirs_result -> {
                             if (mkdirs_result.succeeded())
                                 {
@@ -372,18 +390,21 @@ public class FeedHandler extends AbstractVerticle {
     // Write file to $TFC_DATA_CACHE
     //
     final String cache_path = TFC_DATA_CACHE+"/"+filepath;
-    System.out.println("Writing "+cache_path+"/"+filename+".bin");
+    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+               ": Writing "+cache_path+"/"+filename+".bin");
     // if full directory path exists, then write file
     // otherwise create full path first
     fs.exists(cache_path, result -> {
             if (result.succeeded() && result.result())
                 {
-                    System.out.println("process_gtfs: path "+cache_path+" exists");
+                    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                               ": process_gtfs: path "+cache_path+" exists");
                     write_file(fs, buf, cache_path+"/"+filename+".bin");
                 }
             else
                 {
-                    System.out.println("Creating directory "+cache_path);
+                    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                               ": Creating directory "+cache_path);
                     fs.mkdirs(cache_path, mkdirs_result -> {
                             if (mkdirs_result.succeeded())
                                 {
@@ -399,13 +420,14 @@ public class FeedHandler extends AbstractVerticle {
 
     // Write file to $TFC_DATA_MONITOR
     //
-    System.out.println("Writing "+TFC_DATA_MONITOR+"/"+filename+".bin");
+    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+               ": Writing "+TFC_DATA_MONITOR+"/"+filename+".bin");
     fs.readDir(TFC_DATA_MONITOR, ".*\\.bin", monitor_result -> {
                             if (monitor_result.succeeded())
                                 {
                                     for (String f: monitor_result.result())
                                         {
-                                            System.out.println("Deleting "+f);
+                                            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"Deleting "+f);
                                             fs.delete(f, delete_result -> {
                                                     if (!delete_result.succeeded())
                                                         {
@@ -426,7 +448,8 @@ public class FeedHandler extends AbstractVerticle {
     FeedMessage feed = FeedMessage.parseFrom(buf.getBytes());
     
     eb.publish(FEEDHANDLER_ADDRESS, feed_to_json_object(feed,filename,filepath));
-    System.out.println("FeedHandler published (feed_vehicle, pos_records)");
+    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+               ": FeedHandler published (feed_vehicle, pos_records)");
     
   } // end process_gtfs()
 
@@ -436,7 +459,8 @@ public class FeedHandler extends AbstractVerticle {
                  buf, 
                  result -> {
       if (result.succeeded()) {
-        System.out.println("File "+file_path+" written");
+          logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                     ": File "+file_path+" written");
       } else {
         Log.log_err("FeedHandler."+MODULE_ID+": write_file error ..." + result.cause());
       }

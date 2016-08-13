@@ -11,6 +11,8 @@
             "eb.system_status":      "tfc.system_status",
             "eb.console_out":        "tfc.console_out",
             "eb.manager":            "tfc.manager",
+
+            "feedhandler.log_level": 1,
               
             "feedhandler.address" :   "tfc.feedhandler.B",
             "feedhandler.http.port" : 8090,
