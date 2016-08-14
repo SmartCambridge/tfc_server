@@ -1,0 +1,130 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<!--
+    raw_day.hbs is served by DataServer.java
+    It lists the raw data files available for a particular day
+-->
+
+<head>
+    <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+    <!-- load the d3 library for the chart plot -->
+    <script src="/static/d3.v3.min.js" charset="utf-8"></script>
+
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon" />    
+    <title>Rita::Raw Data for Day 0.1</title>
+<!--
+RELEASE INFO:
+
+-->	
+<style type="text/css">
+body {
+   font-family: Tahoma, Verdana, Segoe, sans-serif;
+}  
+
+img {
+   vertical-align: middle;
+}
+
+.header_title {
+   color: #707070;
+}
+
+.time_shift {
+  display: inline-block;
+}
+
+</style>
+
+<script type="text/javascript">
+
+var rawname = "{{config_rawname}}";
+
+// Set base URL of web server
+var DATA_RAW_URL = "/{{config_base_uri}}/raw/day/{{config_rawname}}";
+
+var yyyy = {{config_yyyy}}; // Year e.g. 2016
+var MM = {{config_MM}};     // Month e.g. 07 = July
+var dd = {{config_dd}};     // day e.g. 23
+
+var page_date; // date of currently displayed plot (initialized from yyyy/MM/dd)
+
+var page_date_minus_1; // page_date - 1 day
+var page_date_plus_1; // page_date + 1 day
+
+var month_of_year = new Array("spacer", "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec");
+var day_of_week = new Array("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat");
+
+// **********************************************
+// Initialize this page (called in body:onload())
+// **********************************************
+
+function init()
+{
+
+    var page_date = new Date(yyyy,MM-1,dd); // as loaded in page template config_ values;
+
+    alert("page_date " + page_date);
+
+    // set plot_date_minus_1 to the day before
+    page_date_minus_1 = new Date(page_date);
+    page_date_minus_1.setDate(page_date.getDate()-1);
+    var minus_1_url = DATA_RAW_URL;
+    minus_1_url = minus_1_url + "/" + page_date_minus_1.getFullYear();
+    minus_1_url = minus_1_url + "/" + ("0" + (page_date_minus_1.getMonth()+1)).slice(-2);
+    minus_1_url = minus_1_url + "/" + ("0" + page_date_minus_1.getDate()).slice(-2);
+   
+    document.getElementById("date_minus_1").href = minus_1_url;
+   
+
+    // set plot_date_plus_1 to the day after
+    page_date_plus_1 = page_date_minus_1 = new Date(page_date);
+    page_date_plus_1.setDate(page_date.getDate()+1);
+    var plus_1_url = DATA_RAW_URL;
+    plus_1_url = plus_1_url + "/" + page_date_plus_1.getFullYear();
+    plus_1_url = plus_1_url + "/" + ("0" + (page_date_plus_1.getMonth()+1)).slice(-2);
+    plus_1_url = plus_1_url + "/" + ("0" + page_date_plus_1.getDate()).slice(-2);
+   
+    document.getElementById("date_plus_1").href = plus_1_url;
+   
+
+
+    var heading_date = document.getElementById("heading_date");
+
+    heading_date.textContent = day_of_week[page_date.getDay()] + " " + dd + " " + month_of_year[MM] + " " + yyyy;
+
+}
+
+
+function write_console1(msg)
+{
+    var c = document.getElementById('console1');
+    c.innerHTML += msg;
+}
+
+</script>
+
+</head>
+
+<body onload='init()'>
+  
+<h1 class="header_title">
+  <img src="/static/images/smart_cambridge_logo.jpg">Rita::Raw Data 
+</h1>
+
+<div id="chart_title">
+  <h1>
+  <div class="time_shift"><a id="date_minus_1" href="_dummy"><img src="/static/images/chevron-left.png"></a></div>
+  <span id="heading_date"></span>
+  <div class="time_shift"><a id="date_plus_1" href="_dummy"><img src="/static/images/chevron-right.png"></a></div>
+    </h1>
+</div>
+
+<pre>{{config_files}}</pre>
+
+<div id="console1">
+  <h4>Messages</h4>
+</div>
+
+</body>
+</html>

@@ -10,6 +10,7 @@
             "eb.console_out":   "tfc.console_out",
             "eb.manager":       "tfc.manager",
 
+            "dataserver.log_level": 1,
             "dataserver.http.port":  8099,
             "dataserver.webroot":   "webroot",
             "dataserver.data_path": "/home/ijl20/tfc_server_data/data_"

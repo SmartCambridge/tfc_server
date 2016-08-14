@@ -83,8 +83,6 @@ public class DataServer extends AbstractVerticle {
     public  Log logger;
     public  HandlebarsTemplateEngine template_engine;
 
-    private DataPlot dataplot; // to render XY plot web pages
-    
     // Vertx event bus
     private EventBus eb = null; // at least for system_status messages, not for the browser
 
@@ -141,33 +139,10 @@ public class DataServer extends AbstractVerticle {
 
     template_engine = HandlebarsTemplateEngine.create();
 
-    dataplot = new DataPlot(vertx, this, router);
+    DataPlot dataplot = new DataPlot(vertx, this, router);
 
-/*    
-    // first check to see if we have a /plot/zone/zone_id with NO DATE, so do TODAY
-    router.route(HttpMethod.GET, "/"+BASE_URI+"/plot/zone/:zoneid").handler( ctx -> {
-            String zone_id =  ctx.request().getParam("zoneid");
-            LocalDateTime local_time = LocalDateTime.now();
+    DataRaw dataraw = new DataRaw(vertx, this, router);
 
-            String dd = local_time.format(DateTimeFormatter.ofPattern("dd"));
-            String MM = local_time.format(DateTimeFormatter.ofPattern("MM"));
-            String yyyy = local_time.format(DateTimeFormatter.ofPattern("yyyy"));
-            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-		       ": zone "+zone_id+" TODAY "+yyyy+"/"+MM+"/"+dd);
-            dataplot.serve_plot_zone(vertx, ctx, zone_id, yyyy, MM, dd);
-        });
-
-    // check for /plot/zone/zone_id/yyyy/MM/dd and show data for that previous day
-    router.route(HttpMethod.GET, "/"+BASE_URI+"/plot/zone/:zoneid/:yyyy/:MM/:dd").handler( ctx -> {
-            String zone_id =  ctx.request().getParam("zoneid");
-            String yyyy =  ctx.request().getParam("yyyy");
-            String MM =  ctx.request().getParam("MM");
-            String dd =  ctx.request().getParam("dd");
-            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                       ": zone "+zone_id+" "+yyyy+"/"+MM+"/"+dd);
-            dataplot.serve_plot_zone(vertx, ctx, zone_id, yyyy, MM, dd);
-        });
-*/            
     // ********************************
     // create handler for static pages
     // ********************************

@@ -35,7 +35,7 @@ public class DataPlot {
     {
 	parent = caller;
 
-	parent.logger.log(Constants.LOG_INFO, parent.MODULE_NAME+"."+parent.MODULE_ID+": DataPlot logger started");
+	parent.logger.log(Constants.LOG_INFO, parent.MODULE_NAME+"."+parent.MODULE_ID+": DataPlot started");
 	
         // first check to see if we have a /plot/zone/zone_id with NO DATE, so do TODAY
         router.route(HttpMethod.GET, "/"+parent.BASE_URI+"/plot/zone/:zoneid").handler( ctx -> {
