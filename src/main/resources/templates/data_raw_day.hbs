@@ -41,11 +41,11 @@ img {
 var rawname = "{{config_rawname}}";
 
 // Set base URL of web server
-var DATA_RAW_URL = "/{{config_base_uri}}/raw/day/{{config_rawname}}";
+var DATA_RAW_URL = "/{{config_base_uri}}/raw/file/{{config_rawname}}";
 
-var yyyy = {{config_yyyy}}; // Year e.g. 2016
-var MM = {{config_MM}};     // Month e.g. 07 = July
-var dd = {{config_dd}};     // day e.g. 23
+var yyyy = "{{config_yyyy}}"; // Year e.g. 2016
+var   MM = "{{config_MM}}";   // Month e.g. 07 = July
+var   dd = "{{config_dd}}";   // day e.g. 23
 
 var page_date; // date of currently displayed plot (initialized from yyyy/MM/dd)
 
@@ -62,9 +62,9 @@ var day_of_week = new Array("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat");
 function init()
 {
 
-    var page_date = new Date(yyyy,MM-1,dd); // as loaded in page template config_ values;
+    // set up the date header with links to the day before and after
 
-    alert("page_date " + page_date);
+    var page_date = new Date(yyyy,MM-1,dd); // as loaded in page template config_ values;
 
     // set plot_date_minus_1 to the day before
     page_date_minus_1 = new Date(page_date);
@@ -86,13 +86,28 @@ function init()
     plus_1_url = plus_1_url + "/" + ("0" + page_date_plus_1.getDate()).slice(-2);
    
     document.getElementById("date_plus_1").href = plus_1_url;
-   
-
-
+  
     var heading_date = document.getElementById("heading_date");
 
     heading_date.textContent = day_of_week[page_date.getDay()] + " " + dd + " " + month_of_year[MM] + " " + yyyy;
 
+    // load the list of file names available for the selected day
+    var file_names = JSON.parse('{{{config_files}}}');
+
+    var files_div = document.getElementById("file_names");
+
+    for ( i in file_names )
+    {
+        var filename = file_names[i];
+        var d = document.createElement("div");
+        var a = document.createElement("a");
+        var t = document.createTextNode(filename);
+        a.appendChild(t);
+        a.title = filename;
+        a.href = DATA_RAW_URL+"/"+yyyy+"/"+MM+"/"+dd+"/"+filename;
+        d.appendChild(a);
+        files_div.appendChild(d);
+    }
 }
 
 
@@ -120,7 +135,8 @@ function write_console1(msg)
     </h1>
 </div>
 
-<pre>{{config_files}}</pre>
+<div id="file_names">
+</div>
 
 <div id="console1">
   <h4>Messages</h4>

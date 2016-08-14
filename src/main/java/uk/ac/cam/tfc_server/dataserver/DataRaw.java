@@ -9,6 +9,8 @@ import java.io.*;
 import java.time.*;
 import java.time.format.*;
 import java.util.*;
+import java.nio.file.Paths;
+import java.nio.file.Path;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -117,7 +119,9 @@ public class DataRaw {
                                     {
                                         files_json += ",";
                                     }
-                                files_json += "\""+res.result().get(i)+"\"";
+                                Path p = Paths.get(res.result().get(i));
+                                String filename = p.getFileName().toString();
+                                files_json += "\""+filename+"\"";
                             }
 
                         files_json += "]";
