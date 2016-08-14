@@ -56,25 +56,35 @@ import java.util.*;
 
 // other tfc_server classes
 import uk.ac.cam.tfc_server.util.Constants;
+import uk.ac.cam.tfc_server.util.Log;
 
 public class DataServer extends AbstractVerticle {
 
+    // constants from vertx config json
     private Integer HTTP_PORT; // from config()
 
     private String EB_SYSTEM_STATUS; // from config()
     private String EB_MANAGER; // from config()
-    private String MODULE_NAME; // from config()
-    private String MODULE_ID; // from config()
+    public  String MODULE_NAME; // from config()
+    public  String MODULE_ID; // from config()
     private String WEBROOT; // from config()
-    
-    private String BASE_URI; // used as template parameter for web pages, built from config()
 
-    private String DATA_PATH; // base filesystem path to data
+    private int    LOG_LEVEL; // from config(), defaults to Constants.LOG_INFO
     
+    public String DATA_PATH; // base filesystem path to data
+    
+    // Globals
+    public String BASE_URI; // used as template parameter for web pages, built from config()
+
     private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
     private final int SYSTEM_STATUS_AMBER_SECONDS = 15;
     private final int SYSTEM_STATUS_RED_SECONDS = 25;
 
+    public  Log logger;
+    public  HandlebarsTemplateEngine template_engine;
+
+    private DataPlot dataplot; // to render XY plot web pages
+    
     // Vertx event bus
     private EventBus eb = null; // at least for system_status messages, not for the browser
 
@@ -85,13 +95,15 @@ public class DataServer extends AbstractVerticle {
     // Get src/main/conf/tfc_server.conf config values for module
     if (!get_config())
         {
-            System.err.println("DataServer: problem loading config");
+            Log.log_err("DataServer: problem loading config");
             vertx.close();
             return;
         }
 
-    System.out.println("DataServer starting as "+MODULE_NAME+"."+MODULE_ID+
-                       " on port "+HTTP_PORT );
+    logger = new Log(LOG_LEVEL);
+    
+    logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
+                       ": started on port "+HTTP_PORT );
 
     BASE_URI = MODULE_NAME; // typically 'dataserver'
 
@@ -127,8 +139,11 @@ public class DataServer extends AbstractVerticle {
     // **************************************
     // **************************************
 
-    final HandlebarsTemplateEngine template_engine = HandlebarsTemplateEngine.create();
+    template_engine = HandlebarsTemplateEngine.create();
 
+    dataplot = new DataPlot(vertx, this, router);
+
+/*    
     // first check to see if we have a /plot/zone/zone_id with NO DATE, so do TODAY
     router.route(HttpMethod.GET, "/"+BASE_URI+"/plot/zone/:zoneid").handler( ctx -> {
             String zone_id =  ctx.request().getParam("zoneid");
@@ -137,8 +152,9 @@ public class DataServer extends AbstractVerticle {
             String dd = local_time.format(DateTimeFormatter.ofPattern("dd"));
             String MM = local_time.format(DateTimeFormatter.ofPattern("MM"));
             String yyyy = local_time.format(DateTimeFormatter.ofPattern("yyyy"));
-            System.out.println("DataServer."+MODULE_ID+" zone "+zone_id+" TODAY "+yyyy+"/"+MM+"/"+dd);
-            serve_plot_zone(ctx, template_engine, zone_id, yyyy, MM, dd);
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+		       ": zone "+zone_id+" TODAY "+yyyy+"/"+MM+"/"+dd);
+            dataplot.serve_plot_zone(vertx, ctx, zone_id, yyyy, MM, dd);
         });
 
     // check for /plot/zone/zone_id/yyyy/MM/dd and show data for that previous day
@@ -147,10 +163,11 @@ public class DataServer extends AbstractVerticle {
             String yyyy =  ctx.request().getParam("yyyy");
             String MM =  ctx.request().getParam("MM");
             String dd =  ctx.request().getParam("dd");
-            System.out.println("DataServer."+MODULE_ID+" zone "+zone_id+" "+yyyy+"/"+MM+"/"+dd);
-            serve_plot_zone(ctx, template_engine, zone_id, yyyy, MM, dd);
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                       ": zone "+zone_id+" "+yyyy+"/"+MM+"/"+dd);
+            dataplot.serve_plot_zone(vertx, ctx, zone_id, yyyy, MM, dd);
         });
-            
+*/            
     // ********************************
     // create handler for static pages
     // ********************************
@@ -160,7 +177,8 @@ public class DataServer extends AbstractVerticle {
     static_handler.setCachingEnabled(false);
     router.route(HttpMethod.GET, "/static/*").handler( static_handler );
 
-    System.out.println("DataServer."+MODULE_ID+" static handler using "+WEBROOT);
+    logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
+               ": static handler using "+WEBROOT);
     
     // ********************************
     // connect router to http_server
@@ -187,12 +205,13 @@ public class DataServer extends AbstractVerticle {
                  "}" );
       });
     }
-
+  /*  
     // Serve the templates/data_plot.hbs web page
-    private void serve_plot_zone(RoutingContext ctx, HandlebarsTemplateEngine engine,
+    public void serve_plot_zone(RoutingContext ctx, HandlebarsTemplateEngine engine,
                                  String zone_id, String yyyy, String MM, String dd)
     {
-        System.out.println("DataServer."+MODULE_ID+": serving data_plot.hbs for "+zone_id+" "+yyyy+"/"+MM+"/"+dd);
+        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                   ": serving data_plot.hbs for "+zone_id+" "+yyyy+"/"+MM+"/"+dd);
             
         if (zone_id == null)
         {
@@ -261,7 +280,7 @@ public class DataServer extends AbstractVerticle {
             });
         }
     }
-    
+*/        
     // Load initialization global constants defining this module from config()
     private boolean get_config()
     {
@@ -274,23 +293,29 @@ public class DataServer extends AbstractVerticle {
         MODULE_NAME = config().getString("module.name"); // "dataserver"
         if (MODULE_NAME==null)
             {
-                System.err.println("DataServer: no module.name in config()");
+                Log.log_err("DataServer: no module.name in config()");
                 return false;
             }
         
         MODULE_ID = config().getString("module.id"); // A, B, ...
         if (MODULE_ID==null)
             {
-                System.err.println("DataServer: no module.id in config()");
+                Log.log_err("DataServer: no module.id in config()");
                 return false;
             }
 
+        LOG_LEVEL = config().getInteger(MODULE_NAME+".log_level", 0);
+        if (LOG_LEVEL==0)
+            {
+                LOG_LEVEL = Constants.LOG_INFO;
+            }
+        
         // common system status reporting address, e.g. for UP messages
         // picked up by Console
         EB_SYSTEM_STATUS = config().getString("eb.system_status");
         if (EB_SYSTEM_STATUS==null)
             {
-                System.err.println("DataServer: no eb.system_status in config()");
+                Log.log_err(MODULE_NAME+"."+MODULE_ID+": no eb.system_status in config()");
                 return false;
             }
 
@@ -298,7 +323,7 @@ public class DataServer extends AbstractVerticle {
         EB_MANAGER = config().getString("eb.manager");
         if (EB_MANAGER==null)
             {
-                System.err.println("DataServer: no eb.manager in config()");
+                Log.log_err(MODULE_NAME+"."+MODULE_ID+": no eb.manager in config()");
                 return false;
             }
 
@@ -306,7 +331,7 @@ public class DataServer extends AbstractVerticle {
         HTTP_PORT = config().getInteger(MODULE_NAME+".http.port");
         if (HTTP_PORT==null)
             {
-                System.err.println("DataServer: no "+MODULE_NAME+".http.port in config()");
+                Log.log_err(MODULE_NAME+"."+MODULE_ID+": no "+MODULE_NAME+".http.port in config()");
                 return false;
             }
 
@@ -314,7 +339,7 @@ public class DataServer extends AbstractVerticle {
         WEBROOT = config().getString(MODULE_NAME+".webroot");
         if (WEBROOT==null)
             {
-                System.err.println("DataServer: no "+MODULE_NAME+".webroot in config()");
+                Log.log_err(MODULE_NAME+"."+MODULE_ID+": no "+MODULE_NAME+".webroot in config()");
                 return false;
             }
 
@@ -322,7 +347,7 @@ public class DataServer extends AbstractVerticle {
         DATA_PATH = config().getString(MODULE_NAME+".data_path");
         if (DATA_PATH==null)
             {
-                System.err.println("DataServer: no "+MODULE_NAME+".data_path in config()");
+                Log.log_err(MODULE_NAME+"."+MODULE_ID+": no "+MODULE_NAME+".data_path in config()");
                 return false;
             }
 
