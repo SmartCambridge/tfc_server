@@ -11,9 +11,24 @@ user's web page, and populates the page with the required data before it is
 delivered to the end user, much like any other traditional server-side scripted
 web pages. This differs from the pages delivered by the Rita verticle which are
 designed to be real-time to the end-user and are more demanding in terms of the
-technology requried to support this.
+technology required to support this.
 
 DataServer is configured via Vertx application config(), see examples in the
 main/resources directory.
 
+Pages served by DataServer are defined in external classes:
+
+### DataPlot
+
+DataPlot will render an XY plot of the transit times for a zone on a given day by
+reading the *pre-computed* transit times already archived.
+
+![DataPlot screenshot](../../../../../../../../images/zone_plot_screenshot.png)
+
+### DataRaw
+
+DataRaw provides web pages supporting the download of 'raw' data files, e.g.
+the binary GTFS bus position files.
+
+![DataRaw screenshot](../../../../../../../../images/raw_day_screenshot.png)
 

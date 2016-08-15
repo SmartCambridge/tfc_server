@@ -148,6 +148,19 @@ public class DataRaw {
                     {
                         ds.logger.log(Constants.LOG_DEBUG, ds.MODULE_NAME+"."+ds.MODULE_ID+
                                    ": DataRaw directory read error "+raw_path);
+                        // render template with empty list of filenames
+                        //debug on directory read error we should put message on web page
+                        ds.template_engine.render(ctx, "templates/data_raw_day.hbs", t_res -> {
+                                if (t_res.succeeded())
+                                    {
+                                        ctx.response().end(t_res.result());
+                                    }
+                                else
+                                    {
+                                        Log.log_err("DataRaw render error");
+                                        ctx.fail(t_res.cause());
+                                    }
+                            });
                     }
                 });
         }
