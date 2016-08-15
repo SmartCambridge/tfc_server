@@ -4,7 +4,7 @@ package uk.ac.cam.tfc_server.feedhandler;
 // *************************************************************************************************
 // *************************************************************************************************
 // FeedHandler.java
-// Version 0.09
+// Version 0.10
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
@@ -75,15 +75,8 @@ import java.time.*;
 import java.time.format.*;
 import java.util.*;
 
-import com.google.transit.realtime.GtfsRealtime.FeedMessage;
-import com.google.transit.realtime.GtfsRealtime.FeedHeader;
-import com.google.transit.realtime.GtfsRealtime.FeedEntity;
-import com.google.transit.realtime.GtfsRealtime.VehiclePosition;
-import com.google.transit.realtime.GtfsRealtime.VehicleDescriptor;
-import com.google.transit.realtime.GtfsRealtime.TripDescriptor;
-import com.google.transit.realtime.GtfsRealtime.Position;
-
 // other tfc_server classes
+import uk.ac.cam.tfc_server.util.GTFS;
 import uk.ac.cam.tfc_server.util.Log;
 import uk.ac.cam.tfc_server.util.Constants;
 
@@ -191,40 +184,6 @@ public class FeedHandler extends AbstractVerticle {
 
     http_server.requestHandler(router::accept).listen(HTTP_PORT);
     
-    /*
-    http_server.requestHandler(new Handler<HttpServerRequest>() {
-        @Override
-        public void handle(HttpServerRequest request) {
-            if(request.method() == HttpMethod.POST) {
-
-              request.bodyHandler(body_data -> {
-                try {
-                  process_gtfs(body_data);
-                }
-                catch (Exception ex) {
-                  Log.log_err("FeedHandler."+MODULE_ID+": process_gtfs Exception");
-                  Log.log_err(ex.getMessage());
-                }
-                request.response().end("");
-              });
-            } else {
-              request.response().end("<h1>TFC Feed Handler V2</h1> " +
-                "<p>Vert.x 3 application</p");
-            }
-        }
-      });
-
-      http_server.listen(HTTP_PORT, result -> {
-        System.out.println("FeedHandler listening on port " + String.valueOf(HTTP_PORT));
-        if (result.succeeded()) {
-          fut.complete();
-        } else {
-          fut.fail(result.cause());
-        }
-      });
-
-    */
-    
     // send periodic "system_status" messages
     vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> {
       eb.publish(EB_SYSTEM_STATUS,
@@ -237,92 +196,6 @@ public class FeedHandler extends AbstractVerticle {
       });
 
   } // end start()
-
-    // Load initialization global constants defining this FeedHandler from config()
-    private boolean get_config()
-    {
-        // config() values needed by all TFC modules are:
-        //   module.name - usually "zone"
-        //   module.id - unique module reference to be used by this verticle
-        //   eb.system_status - String eventbus address for system status messages
-        //   eb.manager - eventbus address for manager messages
-        
-        MODULE_NAME = config().getString("module.name");
-        if (MODULE_NAME == null)
-            {
-                Log.log_err("FeedHandler: config() not set");
-                return false;
-            }
-        
-        MODULE_ID = config().getString("module.id");
-        if (MODULE_ID == null)
-            {
-                Log.log_err("FeedHandler: module.id config() not set");
-                return false;
-            }
-
-        LOG_LEVEL = config().getInteger(MODULE_NAME+".log_level", 0);
-        if (LOG_LEVEL==0)
-            {
-                LOG_LEVEL = Constants.LOG_INFO;
-            }
-        
-        EB_SYSTEM_STATUS = config().getString("eb.system_status");
-        if (EB_SYSTEM_STATUS == null)
-            {
-                Log.log_err("FeedHandler."+MODULE_ID+": eb.system_status config() not set");
-                return false;
-            }
-
-        EB_MANAGER = config().getString("eb.manager");
-        if (EB_MANAGER == null)
-            {
-                Log.log_err("FeedHandler."+MODULE_ID+": eb.manager config() not set");
-                return false;
-            }
-
-        // eventbus address this FeedHandler will broadcast onto
-        FEEDHANDLER_ADDRESS = config().getString(MODULE_NAME+".address");
-        if (FEEDHANDLER_ADDRESS == null)
-            {
-                Log.log_err("FeedHandler."+MODULE_ID+": "+MODULE_NAME+".address config() not set");
-                return false;
-            }
-
-        // web address for this FeedHandler to receive POST data messages from original source
-        HTTP_PORT = config().getInteger(MODULE_NAME+".http.port",0);
-        if (HTTP_PORT == 0)
-        {
-          Log.log_err("FeedHandler."+MODULE_ID+": "+MODULE_NAME+".http_port config() var not set");
-          return false;
-        }
-
-        // backup alternate filesystem path for use when the 'tfc_data_bin' path fails
-        TFC_DATA_CACHE = config().getString(MODULE_NAME+".tfc_data_cache");
-        if (TFC_DATA_CACHE == null)
-        {
-          Log.log_err("FeedHandler."+MODULE_ID+": "+MODULE_NAME+".tfc_data_cache config() var not set");
-          return false;
-        }
-
-        // primary filesystem path to store the data exacly as received (i.e. GTFS binary .bin files)
-        TFC_DATA_BIN = config().getString(MODULE_NAME+".tfc_data_bin");
-        if (TFC_DATA_BIN == null)
-        {
-          Log.log_err("FeedHandler."+MODULE_ID+": "+MODULE_NAME+".tfc_data_bin config() var not set");
-          return false;
-        }
-
-        // filesystem path to store the latest 'post_data.bin' file so it can be monitored for inotifywait processing
-        TFC_DATA_MONITOR = config().getString(MODULE_NAME+".tfc_data_monitor");
-        if (TFC_DATA_MONITOR == null)
-        {
-          Log.log_err("FeedHandler."+MODULE_ID+": "+MODULE_NAME+".tfc_data_monitor config() var not set");
-          return false;
-        }
-        
-        return true;
-    }
 
     // get current local time as "YYYY-MM-DD-hh-mm-ss"
   private String local_datetime_string()
@@ -445,9 +318,14 @@ public class FeedHandler extends AbstractVerticle {
     });
 
     // Here is where we process the individual position records
-    FeedMessage feed = FeedMessage.parseFrom(buf.getBytes());
+    JsonObject msg = GTFS.buf_to_json(buf, filename, filepath);
+
+    msg.put("module_name", MODULE_NAME);
+    msg.put("module_id", MODULE_ID);
+    msg.put("msg_type", Constants.FEED_BUS_POSITION);
+
+    eb.publish(FEEDHANDLER_ADDRESS, msg);
     
-    eb.publish(FEEDHANDLER_ADDRESS, feed_to_json_object(feed,filename,filepath));
     logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                ": FeedHandler published (feed_vehicle, pos_records)");
     
@@ -467,98 +345,90 @@ public class FeedHandler extends AbstractVerticle {
     });
   } // end write_file
 
-  private JsonObject feed_to_json_object(FeedMessage feed, String filename, String filepath)
-  {
-    JsonObject feed_json_object = new JsonObject(); // object to hold entire message
+    // Load initialization global constants defining this FeedHandler from config()
+    private boolean get_config()
+    {
+        // config() values needed by all TFC modules are:
+        //   module.name - usually "zone"
+        //   module.id - unique module reference to be used by this verticle
+        //   eb.system_status - String eventbus address for system status messages
+        //   eb.manager - eventbus address for manager messages
+        
+        MODULE_NAME = config().getString("module.name");
+        if (MODULE_NAME == null)
+            {
+                Log.log_err("FeedHandler: config() not set");
+                return false;
+            }
+        
+        MODULE_ID = config().getString("module.id");
+        if (MODULE_ID == null)
+            {
+                Log.log_err("FeedHandler: module.id config() not set");
+                return false;
+            }
 
-    feed_json_object.put("filename",filename);
-    feed_json_object.put("filepath",filepath);
-    
-    JsonArray ja = new JsonArray(); // array to hold GTFS 'entities' i.e. position records
+        LOG_LEVEL = config().getInteger(MODULE_NAME+".log_level", 0);
+        if (LOG_LEVEL==0)
+            {
+                LOG_LEVEL = Constants.LOG_INFO;
+            }
+        
+        EB_SYSTEM_STATUS = config().getString("eb.system_status");
+        if (EB_SYSTEM_STATUS == null)
+            {
+                Log.log_err("FeedHandler."+MODULE_ID+": eb.system_status config() not set");
+                return false;
+            }
 
-    Long received_timestamp = System.currentTimeMillis() / 1000L; // note when feed was received
+        EB_MANAGER = config().getString("eb.manager");
+        if (EB_MANAGER == null)
+            {
+                Log.log_err("FeedHandler."+MODULE_ID+": eb.manager config() not set");
+                return false;
+            }
 
-    // add (sent) timestamp as feed.timestamp (i.e. we are not using a 'header' sub-object
-    FeedHeader header = feed.getHeader();
-    if (header.hasTimestamp())
+        // eventbus address this FeedHandler will broadcast onto
+        FEEDHANDLER_ADDRESS = config().getString(MODULE_NAME+".address");
+        if (FEEDHANDLER_ADDRESS == null)
+            {
+                Log.log_err("FeedHandler."+MODULE_ID+": "+MODULE_NAME+".address config() not set");
+                return false;
+            }
+
+        // web address for this FeedHandler to receive POST data messages from original source
+        HTTP_PORT = config().getInteger(MODULE_NAME+".http.port",0);
+        if (HTTP_PORT == 0)
         {
-            feed_json_object.put("timestamp", header.getTimestamp());
-        }
-            
-    for (FeedEntity entity : feed.getEntityList())
-        {
-            try
-                {
-            if (entity.hasVehicle())
-                {
-                    VehiclePosition vehicle_pos = entity.getVehicle();
-                    //PositionRecord pos_record = new PositionRecord();
-                    JsonObject jo = new JsonObject();
-
-                    jo.put("received_timestamp",received_timestamp);
-                    
-                    if (vehicle_pos.hasVehicle())
-                        {
-                            VehicleDescriptor vehicle_desc = vehicle_pos.getVehicle();
-                            if (vehicle_desc.hasId())
-                                {
-                                    jo.put("vehicle_id",vehicle_desc.getId());
-                                }
-                            if (vehicle_desc.hasLabel())
-                                {
-                                    jo.put("label",vehicle_desc.getLabel());
-                                }
-                        }
-                    if (vehicle_pos.hasPosition())
-                        {
-                            Position vpos = vehicle_pos.getPosition();
-                            jo.put("latitude", vpos.getLatitude());
-                            jo.put("longitude", vpos.getLongitude());
-                            if (vpos.hasBearing())
-                                {
-                                    jo.put("bearing",vpos.getBearing());
-                                }
-                            jo.put("timestamp", vehicle_pos.getTimestamp());
-                        }
-                    if (vehicle_pos.hasTrip())
-                        {
-                            TripDescriptor trip = vehicle_pos.getTrip();
-                            if (trip.hasTripId())
-                                {
-                                    jo.put("trip_id",trip.getTripId());
-                                }
-                            if (trip.hasRouteId())
-                                {
-                                    jo.put("route_id",trip.getRouteId());
-                                }
-                        }
-                    if (vehicle_pos.hasCurrentStopSequence())
-                        {
-                            jo.put("current_stop_sequence",vehicle_pos.getCurrentStopSequence());
-                        }
-                    if (vehicle_pos.hasStopId())
-                        {
-                            jo.put("stop_id",vehicle_pos.getStopId());
-                        }
-                    if (vehicle_pos.hasTimestamp())
-                        {
-                            jo.put("timestamp",vehicle_pos.getTimestamp());
-                        }
-
-                    ja.add(jo);
-
-                }
-                } // end try
-            catch (Exception e)
-                {
-                    Log.log_err("FeedHandler."+MODULE_ID+": exception parsing position record");
-                }
+          Log.log_err("FeedHandler."+MODULE_ID+": "+MODULE_NAME+".http_port config() var not set");
+          return false;
         }
 
-    // finally... add JsonArray of feed 'FeedEntities' to feed_json_object
-    feed_json_object.put("entities", ja);
-    
-    return feed_json_object;
-  } // end feed_to_json_array()
+        // backup alternate filesystem path for use when the 'tfc_data_bin' path fails
+        TFC_DATA_CACHE = config().getString(MODULE_NAME+".tfc_data_cache");
+        if (TFC_DATA_CACHE == null)
+        {
+          Log.log_err("FeedHandler."+MODULE_ID+": "+MODULE_NAME+".tfc_data_cache config() var not set");
+          return false;
+        }
+
+        // primary filesystem path to store the data exacly as received (i.e. GTFS binary .bin files)
+        TFC_DATA_BIN = config().getString(MODULE_NAME+".tfc_data_bin");
+        if (TFC_DATA_BIN == null)
+        {
+          Log.log_err("FeedHandler."+MODULE_ID+": "+MODULE_NAME+".tfc_data_bin config() var not set");
+          return false;
+        }
+
+        // filesystem path to store the latest 'post_data.bin' file so it can be monitored for inotifywait processing
+        TFC_DATA_MONITOR = config().getString(MODULE_NAME+".tfc_data_monitor");
+        if (TFC_DATA_MONITOR == null)
+        {
+          Log.log_err("FeedHandler."+MODULE_ID+": "+MODULE_NAME+".tfc_data_monitor config() var not set");
+          return false;
+        }
+        
+        return true;
+    }
     
 } // end FeedHandler class
