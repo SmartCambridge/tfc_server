@@ -4,7 +4,7 @@ package uk.ac.cam.tfc_server.batcher;
 // *************************************************************************************************
 // *************************************************************************************************
 // BatcherWorker.java
-// Version 0.01
+// Version 0.02
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
@@ -78,6 +78,8 @@ public class BatcherWorker extends AbstractVerticle {
     private HashMap<String, ZoneCompute> zones; // zones to run against bin gtfs records
 
     private ArrayList<FilerUtils> filers; // filers to call to store messages
+
+    private MsgHandler msg_handler; // will provide handle_msg method which calls filers
     
     private EventBus eb = null;
 
@@ -104,15 +106,32 @@ public class BatcherWorker extends AbstractVerticle {
         logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": time boundaries "+START_TS+","+FINISH_TS);
         logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": input bin files "+TFC_DATA_BIN);
         logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": zones "+ZONE_NAMES);
+
+        // Create msg_handler
+        // See MsgHandler definition below
+        msg_handler = new MsgHandler();
         
-        zones = create_zones(ZONE_NAMES, new MsgHandler());
+        zones = create_zones(ZONE_NAMES, msg_handler);
 
         filers = create_filers(FILERS); // create list of FilerUtils from FilerConfig list
 
         eb = vertx.eventBus();
 
-        // SYNCHRONOUSLY step through the filesystem, sending files as messages
-        process_bin_files( START_TS, FINISH_TS );
+        // SYNCHRONOUSLY step through the filesystem, passing each bus_position_feed record to
+        // zones or storing as JSON.
+        vertx.executeBlocking(future -> {
+                try {
+                    process_bin_files( START_TS, FINISH_TS );
+                } catch (Exception e) {
+                    System.err.println(MODULE_NAME+"."+MODULE_ID+": Exception during process_bin_files");
+                    e.printStackTrace();
+                    future.complete("FAILED");
+                    return;
+                }
+                future.complete("OK");
+            }, res -> {
+                logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": result is: " + res.result());
+            });
         
       } // end start()
 
@@ -178,9 +197,9 @@ public class BatcherWorker extends AbstractVerticle {
     //
     // Given a list of FilerConfigs create an ArrayList of FilerUtils
     //
-    ArrayList create_filers(ArrayList<FilerConfig> filerconfig_list)
+    ArrayList<FilerUtils> create_filers(ArrayList<FilerConfig> filerconfig_list)
     {
-        ArrayList filer_list = new ArrayList<FilerUtils>();
+        ArrayList<FilerUtils> filer_list = new ArrayList<FilerUtils>();
 
         for (int i=0; i<filerconfig_list.size(); i++)
             {
@@ -207,7 +226,7 @@ public class BatcherWorker extends AbstractVerticle {
 
                 logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": processing date "+yyyymmdd);
 
-                // iterate through current bin file directory
+                // iterate through current bin file directory, (will skip if if doesn't exist)
                 process_bin_dir(next_start_ts, finish_ts, TFC_DATA_BIN+"/"+yyyymmdd);
                 
                 ZonedDateTime next_day = zoned_datetime.plusDays(1L).withHour(0).withMinute(0).withSecond(0); // add a day
@@ -225,11 +244,18 @@ public class BatcherWorker extends AbstractVerticle {
     {
 
         //logger.log(Constants.LOG_DEBUG, "BatcherWorker."+MODULE_ID+" processing "+bin_path);
-        
-        List<Path> file_paths = Files.walk(Paths.get(bin_path))
-            .filter(Files::isRegularFile)
-            .collect(Collectors.toList());
 
+        List<Path> file_paths;
+        
+        try {
+              file_paths = Files.walk(Paths.get(bin_path))
+                .filter(Files::isRegularFile)
+                .collect(Collectors.toList());
+        } catch (Exception e) {
+                System.err.println(MODULE_NAME+"."+MODULE_ID+": process_bin_dir skipping dir "+bin_path);
+            return;
+        }
+        
         Collections.sort(file_paths);
         
         file_paths.forEach(file_path -> {
@@ -288,10 +314,20 @@ public class BatcherWorker extends AbstractVerticle {
             msg.put("module_id", MODULE_ID);
             msg.put("msg_type", Constants.FEED_BUS_POSITION);
 
-            // Here is where we pass the current feed data through the configured zones
-            for (String zone_id: zones.keySet())
+            // Here is where we process the current feed_bus_position message
+            // If there are NO zones then we pass the message straight to the filers
+            // If there are zones then we pass the message to each zone.
+            if (zones.size() == 0)
                 {
-                    zones.get(zone_id).handle_feed(msg);
+                    msg_handler.handle_msg(msg);
+                }
+            else
+                {
+                    // Here is where we pass the current feed data through the configured zones
+                    for (String zone_id: zones.keySet())
+                        {
+                            zones.get(zone_id).handle_feed(msg);
+                        }
                 }
 
           //eb.publish(FEEDPLAYER_ADDRESS, msg);
@@ -422,7 +458,12 @@ public class BatcherWorker extends AbstractVerticle {
     // Class MsgHandler
     //*************************************************************************************
     //
-    // passed to ZoneCompute for callback to handle zone event messages
+    // Passed to ZoneCompute for callback to handle zone event messages
+    //
+    // This class is required so that it can be passed to sub-modules that are processing the
+    // original data - if they have new messages that need processing (e.g. a zone_completion
+    // from a ZoneCompute) these can be passed to the 'handle_msg' method so they can be filed as
+    // required by this BatcherWorker.
     //
     class MsgHandler implements IMsgHandler {
 

@@ -48,7 +48,8 @@ img {
 var rawname = "{{config_rawname}}";
 
 // Set base URL of web server
-var DATA_RAW_URL = "/{{config_base_uri}}/raw/file/{{config_rawname}}";
+var DATA_RAW_DAY_URL = "/{{config_base_uri}}/raw/day/{{config_rawname}}";
+var DATA_RAW_FILE_URL = "/{{config_base_uri}}/raw/file/{{config_rawname}}";
 
 var yyyy = "{{config_yyyy}}"; // Year e.g. 2016
 var   MM = "{{config_MM}}";   // Month e.g. 07 = July
@@ -76,7 +77,7 @@ function init()
     // set plot_date_minus_1 to the day before
     page_date_minus_1 = new Date(page_date);
     page_date_minus_1.setDate(page_date.getDate()-1);
-    var minus_1_url = DATA_RAW_URL;
+    var minus_1_url = DATA_RAW_DAY_URL;
     minus_1_url = minus_1_url + "/" + page_date_minus_1.getFullYear();
     minus_1_url = minus_1_url + "/" + ("0" + (page_date_minus_1.getMonth()+1)).slice(-2);
     minus_1_url = minus_1_url + "/" + ("0" + page_date_minus_1.getDate()).slice(-2);
@@ -87,7 +88,7 @@ function init()
     // set plot_date_plus_1 to the day after
     page_date_plus_1 = page_date_minus_1 = new Date(page_date);
     page_date_plus_1.setDate(page_date.getDate()+1);
-    var plus_1_url = DATA_RAW_URL;
+    var plus_1_url = DATA_RAW_DAY_URL;
     plus_1_url = plus_1_url + "/" + page_date_plus_1.getFullYear();
     plus_1_url = plus_1_url + "/" + ("0" + (page_date_plus_1.getMonth()+1)).slice(-2);
     plus_1_url = plus_1_url + "/" + ("0" + page_date_plus_1.getDate()).slice(-2);
@@ -117,7 +118,7 @@ function init()
             var t = document.createTextNode(filename);
             a.appendChild(t);
             a.title = filename;
-            a.href = DATA_RAW_URL+"/"+yyyy+"/"+MM+"/"+dd+"/"+filename;
+            a.href = DATA_RAW_FILE_URL+"/"+yyyy+"/"+MM+"/"+dd+"/"+filename;
             d.appendChild(a);
             files_div.appendChild(d);
         }

@@ -1,18 +1,18 @@
                                                                                 
 {
-    "main":    "uk.ac.cam.tfc_server.batcher.BatcherWorker",
-    "options":
-        { "config":
-          {
+        "main":    "uk.ac.cam.tfc_server.batcher.BatcherWorker",
+        "options":
+            { "config":
+                        {
 
-            "module.name":           "batcherworker",
-            "module.id":             "A",
+                                        "module.name":           "batcherworker",
+                                        "module.id":             "A",
 
-            "batcher.address" :      "tfc.batcher.A",
+                                        "batcher.address" :      "tfc.batcher.A",
 
-            "batcherworker.files":      "/home/ijl20/tfc_server_data/data_bin",
-            "batcherworker.start_ts" :  1448802000,
-            "batcherworker.finish_ts" : 1448812800
-          }
-        }
-}
+                                        "batcherworker.files":      "/home/ijl20/tfc_server_data/data_bin",
+                                        "batcherworker.start_ts" :  1448802000,
+                                        "batcherworker.finish_ts" : 1448812800
+                                      }
+                      }
+    }

@@ -4,7 +4,7 @@ package uk.ac.cam.tfc_server.feedhandler;
 // *************************************************************************************************
 // *************************************************************************************************
 // FeedHandler.java
-// Version 0.10
+// Version 0.11
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
@@ -96,6 +96,8 @@ public class FeedHandler extends AbstractVerticle {
     private String TFC_DATA_BIN = null;     // MODULE_NAME.tfc_data_bin
     private String TFC_DATA_MONITOR = null; // MODULE_NAME.tfc_data_monitor
 
+    private String FILE_SUFFIX;             // MODULE_NAME.file_suffix, default ".bin"
+    
     public int LOG_LEVEL; // optional in config(), defaults to Constants.LOG_INFO
 
     // local constants
@@ -220,7 +222,7 @@ public class FeedHandler extends AbstractVerticle {
     String year = local_time.format(DateTimeFormatter.ofPattern("yyyy"));
     String utc_ts = String.valueOf(System.currentTimeMillis() / 1000);
 
-    // filename without the '.bin' suffix
+    // filename without the suffix
     String filename = utc_ts+"_"+local_time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss"));
     // sub-dir structure to store the file
     String filepath = year+"/"+month+"/"+day;
@@ -235,13 +237,13 @@ public class FeedHandler extends AbstractVerticle {
     // otherwise create full path first
     final String bin_path = TFC_DATA_BIN+"/"+filepath;
     logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-               ": Writing "+bin_path+"/"+filename+".bin");
+               ": Writing "+bin_path+"/"+filename + FILE_SUFFIX);
     fs.exists(bin_path, result -> {
             if (result.succeeded() && result.result())
                 {
                     logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                                ": process_gtfs: path "+bin_path+" exists");
-                    write_file(fs, buf, bin_path+"/"+filename+".bin");
+                    write_file(fs, buf, bin_path+"/"+filename+ FILE_SUFFIX);
                 }
             else
                 {
@@ -250,7 +252,7 @@ public class FeedHandler extends AbstractVerticle {
                     fs.mkdirs(bin_path, mkdirs_result -> {
                             if (mkdirs_result.succeeded())
                                 {
-                                    write_file(fs, buf, bin_path+"/"+filename+".bin");
+                                    write_file(fs, buf, bin_path+"/"+filename+ FILE_SUFFIX);
                                 }
                             else
                                 {
@@ -264,7 +266,7 @@ public class FeedHandler extends AbstractVerticle {
     //
     final String cache_path = TFC_DATA_CACHE+"/"+filepath;
     logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-               ": Writing "+cache_path+"/"+filename+".bin");
+               ": Writing "+cache_path+"/"+filename+ FILE_SUFFIX);
     // if full directory path exists, then write file
     // otherwise create full path first
     fs.exists(cache_path, result -> {
@@ -272,7 +274,7 @@ public class FeedHandler extends AbstractVerticle {
                 {
                     logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                                ": process_gtfs: path "+cache_path+" exists");
-                    write_file(fs, buf, cache_path+"/"+filename+".bin");
+                    write_file(fs, buf, cache_path+"/"+filename+ FILE_SUFFIX);
                 }
             else
                 {
@@ -281,7 +283,7 @@ public class FeedHandler extends AbstractVerticle {
                     fs.mkdirs(cache_path, mkdirs_result -> {
                             if (mkdirs_result.succeeded())
                                 {
-                                    write_file(fs, buf, cache_path+"/"+filename+".bin");
+                                    write_file(fs, buf, cache_path+"/"+filename+ FILE_SUFFIX);
                                 }
                             else
                                 {
@@ -294,10 +296,11 @@ public class FeedHandler extends AbstractVerticle {
     // Write file to $TFC_DATA_MONITOR
     //
     logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-               ": Writing "+TFC_DATA_MONITOR+"/"+filename+".bin");
-    fs.readDir(TFC_DATA_MONITOR, ".*\\.bin", monitor_result -> {
+               ": Writing "+TFC_DATA_MONITOR+"/"+filename+ FILE_SUFFIX);
+    fs.readDir(TFC_DATA_MONITOR, ".*\\"+FILE_SUFFIX, monitor_result -> {
                             if (monitor_result.succeeded())
                                 {
+                                    // directory exists, delete previous files of same suffix
                                     for (String f: monitor_result.result())
                                         {
                                             logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"Deleting "+f);
@@ -308,7 +311,7 @@ public class FeedHandler extends AbstractVerticle {
                                                         }
                                                 });
                                         }
-                                    write_file(fs, buf, TFC_DATA_MONITOR+"/"+filename+".bin");
+                                    write_file(fs, buf, TFC_DATA_MONITOR+"/"+filename+ FILE_SUFFIX);
                                 }
                             else
                                 {
@@ -364,7 +367,7 @@ public class FeedHandler extends AbstractVerticle {
         MODULE_ID = config().getString("module.id");
         if (MODULE_ID == null)
             {
-                Log.log_err("FeedHandler: module.id config() not set");
+                Log.log_err(MODULE_NAME+": module.id config() not set");
                 return false;
             }
 
@@ -377,14 +380,14 @@ public class FeedHandler extends AbstractVerticle {
         EB_SYSTEM_STATUS = config().getString("eb.system_status");
         if (EB_SYSTEM_STATUS == null)
             {
-                Log.log_err("FeedHandler."+MODULE_ID+": eb.system_status config() not set");
+                Log.log_err(MODULE_NAME+"."+MODULE_ID+": eb.system_status config() not set");
                 return false;
             }
 
         EB_MANAGER = config().getString("eb.manager");
         if (EB_MANAGER == null)
             {
-                Log.log_err("FeedHandler."+MODULE_ID+": eb.manager config() not set");
+                Log.log_err(MODULE_NAME+"."+MODULE_ID+": eb.manager config() not set");
                 return false;
             }
 
@@ -392,7 +395,7 @@ public class FeedHandler extends AbstractVerticle {
         FEEDHANDLER_ADDRESS = config().getString(MODULE_NAME+".address");
         if (FEEDHANDLER_ADDRESS == null)
             {
-                Log.log_err("FeedHandler."+MODULE_ID+": "+MODULE_NAME+".address config() not set");
+                Log.log_err(MODULE_NAME+"."+MODULE_ID+": "+MODULE_NAME+".address config() not set");
                 return false;
             }
 
@@ -400,7 +403,7 @@ public class FeedHandler extends AbstractVerticle {
         HTTP_PORT = config().getInteger(MODULE_NAME+".http.port",0);
         if (HTTP_PORT == 0)
         {
-          Log.log_err("FeedHandler."+MODULE_ID+": "+MODULE_NAME+".http_port config() var not set");
+          Log.log_err(MODULE_NAME+"."+MODULE_ID+": "+MODULE_NAME+".http_port config() var not set");
           return false;
         }
 
@@ -408,7 +411,7 @@ public class FeedHandler extends AbstractVerticle {
         TFC_DATA_CACHE = config().getString(MODULE_NAME+".tfc_data_cache");
         if (TFC_DATA_CACHE == null)
         {
-          Log.log_err("FeedHandler."+MODULE_ID+": "+MODULE_NAME+".tfc_data_cache config() var not set");
+          Log.log_err(MODULE_NAME+"."+MODULE_ID+": "+MODULE_NAME+".tfc_data_cache config() var not set");
           return false;
         }
 
@@ -416,7 +419,7 @@ public class FeedHandler extends AbstractVerticle {
         TFC_DATA_BIN = config().getString(MODULE_NAME+".tfc_data_bin");
         if (TFC_DATA_BIN == null)
         {
-          Log.log_err("FeedHandler."+MODULE_ID+": "+MODULE_NAME+".tfc_data_bin config() var not set");
+          Log.log_err(MODULE_NAME+"."+MODULE_ID+": "+MODULE_NAME+".tfc_data_bin config() var not set");
           return false;
         }
 
@@ -424,8 +427,15 @@ public class FeedHandler extends AbstractVerticle {
         TFC_DATA_MONITOR = config().getString(MODULE_NAME+".tfc_data_monitor");
         if (TFC_DATA_MONITOR == null)
         {
-          Log.log_err("FeedHandler."+MODULE_ID+": "+MODULE_NAME+".tfc_data_monitor config() var not set");
+          Log.log_err(MODULE_NAME+"."+MODULE_ID+": "+MODULE_NAME+".tfc_data_monitor config() var not set");
           return false;
+        }
+        
+        // filename suffix for file, default '.bin'
+        FILE_SUFFIX = config().getString(MODULE_NAME+".file_suffix");
+        if (FILE_SUFFIX == null)
+        {
+            FILE_SUFFIX = ".bin";
         }
         
         return true;

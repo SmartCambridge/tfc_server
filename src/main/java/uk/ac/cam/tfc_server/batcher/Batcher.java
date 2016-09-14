@@ -4,13 +4,20 @@ package uk.ac.cam.tfc_server.batcher;
 // *************************************************************************************************
 // *************************************************************************************************
 // Batcher.java
-// Version 0.01
+// Version 0.03
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
 //
 // Deploys BatcherWorker worker verticles to batch-process historical data
 //
+// Batcher can iterate the files in a given set of directories (assuming a yyyy/MM/dd directory
+// structure) bounded by utc timestamps (it does this in the same way as FeedPlayer) and
+// assumes file names have the format <utc timestamp>_yyyy_MM_dd_hh_mm_ss.<suffix>. The file
+// iteration is actually done by BatcherWorker so see BatcherWorker.java to see how it actually
+// operates.
+//
+// 
 // *************************************************************************************************
 // *************************************************************************************************
 // *************************************************************************************************
@@ -63,6 +70,8 @@ public class Batcher extends AbstractVerticle {
     private final int SYSTEM_STATUS_AMBER_SECONDS = 15; // delay before flagging system as AMBER
     private final int SYSTEM_STATUS_RED_SECONDS = 25; // delay before flagging system as RED
 
+    private final long MAXWORKER_NS = 120000000000L; // Max worker (i.e. batcherworker) execution time before Vertx complains
+    
     private Log logger;
     
     private EventBus eb = null;
@@ -88,7 +97,7 @@ public class Batcher extends AbstractVerticle {
 
         for (String bw_id : BATCHERWORKERS.keySet())
             {
-                deploy_batcherworker(BATCHERWORKERS.get(bw_id));
+                deploy_batcherworker(BATCHERWORKERS.get(bw_id), fut);
             }
 
         // send periodic "system_status" messages
@@ -105,7 +114,7 @@ public class Batcher extends AbstractVerticle {
       } // end start()
 
     // Deploy BatcherWorker as a WORKER verticle
-    private void deploy_batcherworker(BatcherWorkerConfig bwc)
+    private void deploy_batcherworker(BatcherWorkerConfig bwc, Future fut)
     {
         logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": deploying "+BW_MODULE_NAME+"."+bwc.MODULE_ID);
         logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": "+bwc.DATA_BIN+","+bwc.START_TS+","+bwc.FINISH_TS);
@@ -136,20 +145,24 @@ public class Batcher extends AbstractVerticle {
 
         // set as WORKER verticle (i.e. synchronous, not non-blocking)
         batcherworker_options.setWorker(true);
+        batcherworker_options.setMaxWorkerExecuteTime(MAXWORKER_NS);
+        long mwet = batcherworker_options.getMaxWorkerExecuteTime();
+        //boolean mwet = batcherworker_options.isWorker();
+        logger.log(Constants.LOG_DEBUG, "MaxWorkerExecuteTime="+mwet);
 
         // debug printing whole BatcherWorker config()
-        //logger.log(Constants.LOG_DEBUG, "Batcher: new BatcherWorker config() after setWorker=");
-        //logger.log(Constants.LOG_DEBUG, batcherworker_options.toJson().toString());
+        logger.log(Constants.LOG_DEBUG, "Batcher: new BatcherWorker config() with worker and maxtime:");
+        logger.log(Constants.LOG_DEBUG, batcherworker_options.toJson().toString());
         
         // note the BatcherWorker json config() file has MODULE_ID of this BATCHER
-        vertx.deployVerticle("service:uk.ac.cam.tfc_server.batcherworker."+MODULE_ID,
+        vertx.deployVerticle("service:uk.ac.cam.tfc_server.batcherworker."+bwc.MODULE_ID,
                              batcherworker_options,
                              res -> {
                 if (res.succeeded()) {
                     logger.log(Constants.LOG_INFO, "Batcher."+MODULE_ID+": BatcherWorker "+bwc.MODULE_ID+ "started");
                 } else {
                     System.err.println("Batcher."+MODULE_ID+": failed to start BatcherWorker " + bwc.MODULE_ID);
-                    //fut.fail(res.cause());
+                    fut.fail(res.cause());
                 }
             });
     }

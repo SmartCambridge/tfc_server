@@ -111,6 +111,9 @@ public class DataRaw {
                     {
                         // get res.result() list of files and display in raw_day.hbs
 
+                                // sort the files from the directory into timestamp order
+                        Collections.sort(res.result());
+
                         String files_json = "[";
                         
                         for (int i = 0; i < res.result().size(); i++)
