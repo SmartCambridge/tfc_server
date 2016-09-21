@@ -1,0 +1,21 @@
+                                                                                
+{
+    "main":    "uk.ac.cam.tfc_server.feedhandler.FeedHandler",
+    "options":
+        { "config":
+          {
+            "module.name":           "feedhandler",
+            "module.id":             "dev",
+
+            "eb.system_status":      "tfc.system_status",
+            "eb.console_out":        "tfc.console_out",
+            "eb.manager":            "tfc.manager",
+              
+            "feedhandler.address" :   "tfc.feedhandler.dev",
+            "feedhandler.http.port" : 8080,
+            "feedhandler.tfc_data_bin": "/media/tfc/data_bin",
+            "feedhandler.tfc_data_cache": "/media/tfc/data_cache",
+            "feedhandler.tfc_data_monitor": "/media/tfc/data_monitor"
+          }
+        }
+}
