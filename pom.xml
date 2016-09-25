@@ -4,7 +4,7 @@
     <groupId>uk.ac.cam.tfc_server</groupId>
     <artifactId>tfc_server</artifactId>
     <packaging>jar</packaging>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0-alpha</version>
     <name>tfc_server</name>
     <url>http://maven.apache.org</url>
     <properties>
@@ -53,26 +53,22 @@
             <artifactId>achilles-core</artifactId>
             <version>5.0.0</version>
         </dependency>
-        <dependency>
-            <groupId>info.archinnov</groupId>
-            <artifactId>achilles-common</artifactId>
-            <version>5.0.0</version>
-        </dependency>
     </dependencies>
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.3</version>
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
-                    <useIncrementalCompilation>false</useIncrementalCompilation>
-                    <compilerArgs>
-                        <arg>-Xlint:unchecked</arg>
-                    </compilerArgs>
+                    <proc>none</proc>
+                    <debug>true</debug>
+                    <compilerArgument>-proc:none</compilerArgument>
                 </configuration>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
