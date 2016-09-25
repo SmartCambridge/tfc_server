@@ -55,7 +55,7 @@
         </dependency>
         <dependency>
             <groupId>info.archinnov</groupId>
-            <artifactId>achilles</artifactId>
+            <artifactId>achilles-common</artifactId>
             <version>5.0.0</version>
         </dependency>
     </dependencies>
