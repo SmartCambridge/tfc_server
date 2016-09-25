@@ -12,4 +12,6 @@ java -cp target/tfc_server-1.0-SNAPSHOT-fat.jar io.vertx.core.Launcher run "serv
 
 #java -cp target/tfc_server-1.0-SNAPSHOT-fat.jar io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.dataserver.dev" -cluster -cluster-port 10084 >/var/log/tfc/dataserver.log 2>>/var/log/dataserver.error.log & disown
 
+java -cp target/tfc_server-1.0-SNAPSHOT-fat.jar io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.feeddb.dev" -cluster -cluster-port 10085 >/var/log/tfc/staticserver.log 2>>/var/log/tfc/staticserver.error.log & disown
+
 #nohup /home/ijl20/tfc_monitor/tfc_monitor.sh /home/ijl20/tfc_server_data/data_monitor_json/  >>/home/ijl20/log/tfc_monitor.log & disown
