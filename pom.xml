@@ -63,9 +63,6 @@
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
-                    <proc>none</proc>
-                    <debug>true</debug>
-                    <compilerArgument>-proc:none</compilerArgument>
                 </configuration>
             </plugin>
 
