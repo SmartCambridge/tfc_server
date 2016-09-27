@@ -4,7 +4,7 @@ package uk.ac.cam.tfc_server.console;
 // *************************************************************************************************
 // *************************************************************************************************
 // Console.java
-// Version 0.04
+//
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
@@ -49,7 +49,15 @@ import java.io.*;
 import java.time.*;
 import java.time.format.*;
 
+import uk.ac.cam.tfc_server.util.Log;
+import uk.ac.cam.tfc_server.util.Constants;
+
 public class Console extends AbstractVerticle {
+
+    private final String VERSION = "1.05";
+    
+    public int LOG_LEVEL; // optional in config(), defaults to Constants.LOG_INFO
+
     private Integer HTTP_PORT; // from config()
     private String EB_SYSTEM_STATUS; // from config()
     private String EB_MANAGER; // from config()
@@ -61,19 +69,24 @@ public class Console extends AbstractVerticle {
     private final int SYSTEM_STATUS_AMBER_SECONDS = 15;
     private final int SYSTEM_STATUS_RED_SECONDS = 25;
 
+    private Log logger; // tfc module to handle logging
+    
     private EventBus eb;
     
   @Override
   public void start(Future<Void> fut) throws Exception {
 
     if (!get_config())
-        {
-            System.err.println("Console: problem loading config");
-            vertx.close();
-            return;
-        }
+          {
+              Log.log_err("Console: "+MODULE_NAME+"."+ MODULE_ID + " failed to load initial config()");
+              vertx.close();
+              return;
+          }
 
-    System.out.println("Console."+MODULE_ID+": Started. Address "+EB_SYSTEM_STATUS+" on port "+HTTP_PORT);
+    logger = new Log(LOG_LEVEL);
+    
+    logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": Version "+VERSION+" started on " +
+                       EB_SYSTEM_STATUS+", port "+HTTP_PORT);
 
     eb = vertx.eventBus();
     
@@ -81,10 +94,15 @@ public class Console extends AbstractVerticle {
 
     Router router = Router.router(vertx);
 
-    // general logging of get requests
+    // general logging of get requests and initial hack filter
     router.route(HttpMethod.GET,"/*").handler(ctx -> {
-            System.out.println("Console GET request for " + ctx.request().absoluteURI());
-            ctx.next();
+            // wrap in 'try' block to filter out many hacking malformed URL requests
+            try {
+                System.out.println("Console GET request for " + ctx.request().absoluteURI());
+                ctx.next();
+            } catch (Exception e) {
+                // will do nothing here if ctx.request.absoluteURI() fails for current request
+            }
         });
     
     // *****************************************
@@ -108,6 +126,8 @@ public class Console extends AbstractVerticle {
     
     router.route(HttpMethod.GET, "/console").handler( ctx -> {
 
+            ctx.put("config_version", VERSION);
+            
             ctx.put("config_eb_system_status", EB_SYSTEM_STATUS);
             
             ctx.put("config_module_id", MODULE_ID);
@@ -174,16 +194,23 @@ public class Console extends AbstractVerticle {
         MODULE_ID = config().getString("module.id"); // A, B, ...
         if (MODULE_ID==null)
             {
-                System.err.println("Console: no module.id in config()");
+                System.err.println(MODULE_NAME+": no module.id in config()");
                 return false;
             }
 
+        // set logging level
+        LOG_LEVEL = config().getInteger(MODULE_NAME+".log_level", 0);
+        if (LOG_LEVEL==0)
+            {
+                LOG_LEVEL = Constants.LOG_INFO;
+            }
+        
         // common system status reporting address, e.g. for UP messages
         // picked up by Console
         EB_SYSTEM_STATUS = config().getString("eb.system_status");
         if (EB_SYSTEM_STATUS==null)
             {
-                System.err.println("Console: no eb.system_status in config()");
+                System.err.println(MODULE_NAME+"."+MODULE_ID+": no eb.system_status in config()");
                 return false;
             }
 
@@ -191,7 +218,7 @@ public class Console extends AbstractVerticle {
         EB_MANAGER = config().getString("eb.manager");
         if (EB_MANAGER==null)
             {
-                System.err.println("Console: no eb.manager in config()");
+                System.err.println(MODULE_NAME+"."+MODULE_ID+" no eb.manager in config()");
                 return false;
             }
 
@@ -199,7 +226,7 @@ public class Console extends AbstractVerticle {
         HTTP_PORT = config().getInteger(MODULE_NAME+".http.port");
         if (HTTP_PORT==null)
             {
-                System.err.println("Console: no "+MODULE_NAME+".http.port in config()");
+                System.err.println(MODULE_NAME+"."+MODULE_ID+": no "+MODULE_NAME+".http.port in config()");
                 return false;
             }
 

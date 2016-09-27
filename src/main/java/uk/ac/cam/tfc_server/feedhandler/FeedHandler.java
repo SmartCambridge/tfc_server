@@ -4,7 +4,6 @@ package uk.ac.cam.tfc_server.feedhandler;
 // *************************************************************************************************
 // *************************************************************************************************
 // FeedHandler.java
-// Version 0.11
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
@@ -39,6 +38,7 @@ package uk.ac.cam.tfc_server.feedhandler;
 
                     "feedhandler.address" :   "tfc.feedhandler.A",
                     "feedhandler.http.port" : 8080,
+                    "feedhandler.http.token": "test-token",
                     "feedhandler.tfc_data_bin":     "/home/ijl20/tfc_server_data/data_bin",
                     "feedhandler.tfc_data_cache":   "/home/ijl20/tfc_server_data/data_cache",
                     "feedhandler.tfc_data_monitor": "/home/ijl20/tfc_server_data/data_monitor"
@@ -82,6 +82,8 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class FeedHandler extends AbstractVerticle {
 
+    private final String VERSION = "1.12";
+    
     // from config()
     private String MODULE_NAME;       // config module.name - normally "feedhandler"
     private String MODULE_ID;         // config module.id
@@ -89,6 +91,7 @@ public class FeedHandler extends AbstractVerticle {
     private String EB_MANAGER;        // config eb.manager
     
     private int HTTP_PORT;            // config feedplayer.http.port
+    private String HTTP_TOKEN;        // config feedplayer.http.token, can be null
 
     private String FEEDHANDLER_ADDRESS; // config MODULE_NAME.address
     
@@ -128,7 +131,7 @@ public class FeedHandler extends AbstractVerticle {
 
     logger = new Log(LOG_LEVEL);
     
-    logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": started on "+FEEDHANDLER_ADDRESS);
+    logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": Version "+VERSION+" started on "+FEEDHANDLER_ADDRESS);
 
     // set up base URI that will be used for feed post, e.g. feedhandler/vix
     BASE_URI = MODULE_NAME + "/" + MODULE_ID;
@@ -167,12 +170,19 @@ public class FeedHandler extends AbstractVerticle {
     router.route(HttpMethod.POST,"/"+BASE_URI).handler( ctx -> {
             ctx.request().bodyHandler( body_data -> {
                 try {
+                    // read the head value "X-Auth-Token" from the POST
+                    String post_token = ctx.request().getHeader("X-Auth-Token");
                     logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                               ": header="+ctx.request().getHeader("Authorization"));
-                    process_gtfs(body_data);
+                               ": X-Auth-Token="+post_token);
+                    // if the token matches the config(), or config() http.token is null
+                    // then parse this assumed gtfs-realtime POST data
+                    if (HTTP_TOKEN==null || HTTP_TOKEN.equals(post_token))
+                        {
+                            process_gtfs(body_data);
+                        }
                 }
                 catch (Exception ex) {
-                  Log.log_err("FeedHandler."+MODULE_ID+": process_gtfs Exception");
+                  Log.log_err(MODULE_NAME+"."+MODULE_ID+": process_gtfs Exception");
                   Log.log_err(ex.getMessage());
                 }
                 ctx.request().response().end("");
@@ -403,8 +413,15 @@ public class FeedHandler extends AbstractVerticle {
         HTTP_PORT = config().getInteger(MODULE_NAME+".http.port",0);
         if (HTTP_PORT == 0)
         {
-          Log.log_err(MODULE_NAME+"."+MODULE_ID+": "+MODULE_NAME+".http_port config() var not set");
+          Log.log_err(MODULE_NAME+"."+MODULE_ID+": "+MODULE_NAME+".http.port config() var not set");
           return false;
+        }
+
+        // X-Auth-Token for this FeedHandler to authenticate POST data messages from original source
+        HTTP_TOKEN = config().getString(MODULE_NAME+".http.token");
+        if (HTTP_TOKEN == null)
+        {
+          Log.log_err(MODULE_NAME+"."+MODULE_ID+": http.token config() var not set, running with no authentication");
         }
 
         // backup alternate filesystem path for use when the 'tfc_data_bin' path fails
