@@ -25,7 +25,7 @@
                   "store_name": "{{filename}}.json",
                   "store_mode": "write"
                 },
-                { "source_address": "tfc.feedhandler.A",
+                { "source_address": "tfc.feedhandler.vix",
                   "source_filter": { "field": "msg_type",
                                      "compare": "=",
                                      "value": "feed_bus_position"
