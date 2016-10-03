@@ -65,13 +65,14 @@ public class DataServer extends AbstractVerticle {
 
     private String EB_SYSTEM_STATUS; // from config()
     private String EB_MANAGER; // from config()
-    public  String MODULE_NAME; // from config()
+    public  String MODULE_NAME; // from config() // used in page servers e.g. DataPlot, DataMap
     public  String MODULE_ID; // from config()
     private String WEBROOT; // from config()
+    public String GOOGLE_MAP_API_KEY; // from config() // also used in DataMap
 
     private int    LOG_LEVEL; // from config(), defaults to Constants.LOG_INFO
     
-    public String DATA_PATH; // base filesystem path to data
+    public String DATA_PATH; // from config() base filesystem path to data
     
     // Globals
     public String BASE_URI; // used as template parameter for web pages, built from config()
@@ -145,10 +146,12 @@ public class DataServer extends AbstractVerticle {
 
     template_engine = HandlebarsTemplateEngine.create();
 
-    DataPlot dataplot = new DataPlot(vertx, this, router);
+    DataPlot data_plot = new DataPlot(vertx, this, router);
 
-    DataRaw dataraw = new DataRaw(vertx, this, router);
+    DataRaw data_raw = new DataRaw(vertx, this, router);
 
+    DataMap data_map = new DataMap(vertx, this, router);
+    
     // ********************************
     // create handler for static pages
     // ********************************
@@ -255,6 +258,15 @@ public class DataServer extends AbstractVerticle {
             {
                 Log.log_err(MODULE_NAME+"."+MODULE_ID+": no "+MODULE_NAME+".data_path in config()");
                 return false;
+            }
+
+        // where the built-in webserver will find static files
+        GOOGLE_MAP_API_KEY = config().getString(MODULE_NAME+".google_map_api_key");
+        if (GOOGLE_MAP_API_KEY==null)
+            {
+                Log.log_err(MODULE_NAME+"."+MODULE_ID+": no "+MODULE_NAME+".google_map_api_key in config()");
+                //debug remove generic google api key from DataServer.java
+                GOOGLE_MAP_API_KEY = "AIzaSyBrsJPwD7keGUnm_2lnQi33uRe_LsYxR3Y"; // generic open-use key
             }
 
         return true;

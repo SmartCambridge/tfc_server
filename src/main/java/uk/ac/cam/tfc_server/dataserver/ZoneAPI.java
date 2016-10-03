@@ -36,26 +36,35 @@ public class ZoneAPI {
 	parent = caller;
 
 	parent.logger.log(Constants.LOG_INFO, parent.MODULE_NAME+"."+parent.MODULE_ID+": ZoneAPI started");
-	
-        // check for /plot/zone/zone_id/yyyy/MM/dd and show data for that previous day
-        //debug using 'dataserver' in api path for zone, possibly should use variable
-        router.route(HttpMethod.GET, "/api/dataserver/zone/transits/:zoneid/:yyyy/:MM/:dd").handler( ctx -> {
+
+        // ZONE TRANSITS API e.g. /api/dataserver/zone/transits/madingley_road_in/2016/10/01
+        
+        router.route(HttpMethod.GET, "/api/"+parent.MODULE_NAME+"/zone/transits/:zoneid/:yyyy/:MM/:dd").handler( ctx -> {
                 String zone_id =  ctx.request().getParam("zoneid");
                 String yyyy =  ctx.request().getParam("yyyy");
                 String MM =  ctx.request().getParam("MM");
                 String dd =  ctx.request().getParam("dd");
                 parent.logger.log(Constants.LOG_DEBUG, parent.MODULE_NAME+"."+parent.MODULE_ID+
-                           ": zone "+zone_id+" "+yyyy+"/"+MM+"/"+dd);
+                           ": API zone/transits/"+zone_id+"/"+yyyy+"/"+MM+"/"+dd);
                 serve_transits(vertx, ctx, zone_id, yyyy, MM, dd);
+            });
+        
+        // ZONE CONFIG API e.g. /api/dataserver/zone/config/madingley_road_in
+        
+        router.route(HttpMethod.GET, "/api/"+parent.MODULE_NAME+"/zone/config/:zoneid").handler( ctx -> {
+                String zone_id =  ctx.request().getParam("zoneid");
+                parent.logger.log(Constants.LOG_DEBUG, parent.MODULE_NAME+"."+parent.MODULE_ID+
+                           ": API zone/config/"+zone_id);
+                serve_config(vertx, ctx, zone_id);
             });
    }
 
-    // Serve the json data
-    public void serve_transits(Vertx vertx, RoutingContext ctx,
+    // Serve the zone/transits json data
+    void serve_transits(Vertx vertx, RoutingContext ctx,
                                  String zone_id, String yyyy, String MM, String dd)
     {
         parent.logger.log(Constants.LOG_DEBUG, parent.MODULE_NAME+"."+parent.MODULE_ID+
-                   ": serving /api/dataserver/zone/transits for "+zone_id+" "+yyyy+"/"+MM+"/"+dd);
+                   ": serving /api/"+parent.MODULE_NAME+"/zone/transits for "+zone_id+" "+yyyy+"/"+MM+"/"+dd);
             
         if (zone_id == null)
         {
@@ -67,44 +76,98 @@ public class ZoneAPI {
             // build full filepath for data to be retrieved
             String filename = parent.DATA_PATH+"zone/"+yyyy+"/"+MM+"/"+dd+"/"+zone_id+"_"+yyyy+"-"+MM+"-"+dd+".txt";
 
-            // read the file containing the data
-            vertx.fileSystem().readFile(filename, fileres -> {
-
-                    if (fileres.succeeded()) {
-
-                        // successful file read, so populate page data and return page
-
-                        // Convert file contents to valid JSON
-                        // File starts as JSON objects separated by newlines
-
-                        String transit_data = fileres.result().toString();
-
-                        // replace newlines with commas
-                        transit_data = transit_data.replace("\n",",");
-
-                        //remove trailing comma
-                        transit_data = transit_data.substring(0,transit_data.length()-1);
-
-                        // wrap with [] and we have a JSON array containing JSON objects...
-                        transit_data = "["+transit_data+"]";
-
-                        
-                        JsonArray transit_json = new JsonArray(transit_data);
-                        
-                        HttpServerResponse response = ctx.response();
-                        response.putHeader("content-type", "text/plain");
-
-                        // build api JSON message including latest status values
-                        JsonObject jo = new JsonObject();
-                        jo.put("module_name", parent.MODULE_NAME);
-                        jo.put("module_id", parent.MODULE_ID);
-                        jo.put("transits", transit_json);
-                        response.end(jo.toString());
-                    } else {
-                        ctx.response().setStatusCode(404).end();
-                    }
-            });
+            // read file which is actually a line-per-JsonObject, convert to JsonArray, and serve it
+            serve_transit_file(vertx, ctx, filename);
         }
+    }
+
+    // Serve the zone/config json data
+    void serve_config(Vertx vertx, RoutingContext ctx,
+                      String zone_id)
+    {
+        parent.logger.log(Constants.LOG_DEBUG, parent.MODULE_NAME+"."+parent.MODULE_ID+
+                   ": serving /api/"+parent.MODULE_NAME+"/zone/config for "+zone_id);
+            
+        if (zone_id == null)
+        {
+            ctx.response().setStatusCode(404).end();
+        }
+        else
+        {
+
+            // build full filepath for data to be retrieved
+            String filename = parent.DATA_PATH+"zone_config/uk.ac.cam.tfc_server.zone."+zone_id+".json";
+
+            serve_file(vertx, ctx, filename);
+        }
+    }
+
+    void serve_transit_file(Vertx vertx, RoutingContext ctx, String filename)
+    {
+        // read the file containing the data
+        vertx.fileSystem().readFile(filename, fileres -> {
+
+                if (fileres.succeeded()) {
+
+                    // successful file read, so populate page data and return page
+
+                    // Convert file contents to valid JSON
+                    // File starts as JSON objects separated by newlines
+
+                    String transit_data = fileres.result().toString();
+
+                    // replace newlines with commas
+                    transit_data = transit_data.replace("\n",",");
+
+                    //remove trailing comma
+                    transit_data = transit_data.substring(0,transit_data.length()-1);
+
+                    // wrap with [] and we have a JSON array containing JSON objects...
+                    transit_data = "["+transit_data+"]";
+
+
+                    JsonArray transit_json = new JsonArray(transit_data);
+
+                    HttpServerResponse response = ctx.response();
+                    response.putHeader("content-type", "text/plain");
+
+                    // build api JSON message including latest status values
+                    JsonObject jo = new JsonObject();
+                    jo.put("module_name", parent.MODULE_NAME);
+                    jo.put("module_id", parent.MODULE_ID);
+                    jo.put("request_data", transit_json);
+                    response.end(jo.toString());
+                } else {
+                    ctx.response().setStatusCode(404).end();
+                }
+        });
+    }
+
+    // serve file, assumed to contain a valid JsonObject
+    void serve_file(Vertx vertx, RoutingContext ctx, String filename)
+    {
+        // read the file containing the data
+        vertx.fileSystem().readFile(filename, fileres -> {
+
+                if (fileres.succeeded()) {
+
+                    // successful file read, so populate page data and return page
+
+                    JsonObject file_json = new JsonObject(fileres.result().toString());
+
+                    HttpServerResponse response = ctx.response();
+                    response.putHeader("content-type", "text/plain");
+
+                    // build api JSON message including latest status values
+                    JsonObject jo = new JsonObject();
+                    jo.put("module_name", parent.MODULE_NAME);
+                    jo.put("module_id", parent.MODULE_ID);
+                    jo.put("request_data", file_json);
+                    response.end(jo.toString());
+                } else {
+                    ctx.response().setStatusCode(404).end();
+                }
+        });
     }
         
 }

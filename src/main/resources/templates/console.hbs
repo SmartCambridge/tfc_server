@@ -74,7 +74,7 @@ img {
 var STATUS_AMBER_SECONDS_DEFAULT = 35;
 var STATUS_RED_SECONDS_DEFAULT = 65;
 
-var API_STATUS = '/api/{{config_base_uri}}/status'; // http url to retrieve status as json
+var API_CONSOLE_STATUS = '/api/{{config_base_uri}}/status'; // http url to retrieve status as json
       
 var status_areas; // div on page to hold status areas for each module
 var console1; // console div on page for general purpose scrolling text messages
@@ -241,7 +241,7 @@ var call_tfc_api = function(url, callback) {
 function update_all_status()
   {
     // first an ASYNCHRONOUS get of the status data from the server
-    call_tfc_api( API_STATUS, function (err, data) {
+    call_tfc_api( API_CONSOLE_STATUS, function (err, data) {
                   if (err != null)
                       {
                         console.log( 'get_status failed '+err);

@@ -1,0 +1,285 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<!--
+    dataserver_map_zone.hbs is served by DataServer.java
+    The idea is that it will become an 'end-user' map page for a given zone.
+
+    Sample API data (from /api/dataserver/zone/config)
+    { "main":"uk.ac.cam.tfc_server.zone.Zone",
+      "options": {
+          "config": {
+              "module.name":"zone",
+              "module.id":"madingley_road_in",
+              "eb.system_status":"system_status",
+              "eb.zone":"tfc.zone",
+              "zone.center":{"lat":52.21132533651944,"lng":0.0969279289245284},
+              "zone.zoom":15,
+              "zone.path":[{"lat":52.212783911038585,"lng":0.08480072021484375},
+                           {"lat":52.214335321429296,"lng":0.08514404296875},
+                           {"lat":52.212257996914616,"lng":0.10570049285888672},
+                           {"lat":52.21065392038191,"lng":0.10548591613769531}],
+              "zone.finish_index":2,
+              "zone.name":"Madingley Road IN",
+              "zone.id":"madingley_road_in"
+              }
+           }
+    }
+-->
+
+<head>
+    <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+    
+    <title>Zone Map 0.73</title>
+<!--
+RELEASE INFO:
+
+2016-10-03 cloned from zone_map.hbs,
+           converted to use dataserver api /api/dataserver/zone/config/<zone_id>
+           
+2016-05-21 cloned from zone_plot
+
+-->	
+<style type="text/css">
+body {
+   font-family: Tahoma, Verdana, Segoe, sans-serif;
+}  
+
+img {
+   vertical-align: middle;
+}
+
+.header_title {
+   color: #707070;
+}
+
+#map { height: 650px; }
+
+</style>
+
+<script type="text/javascript">
+
+// http/json API location for zone config json
+var API_ZONE_CONFIG = '/api/{{config_base_uri}}/zone/config/';
+
+var console_div; // element to display log messages on page
+
+var zone_id = '{{config_zone_id}}'; // zone_id as requested in URL
+
+var zone_config = {}; // object to hold zone config data when retrieved
+
+var map; // google.maps.Map object
+
+var map_element; // doc div element holding map
+
+var MAPCENTER = { lat: 52.2, lng: 0.05};
+// initialize lat/lng bounds of the Google map, to prune the markers we need to draw
+var map_bounds = { n: 90, s: -90, e: 180, w: -180 };
+
+// **********************************************
+// Initialize this page (called in body:onload())
+// **********************************************
+
+function init()
+{
+    console.log('dataserver_map_zone started');
+    console.log('google_map_api_key {{config_google_map_api_key}}');
+
+    console_div = document.getElementById('console1');
+    // call the API
+    call_tfc_api(API_ZONE_CONFIG+zone_id, handle_zone_config);
+}
+
+// *************************************************
+// call_tfc_api
+// http/json API call
+// retrieves /api/dataserver/zone/config/<zone_id>
+// *************************************************
+
+var call_tfc_api = function(url, callback) {
+            var xhr = new XMLHttpRequest();
+            try {
+                // here is where we GET the /console/status content
+                xhr.open('get', url, true);
+                xhr.responseType = 'text';
+                xhr.onload = function() {
+                  var status = xhr.status;
+                  if (status == 200) {
+                    callback(null, xhr.responseText);
+                  } else {
+                    callback(status);
+                  }
+                };
+                xhr.send();
+            }
+            catch (ex)
+            {
+              console.log('Exception in call_tfc_api');
+            }
+        };
+
+// ******************************
+// handle_zone_config
+// ******************************
+
+var handle_zone_config = function(err, api_data) {
+                  if (err != null)
+                      {
+                        console.log( 'handle_zone_config() failed '+err);
+                      }
+                  else
+                      {
+                        console.log( 'GET /api/dataserver/zone/config succeeded');
+                        console.log('api data='+api_data);
+                        var api_obj = JSON.parse(api_data);
+                        console.log('data module_name='+api_obj.module_name);
+                        draw_zone(api_obj.request_data.options.config);
+                      }
+                };
+
+// General purpose function to append text to div on screen, used for general console messages.
+// In particular, often used for messages from "console_out" address as these are more general
+function log(console_div, text)
+  {
+    //console.log(text);
+    var dateobj = new Date();
+    var year = dateobj.getFullYear();
+    var month= ("0" + (dateobj.getMonth()+1)).slice(-2);
+    var date = ("0" + dateobj.getDate()).slice(-2);
+    var hours = ("0" + dateobj.getHours()).slice(-2);
+    var minutes = ("0" + dateobj.getMinutes()).slice(-2);
+    var seconds = ("0" + dateobj.getSeconds()).slice(-2);
+
+    var log_date = year+'-'+month+'-'+date+' '+hours+':'+minutes+':'+seconds;
+                      
+    console_div.innerHTML = console_div.innerHTML + log_date +' '+text+'<br/>';
+    console_div.scrollTop = console_div.scrollHeight;
+  }
+                                          
+// handle zone/config data received from API call
+// draw the zone on the map
+function draw_zone(config)
+{
+    console.log('drawing '+JSON.stringify(config));
+    draw_polygon(config['zone.path']);
+    draw_start(config['zone.path']);
+    draw_finish(config['zone.path'], config['zone.finish_index']);
+    map.setCenter(config['zone.center']);
+    map.setZoom(config['zone.zoom']);
+}
+                                          
+// initMap() is called when the map loaded into the page (see src URL in google javascript link above)
+function initMap() {
+
+    console.log('initMap()');
+    
+    map_element = document.getElementById('map');
+
+    // set a map style to NOT display points-of-interest
+    var mapStyles =[{
+            featureType: "poi",
+            elementType: "labels",
+            stylers: [
+                  { visibility: "off" }
+            ]
+        }];
+
+    map = new google.maps.Map(map_element, {
+	  zoom: 13,
+          center: new google.maps.LatLng(MAPCENTER.lat, MAPCENTER.lng),
+	  mapTypeId: google.maps.MapTypeId.ROADMAP,
+          draggableCursor:'crosshair',
+          styles: mapStyles
+	});
+
+    // set listener to update boundary box for map each time user changes it
+    google.maps.event.addListener(map, "bounds_changed", function() {
+         var m = map.getBounds();
+         map_bounds.w = m.getSouthWest().lng();
+         map_bounds.e = m.getNorthEast().lng();
+         map_bounds.s = m.getSouthWest().lat();
+         map_bounds.n = m.getNorthEast().lat();
+    });
+
+    infowindow = new google.maps.InfoWindow( { disableAutoPan: true });
+  
+}
+
+// draw zone polygon on map
+function draw_polygon(path)
+{
+    // draw the polygon of the bounds onto the map
+    new google.maps.Polygon({
+      paths: path,
+      strokeColor: '#FFFF99',
+      strokeOpacity: 0.8,
+      strokeWeight: 2,
+      fillColor: '#FFFF99',
+      fillOpacity: 0.25,
+      editable: true,
+      zIndex: 5,
+      map: map
+    });
+}
+               
+// draw zone start line on map
+function draw_start(path)
+{
+  new google.maps.Polyline({
+                  path: [ path[0], path[1]],
+                  strokeColor: '#009900',
+                  strokeOpacity: 1.0,
+                  strokeWeight: 4,
+                  editable: false,
+                  zIndex: 10,
+                  map: map
+                });
+}
+
+// calculate [pos1, pos2] for finish line coords
+function finish_path(path, finish_index)
+{
+  var a = finish_index;
+  var b = a + 1;
+  if (b == path.length)
+  {
+      b = 0;
+  }
+  return [ path[a], path[b] ];
+}
+                                          
+// draw the finish line on map
+function draw_finish(path, finish_index)
+{
+ new google.maps.Polyline({
+              path: finish_path(path, finish_index),
+              strokeColor: '#990000',
+              strokeOpacity: 1.0,
+              strokeWeight: 4,
+              editable: false,
+              zIndex: 10,
+              map: map
+            });
+}
+
+</script>
+
+<!-- GOOGLE maps api -->
+<script async defer
+  src="https://maps.googleapis.com/maps/api/js?key={{config_google_map_api_key}}&callback=initMap">
+</script>
+
+</head>
+
+<body onload='init()'>
+  
+<h1 class="header_title">
+  <img src="/static/images/smart_cambridge_logo.jpg">Zone <span id='heading'>{{config_zone_id}}</span></h1>
+
+<div id="map"></div>
+
+<div id="console1">
+  <h4>Messages</h4>
+</div>
+
+</body>
+</html>
