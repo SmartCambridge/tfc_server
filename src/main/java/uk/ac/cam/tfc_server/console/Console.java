@@ -61,7 +61,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class Console extends AbstractVerticle {
 
-    private final String VERSION = "1.06";
+    private final String VERSION = "1.07";
     
     public int LOG_LEVEL; // optional in config(), defaults to Constants.LOG_INFO
 
@@ -72,7 +72,7 @@ public class Console extends AbstractVerticle {
     private String MODULE_ID; // from config()
     private String WEBROOT; // from config()
 
-    private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
+    private final int SYSTEM_STATUS_PERIOD = 8000; // publish status heartbeat every 8 s
     private final int SYSTEM_STATUS_AMBER_SECONDS = 15;
     private final int SYSTEM_STATUS_RED_SECONDS = 25;
 
@@ -137,7 +137,7 @@ public class Console extends AbstractVerticle {
             
             ctx.put("config_base_uri", BASE_URI);
             
-            template_engine.render(ctx, "templates/console2.hbs", res -> {
+            template_engine.render(ctx, "templates/console.hbs", res -> {
                     if (res.succeeded())
                     {
                         ctx.response().end(res.result());
@@ -174,7 +174,7 @@ public class Console extends AbstractVerticle {
                 });
 
     // here is the 'API' handler for /console/status which returns JSON packet of all status messages
-    router.route(HttpMethod.GET, "/"+BASE_URI+"/status").handler( ctx -> {
+    router.route(HttpMethod.GET, "/api/"+BASE_URI+"/status").handler( ctx -> {
 
         HttpServerResponse response = ctx.response();
         response.putHeader("content-type", "text/plain");

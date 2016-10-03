@@ -136,6 +136,13 @@ var CHART_Y_MAX = 900; // FIX limit of Y axis at 900 seconds
 function init()
 {
 
+    // make sure YYYY/mm/DD is on end of URL (missing just means give today's data)
+    var yyyyMMdd = '{{config_yyyy}}/{{config_MM}}/{{config_dd}}';
+    if (!window.location.href.endsWith(yyyyMMdd))
+    {
+      window.history.pushState({},null,window.location.href+'/'+yyyyMMdd);
+    }
+
     chart_day_start_ts = 0; // initially set start-time boundary of chart to distant past
 
     plot_date = new Date(yyyy,MM-1,dd); // as loaded in page template config_ values;
@@ -145,7 +152,7 @@ function init()
     // set plot_date_minus_1 to the day before
     plot_date_minus_1 = new Date(plot_date);
     plot_date_minus_1.setDate(plot_date.getDate()-1);
-    var minus_1_url = DATA_PLOT_ZONE_URL;
+    var minus_1_url = '../..'; //DATA_PLOT_ZONE_URL;
     minus_1_url = minus_1_url + "/" + plot_date_minus_1.getFullYear();
     minus_1_url = minus_1_url + "/" + ("0" + (plot_date_minus_1.getMonth()+1)).slice(-2);
     minus_1_url = minus_1_url + "/" + ("0" + plot_date_minus_1.getDate()).slice(-2);
@@ -156,7 +163,7 @@ function init()
     // set plot_date_plus_1 to the day after
     plot_date_plus_1 = plot_date_minus_1 = new Date(plot_date);
     plot_date_plus_1.setDate(plot_date.getDate()+1);
-    var plus_1_url = DATA_PLOT_ZONE_URL;
+    var plus_1_url = '../..'; //DATA_PLOT_ZONE_URL;
     plus_1_url = plus_1_url + "/" + plot_date_plus_1.getFullYear();
     plus_1_url = plus_1_url + "/" + ("0" + (plot_date_plus_1.getMonth()+1)).slice(-2);
     plus_1_url = plus_1_url + "/" + ("0" + plot_date_plus_1.getDate()).slice(-2);
@@ -437,10 +444,6 @@ function write_console1(msg)
 </div>
 
 <div class="chart" id="chart">
-</div>
-
-<div id="console1">
-  <h4>Messages</h4>
 </div>
 
 </body>

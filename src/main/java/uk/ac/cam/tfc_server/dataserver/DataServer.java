@@ -131,6 +131,12 @@ public class DataServer extends AbstractVerticle {
         response.end("<h1>DataServer."+MODULE_ID+"</h1><p>Vertx-Web!</p>");
     });
 
+    // ********************************
+    // create handler for Zone API
+    // ********************************
+
+    ZoneAPI datazone = new ZoneAPI(vertx, this, router);
+    
     // **************************************
     // **************************************
     // create handlers for template pages
@@ -180,82 +186,7 @@ public class DataServer extends AbstractVerticle {
                  "}" );
       });
     }
-  /*  
-    // Serve the templates/data_plot.hbs web page
-    public void serve_plot_zone(RoutingContext ctx, HandlebarsTemplateEngine engine,
-                                 String zone_id, String yyyy, String MM, String dd)
-    {
-        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                   ": serving data_plot.hbs for "+zone_id+" "+yyyy+"/"+MM+"/"+dd);
-            
-        if (zone_id == null)
-        {
-            ctx.response().setStatusCode(400).end();
-        }
-        else
-        {
-
-            ctx.put("config_base_uri", BASE_URI); // e.g. "dataserver"
-            
-            ctx.put("config_zone_id",zone_id); // pass zone_id from URL into template var
-
-            ctx.put("config_yyyy", yyyy);
-            ctx.put("config_MM", MM);
-            ctx.put("config_dd", dd);
-            
-            // build full filepath for data to be retrieved
-            String filename = DATA_PATH+"zone/"+yyyy+"/"+MM+"/"+dd+"/"+zone_id+"_"+yyyy+"-"+MM+"-"+dd+".txt";
-
-            // read the file containing the data
-            vertx.fileSystem().readFile(filename, fileres -> {
-
-                    if (fileres.succeeded()) {
-
-                        // successful file read, so populate page data and return page
-
-                        // Convert file contents to valid JSON
-                        // File starts as JSON objects separated by newlines
-
-                        String plot_data = fileres.result().toString();
-
-                        // replace newlines with commas
-                        plot_data = plot_data.replace("\n",",");
-
-                        //remove trailing comma
-                        plot_data = plot_data.substring(0,plot_data.length()-1);
-
-                        // wrap with [] and we have a JSON array containing JSON objects...
-                        plot_data = "["+plot_data+"]";
-
-                        ctx.put("config_plot_data", plot_data);
-
-                        engine.render(ctx, "templates/data_plot.hbs", res -> {
-                                if (res.succeeded())
-                                {
-                                    ctx.response().end(res.result());
-                                }
-                                else
-                                {
-                                    ctx.fail(res.cause());
-                                }
-                            });
-                    } else {
-                        // render the template WITHOUT the data, so page can tell user of error
-                        engine.render(ctx, "templates/data_plot.hbs", res -> {
-                                if (res.succeeded())
-                                {
-                                    ctx.response().end(res.result());
-                                }
-                                else
-                                {
-                                    ctx.fail(res.cause());
-                                }
-                            });
-                    }
-            });
-        }
-    }
-*/        
+    
     // Load initialization global constants defining this module from config()
     private boolean get_config()
     {

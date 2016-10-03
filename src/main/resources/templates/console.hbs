@@ -1,9 +1,7 @@
 <html>
   <head>
-    <script src='/static/sockjs.min.js'></script>
-    <script src='/static/vertx-eventbus.js'></script>
     <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico"/>
-    <title>RITA Console 0.33</title>
+    <title>RITA Console 0.44</title>
 <style>
 body {
    font-family: Tahoma, Verdana, Segoe, sans-serif;
@@ -36,171 +34,74 @@ img {
 </style>
 
 <script>
-  // ******************************************************************************************************
-  // This JS console receives messages from the Vertx eventbus, published by server-side Console.java.
-  // Console.java provides both the web server for this page, and the eventbus bridge to this javascript.
-  //
-  // Message format on the 'system status' eventbus address
-  //   { "module_name": "console",
-  //     "module_id": <whatever unique identifier this instance has>,
-  //     "status": "UP" ,
-  //     "status_amber_seconds": 35,
-  //     "status_red_seconds": 65 }
-  //   where the status_amber-seconds and status_red_seconds are optional
-  //
-  // Current module status is maintained in the object 'module_status' e.g.
-  // module_status["console.A"] = { name: "console",
-  //                                id:   "A",
-  //                                status_amber_seconds: 15,
-  //                                status_red_seconds: 25,
-  //                                el:   <reference to page status element for this module>,
-  //                                heartbeat: <javascript timestamp of most recent UP message>,
-  //                                status: "UP"|"AMBER"|"RED"
-  //                               }
-  //
-  // Where possible, the console (server-side java and client javascript) doesn't need prior definition
-  // of the 'status reporting' modules, i.e. it will dynamically create a display block for any new module
-  // it hears from.
-  // ******************************************************************************************************
+// ******************************************************************************************************
+// This JS console polls for messages from /console/status, in Json, published by server-side Console.java.
+// Console.java provides the web server for this page.
+// Message format from /console/status
+//   { "module_name":"console",
+//     "module_id":"test",
+//     "status":[{"module_name":"feedhandler",
+//                "module_id":"test",
+//                "status":"UP",
+//                "status_amber_seconds":15,
+//                "status_red_seconds":25,
+//                "ts":1475149281},
+//                ...
+//              ]
+//   } 
+//   where the status_amber-seconds and status_red_seconds are optional
+//
+// Current module status is maintained in the object 'module_status' e.g.
+// module_status["console.A"] = { module_name: "console",
+//                                module_id:   "A",
+//                                status_amber_seconds: 15,
+//                                status_red_seconds: 25,
+//                                el:   < reference to page status element for this module>,
+//                                ts: < utc timestamp of most recent UP message>,
+//                                status: "UP"|"AMBER"|"RED"
+//                               }
+//
+// Where possible, the console (server-side java and client javascript) doesn't need prior definition
+// of the 'status reporting' modules, i.e. it will dynamically create a display block for any new module
+// it hears from.
+// ******************************************************************************************************
 
-  // Constant address of server-side eventbus bridge
+// Default constants for status timeouts for module from green->amber, and amber->red
+// Note these threshold values can also be sent in the EB_SYSTEM_STATUS message
+// i.e. if the console hasn't received an 'UP' status message in 35 seconds, it will treat the
+// local status of that module as 'amber'
+      
+var STATUS_AMBER_SECONDS_DEFAULT = 35;
+var STATUS_RED_SECONDS_DEFAULT = 65;
 
-  // Set base URL of web server
-  var CONSOLE_HTTP = window.location.href; // window.location.protocol + '//' +
-                      // window.location.hostname +
-                      // ':' + window.location.port;
+var API_STATUS = '/api/{{config_base_uri}}/status'; // http url to retrieve status as json
+      
+var status_areas; // div on page to hold status areas for each module
+var console1; // console div on page for general purpose scrolling text messages
+var clock; // element to display clock
 
-  // Extend base URL for eventbus address
-  var CONSOLE_EVENTBUS_HTTP =  CONSOLE_HTTP + '/eb';
-
-  // System eventbus address for system status messages
-  // Handlebars template var populated by config.java
-  var EB_SYSTEM_STATUS = '{{config_eb_system_status}}';
-    
-  // Default constants for status timeouts for module from green->amber, and amber->red
-  // Note these threshold values can also be sent in the EB_SYSTEM_STATUS message
-  // i.e. if the console hasn't received an 'UP' status message in 35 seconds, it will treat the
-  // local status of that module as 'amber'
-  var STATUS_AMBER_SECONDS_DEFAULT = 35;
-  var STATUS_RED_SECONDS_DEFAULT = 65;
-  
-  var eb; // eventbus
-  var status_areas; // div on page to hold status areas for each module
-  var console1; // console div on page for general purpose scrolling text messages
-  var clock; // element to display clock
-  
-  // Object to hold current status of each module (e.g. feedhandler, zone, feedcsv, console)
-  var module_status = {};
-  
-  // Startup (called on page load)
-  // Initialize the eventbus connection to Console.java
-  // Register handlers for the eventbus messages
-  function init()
-    {
-      // initialize eventbus to connect to Console.java on server
-      eb = new EventBus(CONSOLE_EVENTBUS_HTTP);
-
-      // pre-cache page elements to be written to as status messages arrive
-      status_areas = document.getElementById('status_areas');
-
-      console1 = document.getElementById('console1');
-
-      clock = document.getElementById('clock');
-
-      // script to run when Vertx EventBus is ready
-      eb.onopen = function() {
-
-        // Set a handler to receive a 'system status' message
-        // on the address passed to page by Console.java on startup
-        eb.registerHandler(EB_SYSTEM_STATUS, handle_status );
-
-      }
-
-      // refresh all status buttons every 3 seconds
-      setInterval(update_all_status, 3000);
-  
-      // update clock every second
-      setInterval(update_clock, 1000);
-  
-  } // end init()
-
-// We have just received a message on the EB_SYSTEM_STATUS address
-// so update the appropriate 'status_area' on the page
-function handle_status(error,message)
+var module_status = {}; // object to cache most recent status for each module
+      
+// Startup (called on page load)
+// Initialize the eventbus connection to Console.java
+// Register handlers for the eventbus messages
+function init()
 {
+  // pre-cache page elements to be written to as status messages arrive
+  status_areas = document.getElementById('status_areas');
 
-    //log(console1, message.body);
-    
-    var status = JSON.parse(message.body);
+  console1 = document.getElementById('console1');
 
-    if (!status.hasOwnProperty('module_id'))
-    {
-      status.module_id = '';
-    }
-    
-    var module_ref = status.module_name + "." + status.module_id;
+  clock = document.getElementById('clock');
 
-    // Create a new 'module_status' object if it doesn't already exist for current module
-    // and add a status area on the page for it.
-    if (!module_status.hasOwnProperty(module_ref))
-    {
-      log(console1, module_ref + " new module recognized as UP");
-    
-      // create a new module_status object
-      module_status[module_ref] = { };
+  // refresh all status buttons every 3 seconds
+  setInterval(update_all_status, 3000);
 
-      module_status[module_ref].name = status.module_name;
-      module_status[module_ref].id = status.module_id;
-    
-      // create a new 'status_area' page element
-      var status_area = document.createElement('DIV');
-      status_area.setAttribute('class','status_area');
-      status_area.setAttribute('id',module_ref);
-//      status_area.innerHTML = format_status(status.module_name + '<br/>' + status.module_id;
-  
-      // add this status area to 'status_areas' document element
-      status_areas.appendChild(status_area);
+  // update clock every second
+  setInterval(update_clock, 1000);
 
-      // create a new module_status object
-      module_status[module_ref].el = document.getElementById(module_ref);
-    }
-    
-    // put timestamp into module_status, and set status as "UP"
-    module_status[module_ref].heartbeat = new Date();
-        
-    module_status[module_ref].status = "UP";
-            
-    // Set the "status_amber_seconds" and "status_red_seconds" properties for current module
-    // either obtaining these values from the status message, or using the defaults on this page
-    // status_amber_seconds:
-    if (!module_status[module_ref].hasOwnProperty("status_amber_seconds"))
-    {
-      if (status.hasOwnProperty("status_amber_seconds"))
-      {
-        module_status[module_ref].status_amber_seconds = status.status_amber_seconds;
-      }
-      else
-      {
-        module_status[module_ref].status_amber_seconds = STATUS_AMBER_SECONDS_DEFAULT;
-      }
-    }
-    // status_red_seconds:
-    if (!module_status[module_ref].hasOwnProperty("status_red_seconds"))
-    {
-      if (status.hasOwnProperty("status_red_seconds"))
-      {
-        module_status[module_ref].status_red_seconds = status.status_red_seconds;
-      }
-      else
-      {
-        module_status[module_ref].status_red_seconds = STATUS_RED_SECONDS_DEFAULT;
-      }
-    }
+} // end init()
 
-    update_status(module_ref);
-    //log(console1, 'system_status: ' + message.body);
-} // end handle_status()
-  
 function format_time(t)
 {
       var hours = t.getHours();
@@ -217,59 +118,157 @@ function format_status(module_name, module_id, t)
     return module_name+"<br/>"+module_id+"<br/>"+format_time(t);
 }
                     
-// Update the status area for a given module reference
-function update_status(module_ref)
+// We have just received a message on the EB_SYSTEM_STATUS address
+// so update the appropriate 'status_area' on the page
+function handle_status(status)
 {
-      var t = module_status[module_ref].heartbeat;
-      //console.log(str_time);
-      
-      module_status[module_ref].el.innerHTML = module_status[module_ref].name+'<br/>'+
-                    module_status[module_ref].id+'<br/>'+
-                    format_time(t);
-      
-      var seconds_since_heartbeat = ((new Date()).getTime() - module_status[module_ref].heartbeat.getTime())/1000;
-      if (seconds_since_heartbeat > module_status[module_ref].status_red_seconds)
+    //console.log('handle_status '+JSON.stringify(status));
+                    
+    var module_ref = status.module_name + "." + status.module_id;
+
+    // Update status cache, create new entry if needed
+    if (module_status.hasOwnProperty(module_ref))
+        {
+            // existing entry in cache, we just need to update timestamp
+            module_status[module_ref].ts = status.ts;
+        }
+    else
+        {
+            // create new entry
+            module_status[module_ref] = status;
+        }           
+}
+
+function update_status(module_ref)
+{                    
+    // Create a new 'module_status' element if it doesn't already exist for current module
+
+    //console.log('update_status module_status['+module_ref+']='+JSON.stringify(module_status[module_ref]));
+                    
+    if ( !module_status[module_ref].hasOwnProperty('el') )
+    {
+      log(console1, module_ref + " new module recognized");
+    
+      // create a new 'status_el' page element
+      var status_el = document.createElement('DIV');
+      status_el.setAttribute('class','status_area');
+      status_el.setAttribute('id',module_ref);
+  
+      // add this status area to 'status_areas' document element
+      status_areas.appendChild(status_el);
+      // put this updated status with element ref back into module_status
+      module_status[module_ref].el = status_el;
+    }
+    //console.log('update_status after el check module_status['+module_ref+']='+JSON.stringify(module_status[module_ref]));
+    
+    var status = module_status[module_ref];
+                    
+    // Set the "status_amber_seconds" and "status_red_seconds" properties for current module
+    // either obtaining these values from the status message, or using the defaults on this page
+    var status_amber_seconds = STATUS_AMBER_SECONDS_DEFAULT;
+    if (status.hasOwnProperty("status_amber_seconds"))
+      {
+        status_amber_seconds = status.status_amber_seconds;
+      }
+    var status_red_seconds = STATUS_RED_SECONDS_DEFAULT;
+    if (status.hasOwnProperty("status_red_seconds"))
+      {
+        status_red_seconds = status.status_red_seconds;
+      }
+
+    status.el.innerHTML = status.module_name+'<br/>'+
+                status.module_id+'<br/>'+
+                (new Date(status.ts*1000)).toLocaleTimeString();
+
+    var seconds_since_ts = (new Date()).getTime()/1000 - status.ts;
+    //console.log('seconds_since_ts '+seconds_since_ts);
+                    
+    if (seconds_since_ts > status_red_seconds)
       {
         if (module_status[module_ref].status!="RED")
         {
             module_status[module_ref].status = "RED";
             log(console1, module_ref + " status now RED");
         }
-        module_status[module_ref].el.setAttribute("style", "background-color: red");
+        status.el.setAttribute("style", "background-color: red; color: black");
       }
-      else if (seconds_since_heartbeat > module_status[module_ref].status_amber_seconds)
+    else if (seconds_since_ts > status_amber_seconds)
       {
-        if (module_status[module_ref].status!="AMBER")
-        {
-            module_status[module_ref].status = "AMBER";
-            log(console1, module_ref + " status now AMBER");
-        }
-        module_status[module_ref].el.setAttribute("style", "background-color: yellow");
+        status.el.setAttribute("style", "background-color: yellow; color: black");
       }
-      else
+    else
       {
         if (module_status[module_ref].status!="UP")
         {
             module_status[module_ref].status = "UP";
             log(console1, module_ref + " status now UP");
         }
-        module_status[module_ref].el.setAttribute("style", "background-color: green");
+        status.el.setAttribute("style", "background-color: green; color: white");
       }
-} // end update_status()
+} // end handle_status()
 
 function update_clock()
 {
     clock.innerHTML = format_time(new Date());
 }
 
-// Update all the module status areas
+// general http GET function
+// retrieves /api/console/status        
+// 
+var call_tfc_api = function(url, callback) {
+            var xhr = new XMLHttpRequest();
+            try {
+                // here is where we GET the /console/status content
+                xhr.open('get', url, true);
+                xhr.responseType = 'text';
+                xhr.onload = function() {
+                  var status = xhr.status;
+                  if (status == 200) {
+                    callback(null, xhr.responseText);
+                  } else {
+                    callback(status);
+                  }
+                };
+                xhr.send();
+            }
+            catch (ex)
+            {
+              console.log('Exception in send()');
+            }
+        };
+
+// Update all the module status areas, called (in init) every 3 seconds
 function update_all_status()
   {
-    for (var p in module_status)
-    {
-      //console.log("Updating "+p);
-      update_status(p);
-    }
+    // first an ASYNCHRONOUS get of the status data from the server
+    call_tfc_api( API_STATUS, function (err, data) {
+                  if (err != null)
+                      {
+                        console.log( 'get_status failed '+err);
+                      }
+                  else
+                      {
+                        //console.log( ' GET /console/status succeeded');
+                        //console.log('data='+data);
+                        var data_obj = JSON.parse(data);
+                        //console.log('data module_name='+data_obj.module_name);
+                        var status_array = data_obj.status;
+                        for (var i=0; i < status_array.length; i++)
+                          {
+                            //console.log("Updating "+JSON.stringify(status_array[i]));
+                            handle_status(status_array[i]);
+                          }
+                      }
+                });
+     // The iterate through the module_status cache and update elements on the page.
+     // Note as above get is async, we may not have the latest status here, but will next time around...
+     for (var p in module_status)
+     {
+         if (module_status.hasOwnProperty(p))
+             {
+               update_status(p);
+             }
+     }
   }
 
 // General purpose function to append text to div on screen, used for general console messages.
