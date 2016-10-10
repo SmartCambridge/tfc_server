@@ -193,9 +193,11 @@ public class DataRaw {
 
                         ds.logger.log(Constants.LOG_DEBUG, ds.MODULE_NAME+"."+ds.MODULE_ID+": "+
                                       "DataRaw file "+filepath+" read successfully");
+                        
+                        ctx.response().putHeader("content-type", "application/octet-stream");
 
                         // successful file read, so return page
-                        ctx.response().setStatusCode(400).end();
+                        ctx.response().end(fileres.result());
 
                     } else {
                         ds.logger.log(Constants.LOG_DEBUG, ds.MODULE_NAME+"."+ds.MODULE_ID+": "+

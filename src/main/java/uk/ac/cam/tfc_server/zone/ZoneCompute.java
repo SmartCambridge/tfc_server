@@ -33,6 +33,9 @@ public class ZoneCompute {
     private Box box;
 
     private Log logger;
+
+    private final Long TS_DELTA_LIMIT = 100L; // if time delta (s) between consecutive position records is greater
+                                              // than TS_DELTA_LIMIT, then do NOT use record for Zone entry/exit
     
     // zone_msg_buffer has a MsgBuffer entry for each zone.address
     //private HashMap<String, MsgBuffer> zone_msg_buffer; // stores zone completion messages since start of day
@@ -73,6 +76,8 @@ public class ZoneCompute {
     private void update_vehicle(JsonObject position_record)
     {
 
+        // update Vehicle object for this vehicle_id
+        // shifting earlier location info to prev_position and prev_within
       String vehicle_id = position_record.getString("vehicle_id");
       Vehicle v = vehicles.get(vehicle_id);
       if (v == null)
@@ -88,6 +93,18 @@ public class ZoneCompute {
       // And set the flag for whether this vehicle is within this Zone
       v.within = inside(v.position);
 
+      // Error trap: If time between samples appears to have gone backwards, don't use for Zone entry/exit
+      if (v.position.ts <= v.prev_position.ts)
+          {
+              return;
+          }
+
+      // Another error trap: if time delta between samples is too large, don't use for Zone entry/exit
+      if (v.position.ts - v.prev_position.ts > TS_DELTA_LIMIT)
+          {
+              return;
+          }
+      
       //****************************************************************************************************
       //*************************  This vehicle data is all ready, so do Zone enter/exit logic  ************
       //****************************************************************************************************
