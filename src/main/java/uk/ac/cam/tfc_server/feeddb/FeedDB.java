@@ -32,11 +32,6 @@ public class FeedDB extends AbstractVerticle {
 
     private BusData_Manager manager;
 
-    @CompileTimeConfig(cassandraVersion = CassandraVersion.CASSANDRA_3_5)
-    public interface AchillesConfig {
-
-    }
-
     @Table(table="busdata")
     public class BusData
     {
@@ -161,9 +156,9 @@ public class FeedDB extends AbstractVerticle {
             return;
         }
 
-        Cluster cluster = Cluster.builder().build();
+        Cluster cluster = Cluster.builder().addContactPoints("localhost").build();
         ManagerFactory managerFactory = ManagerFactoryBuilder.builder(cluster)
-                .withDefaultKeyspaceName("Test Keyspace").doForceSchemaCreation(true).build();
+                .withDefaultKeyspaceName("tfc").doForceSchemaCreation(true).build();
 
         manager = managerFactory.forBusData();
 
@@ -179,7 +174,6 @@ public class FeedDB extends AbstractVerticle {
             JsonObject feed_message = new JsonObject(message.body().toString());
             JsonArray entities = feed_message.getJsonArray("entities");
             System.out.println("FeedDB feed_vehicle message #records: "+String.valueOf(entities.size()));
-
             handle_feed(feed_message);
         });
 
