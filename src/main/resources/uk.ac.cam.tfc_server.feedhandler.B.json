@@ -16,6 +16,7 @@
               
             "feedhandler.address" :   "tfc.feedhandler.B",
             "feedhandler.http.port" : 8090,
+            "feedhandler.http.token": "cam-auth-test",
             "feedhandler.tfc_data_bin": "/home/ijl20/tfc_server_data_test/data_bin",
             "feedhandler.tfc_data_cache": "/home/ijl20/tfc_server_data_test/data_cache",
             "feedhandler.tfc_data_monitor": "/home/ijl20/tfc_server_data_test/data_monitor"

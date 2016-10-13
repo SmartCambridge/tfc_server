@@ -62,12 +62,12 @@ public class DataPlot {
             });
    }
 
-    // Serve the templates/data_plot.hbs web page
+    // Serve the templates/dataserver_plot_zone.hbs web page
     public void serve_plot_zone(Vertx vertx, RoutingContext ctx,
                                  String zone_id, String yyyy, String MM, String dd)
     {
         parent.logger.log(Constants.LOG_DEBUG, parent.MODULE_NAME+"."+parent.MODULE_ID+
-                   ": serving data_plot.hbs for "+zone_id+" "+yyyy+"/"+MM+"/"+dd);
+                   ": serving dataserver_plot_zone.hbs for "+zone_id+" "+yyyy+"/"+MM+"/"+dd);
             
         if (zone_id == null)
         {
@@ -110,7 +110,7 @@ public class DataPlot {
 
                         ctx.put("config_plot_data", plot_data);
 
-                        parent.template_engine.render(ctx, "templates/data_plot.hbs", res -> {
+                        parent.template_engine.render(ctx, "templates/dataserver_plot_zone.hbs", res -> {
                                 if (res.succeeded())
                                 {
                                     ctx.response().end(res.result());
@@ -122,7 +122,7 @@ public class DataPlot {
                             });
                     } else {
                         // render the template WITHOUT the data, so page can tell user of error
-                        parent.template_engine.render(ctx, "templates/data_plot.hbs", res -> {
+                        parent.template_engine.render(ctx, "templates/dataserver_plot_zone.hbs", res -> {
                                 if (res.succeeded())
                                 {
                                     ctx.response().end(res.result());

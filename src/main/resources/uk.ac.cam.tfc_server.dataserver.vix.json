@@ -12,7 +12,9 @@
 
             "dataserver.http.port":  8084,
             "dataserver.webroot":   "webroot",
-            "dataserver.data_path": "/media/tfc/vix/data_"
+            "dataserver.data_path": "/media/tfc/vix/data_",
+            "dataserver.google_map_api_key": "AIzaSyDklXQUoVaDxqoTdIe0emfk3e7-2g7Psjg"
+
         }
     }
 }

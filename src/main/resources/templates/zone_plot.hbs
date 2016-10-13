@@ -22,7 +22,8 @@
     <script src="/static/d3.v3.min.js" charset="utf-8"></script>
 
     <!-- load constants template -->
-    <script src="/{{config_base_uri}}/constants.js" charset="utf-8"></script>
+    <!-- script src="/{{config_base_uri}}/constants.js" charset="utf-8"></script -->
+    <script src="../../constants.js" charset="utf-8"></script>
     
     <title>Rita::Zone Plot 0.63</title>
 <!--
@@ -92,18 +93,25 @@ var chart_day_ts; // Timestamp of start of current chart day
                   // When message arrives with timestamp >+24 hours, we will
                   // reset the chart to next day...
 
-// Set base URL of web server
-var RITA_HTTP =   window.location.protocol + '//' +
-                  window.location.hostname +
-                  ':' + window.location.port +
-                  '/' + "{{config_base_uri}}";
+// Set base URL of web server    
+//var RITA_HTTP =   window.location.protocol + '//' +
+//                  window.location.hostname +
+//                  ':' + window.location.port +
+//                  '/' + "{{config_base_uri}}";
 
+// Get base url of web server by pruning current page href
+var loc = window.location.href;  // e.g. http://smartcambridge.org/backdoor/rita/zone/newmarket_road_in/plot
+var n1 = loc.lastIndexOf("/");
+var n2 = loc.slice(0,n1).lastIndexOf("/");
+var n3 = loc.slice(0,n2).lastIndexOf("/");
+var RITA_HTTP = loc.slice(0,n3); // e.g. http://smartcambridge.org/backdoor/rita
+    
 // Extend base URL for eventbus address
 var RITA_EVENTBUS_HTTP =  RITA_HTTP + '/eb';
 
 // Extend base URL for websocket address
 var SOCK_HTTP = RITA_HTTP + '/ws';
-
+    
 var rita_sock; // websocket to connect back to server Rita.java
 
 // d3 scatterplot parameters

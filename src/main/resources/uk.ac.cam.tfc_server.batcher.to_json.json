@@ -18,7 +18,7 @@
 
             "batcherworker.A.data_bin":      "/mnt/usb_wd_2/tfc/data_bin",
             "batcherworker.A.start_ts" :  1461866400,
-            "batcherworker.A.finish_ts" : 1462064701,
+            "batcherworker.A.finish_ts" : 1462089600,
             "batcherworker.A.filers":
             [
                 { 

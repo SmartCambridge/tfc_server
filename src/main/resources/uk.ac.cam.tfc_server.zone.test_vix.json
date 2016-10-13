@@ -3,17 +3,17 @@
     "options": { "config":
                  {
         "module.name":      "zone",
-        "module.id":        "test",
+        "module.id":        "test_vix",
 
         "eb.system_status": "tfc.system_status",
         "eb.manager":       "tfc.manager",
                      
         "zone.log_level":   1,
                      
-        "zone.id":          "test",
+        "zone.id":          "test_vix",
 
         "zone.feed":        "tfc.feedhandler.vix",
-        "zone.address":     "tfc.test",
+        "zone.address":     "tfc.test_vix",
                      
         "zone.center":{"lat":52.20786459390002,"lng":0.15028028409575622},
         "zone.zoom":15,

@@ -1,0 +1,26 @@
+                                                                                
+{
+    "main": "uk.ac.cam.tfc_server.rita.Rita",
+    "options": {
+        "config": {
+            "module.name":      "rita",
+            "module.id":        "test_live",
+
+            "eb.system_status": "tfc.system_status",
+            "eb.console_out":   "tfc.console_out",
+            "eb.manager":       "tfc.manager",
+
+            "rita.log_level":     1,
+
+            "rita.address":     "tfc.rita.test_live",
+
+            "rita.zonemanagers": [ "cambridge" ],
+            "rita.zone.address": "tfc.zone.test_live",
+            "rita.zone.feed": "tfc.feedhandler.A",
+
+            "rita.name":      "RITA-test",
+            "rita.http.port":  8099,
+            "rita.webroot":   "webroot"
+        }
+    }
+}
