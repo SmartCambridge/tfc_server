@@ -1,1 +1,0 @@
-../send_to_thingful.sh

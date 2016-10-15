@@ -10,6 +10,8 @@
             "eb.console_out":   "tfc.console_out",
             "eb.manager":       "tfc.manager",
 
+            "dataserver.log_level": 1,
+            
             "dataserver.http.port":  8084,
             "dataserver.webroot":   "webroot",
             "dataserver.data_path": "/media/tfc/vix/data_",

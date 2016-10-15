@@ -65,7 +65,7 @@ public class DataRaw {
                 serve_raw_day(vertx, ctx, rawname, yyyy, MM, dd);
             });
 
-        // check for /raw/file/bin/yyyy/MM/dd/<filename> and return contents of that file
+        // check for /raw/file/<rawname>/yyyy/MM/dd/<filename> and return contents of that file
         router.route(HttpMethod.GET, "/"+ds.BASE_URI+"/raw/file/:rawname/:yyyy/:MM/:dd/:filename").handler( ctx -> {
 
                 String yyyy =  ctx.request().getParam("yyyy");
@@ -79,17 +79,31 @@ public class DataRaw {
                 serve_raw_file(vertx, ctx, rawname, yyyy, MM, dd, filename);
             });
 
+        // check for /raw/file/<rawname>/<filename> and return contents of that file
+        // e.g. /raw/file/monitor_json/post_data.json
+        router.route(HttpMethod.GET, "/"+ds.BASE_URI+"/raw/file/:rawname/:filename").handler( ctx -> {
+
+                String rawname =  ctx.request().getParam("rawname");
+                String filename = ctx.request().getParam("filename");
+
+                ds.logger.log(Constants.LOG_DEBUG, ds.MODULE_NAME+"."+ds.MODULE_ID+
+                           ": raw file "+rawname+"/"+filename);
+                serve_filepath(vertx, ctx, ds.DATA_PATH+rawname+"/"+ filename);
+            });
+
    }
 
-    // Serve the templates/data_raw_day.hbs web page
+    // Serve the templates/dataserver_raw_day.hbs web page
     public void serve_raw_day(Vertx vertx, RoutingContext ctx,
                                  String rawname, String yyyy, String MM, String dd)
     {
         ds.logger.log(Constants.LOG_DEBUG, ds.MODULE_NAME+"."+ds.MODULE_ID+
-                   ": serving data_raw_day.hbs for "+yyyy+"/"+MM+"/"+dd);
+                   ": serving dataserver_raw_day.hbs for "+rawname+"/"+yyyy+"/"+MM+"/"+dd);
             
         if (rawname == null)
         {
+            ds.logger.log(Constants.LOG_INFO, ds.MODULE_NAME+"."+ds.MODULE_ID+
+                          ": rawname is null, responding 400 error");
             ctx.response().setStatusCode(400).end();
         }
         else
@@ -110,7 +124,9 @@ public class DataRaw {
                 if (res.succeeded())
                     {
                         // get res.result() list of files and display in raw_day.hbs
-
+  
+                        ds.logger.log(Constants.LOG_DEBUG, ds.MODULE_NAME+"."+ds.MODULE_ID+
+                                      ": raw day read successfully");
                                 // sort the files from the directory into timestamp order
                         Collections.sort(res.result());
 
@@ -135,7 +151,7 @@ public class DataRaw {
                                    ": DataRaw rendering "+raw_path);
 
                         // render template with this list of filenames
-                        ds.template_engine.render(ctx, "templates/data_raw_day.hbs", t_res -> {
+                        ds.template_engine.render(ctx, "templates/dataserver_raw_day.hbs", t_res -> {
                                 if (t_res.succeeded())
                                     {
                                         ctx.response().end(t_res.result());
@@ -153,7 +169,7 @@ public class DataRaw {
                                    ": DataRaw directory read error "+raw_path);
                         // render template with empty list of filenames
                         //debug on directory read error we should put message on web page
-                        ds.template_engine.render(ctx, "templates/data_raw_day.hbs", t_res -> {
+                        ds.template_engine.render(ctx, "templates/dataserver_raw_day.hbs", t_res -> {
                                 if (t_res.succeeded())
                                     {
                                         ctx.response().end(t_res.result());
@@ -169,12 +185,12 @@ public class DataRaw {
         }
     }
 
-    // Serve the templates/data_raw_file.hbs web page
+    // Serve the templates/dataserver_raw_file.hbs web page
     public void serve_raw_file(Vertx vertx, RoutingContext ctx,
                                  String rawname, String yyyy, String MM, String dd, String filename)
     {
         ds.logger.log(Constants.LOG_DEBUG, ds.MODULE_NAME+"."+ds.MODULE_ID+
-                   ": serving data_raw_file.hbs for "+yyyy+"/"+MM+"/"+dd+"/"+filename);
+                   ": serving dataserver_raw_file.hbs for "+yyyy+"/"+MM+"/"+dd+"/"+filename);
             
         if (rawname == null)
         {
@@ -186,28 +202,34 @@ public class DataRaw {
             // build full filepath for data to be retrieved
             String filepath = ds.DATA_PATH+rawname+"/"+yyyy+"/"+MM+"/"+dd+"/"+filename;
 
-            // read the file containing the data
-            vertx.fileSystem().readFile(filepath, fileres -> {
+            serve_filepath(vertx, ctx, filepath);
 
-                    if (fileres.succeeded()) {
-
-                        ds.logger.log(Constants.LOG_DEBUG, ds.MODULE_NAME+"."+ds.MODULE_ID+": "+
-                                      "DataRaw file "+filepath+" read successfully");
-                        
-                        ctx.response().putHeader("content-type", "application/octet-stream");
-
-                        // successful file read, so return page
-                        ctx.response().end(fileres.result());
-
-                    } else {
-                        ds.logger.log(Constants.LOG_DEBUG, ds.MODULE_NAME+"."+ds.MODULE_ID+": "+
-                                      "DataRaw file "+filepath+" read failed");
-
-                        // return no-found error
-                        ctx.response().setStatusCode(404).end();
-                    }
-            });
         }
+    }
+
+    public void serve_filepath(Vertx vertx, RoutingContext ctx, String filepath)
+    {
+        // read the file containing the data
+        vertx.fileSystem().readFile(filepath, fileres -> {
+
+                if (fileres.succeeded()) {
+
+                    ds.logger.log(Constants.LOG_DEBUG, ds.MODULE_NAME+"."+ds.MODULE_ID+": "+
+                                  "DataRaw file "+filepath+" read successfully");
+
+                    ctx.response().putHeader("content-type", "application/octet-stream");
+
+                    // successful file read, so return page
+                    ctx.response().end(fileres.result());
+
+                } else {
+                    ds.logger.log(Constants.LOG_DEBUG, ds.MODULE_NAME+"."+ds.MODULE_ID+": "+
+                                  "DataRaw file "+filepath+" read failed");
+
+                    // return no-found error
+                    ctx.response().setStatusCode(404).end();
+                }
+        });
     }
         
 }
