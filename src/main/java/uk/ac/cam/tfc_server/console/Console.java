@@ -17,6 +17,7 @@ package uk.ac.cam.tfc_server.console;
 //   { "module_name": "<e.g. feedhandler, msgfiler, or console>",
 //     "module_id": <whatever unique identifier source instance has>,
 //     "status": "UP" ,
+//     "status_msg": "UP",
 //     "status_amber_seconds": 35,// optional
 //     "status_red_seconds": 65,  // optional
 //     "ts": 1475138945           // optional in source, will be added by Console if missing
@@ -173,11 +174,14 @@ public class Console extends AbstractVerticle {
             status_cache.add( new JsonObject(message.body().toString()) );
                 });
 
+    // **********************************************************************************************
     // here is the 'API' handler for /console/status which returns JSON packet of all status messages
+    // **********************************************************************************************
     router.route(HttpMethod.GET, "/api/"+BASE_URI+"/status").handler( ctx -> {
 
         HttpServerResponse response = ctx.response();
-        response.putHeader("content-type", "text/plain");
+        response.putHeader("content-type", "application/json");
+        response.putHeader("Access-Control-Allow-Origin", "*");
 
         // build api JSON message including latest status values
         JsonObject jo = new JsonObject();
@@ -211,6 +215,7 @@ public class Console extends AbstractVerticle {
                  "{ \"module_name\": \""+MODULE_NAME+"\"," +
                    "\"module_id\": \""+MODULE_ID+"\"," +
                    "\"status\": \"UP\"," +
+                   "\"status_msg\": \"UP\"," +
                    "\"status_amber_seconds\": "+String.valueOf( SYSTEM_STATUS_AMBER_SECONDS ) + "," +
                    "\"status_red_seconds\": "+String.valueOf( SYSTEM_STATUS_RED_SECONDS ) +
                  "}" );
