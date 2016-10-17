@@ -13,7 +13,7 @@
             "dataserver.log_level": 1,
             "dataserver.http.port":  8099,
             "dataserver.webroot":   "webroot",
-            "dataserver.data_path": "/home/ijl20/tfc_server_data/data_",
+            "dataserver.data_path": "/media/tfc/vix/data_",
             "dataserver.google_map_api_key": "AIzaSyAn3n2YQ2wBSnQtITOzsEPhVLaa6n79Qyg"
         }
     }

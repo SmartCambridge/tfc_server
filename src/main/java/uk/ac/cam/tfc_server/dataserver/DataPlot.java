@@ -93,6 +93,8 @@ public class DataPlot {
                     if (fileres.succeeded()) {
 
                         // successful file read, so populate page data and return page
+                        parent.logger.log(Constants.LOG_DEBUG, parent.MODULE_NAME+"."+parent.MODULE_ID+
+                                          ": file read ok for "+filename);
 
                         // Convert file contents to valid JSON
                         // File starts as JSON objects separated by newlines
@@ -121,6 +123,9 @@ public class DataPlot {
                                 }
                             });
                     } else {
+                        // unsuccessful file read, so return page with '' data
+                        parent.logger.log(Constants.LOG_DEBUG, parent.MODULE_NAME+"."+parent.MODULE_ID+
+                                          ": file read failed for "+filename);
                         // render the template WITHOUT the data, so page can tell user of error
                         parent.template_engine.render(ctx, "templates/dataserver_plot_zone.hbs", res -> {
                                 if (res.succeeded())

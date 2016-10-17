@@ -89,6 +89,9 @@ img {
 
 <script type="text/javascript">
 
+//********************************************************************************
+//***********  LOAD VARS FROM SERVER    ******************************************
+//********************************************************************************
 // Set base URL of web server
 var DATA_PLOT_ZONE_URL = "/{{config_base_uri}}/plot/zone/{{config_zone_id}}";
 
@@ -97,6 +100,10 @@ var zone_id = "{{config_zone_id}}";
 var yyyy = {{config_yyyy}}; // Year e.g. 2016
 var MM = {{config_MM}};     // Month e.g. 07 = July
 var dd = {{config_dd}};     // day e.g. 23
+
+var yyyyMMdd = '{{config_yyyy}}/{{config_MM}}/{{config_dd}}';
+//********************************************************************************
+//********************************************************************************
 
 var plot_date; // date of currently displayed plot (initialized from yyyy/MM/dd)
 
@@ -136,23 +143,24 @@ var CHART_Y_MAX = 900; // FIX limit of Y axis at 900 seconds
 function init()
 {
 
-    // make sure YYYY/mm/DD is on end of URL (missing just means give today's data)
-    var yyyyMMdd = '{{config_yyyy}}/{{config_MM}}/{{config_dd}}';
-    if (!window.location.href.endsWith(yyyyMMdd))
+ /*    if (!window.location.href.endsWith(yyyyMMdd))
     {
       window.history.pushState({},null,window.location.href+'/'+yyyyMMdd);
     }
-
+*/
     chart_day_start_ts = 0; // initially set start-time boundary of chart to distant past
 
     plot_date = new Date(yyyy,MM-1,dd); // as loaded in page template config_ values;
 
     //alert("plot_date " + plot_date);
 
+    // fix up the previous/next day offset from current URL, which may or may not have YYYY/MM/DD at and
+    var url_date_offset = (window.location.href).slice(-yyyyMMdd.length) == yyyyMMdd ? '../..' : zone_id;
+
     // set plot_date_minus_1 to the day before
     plot_date_minus_1 = new Date(plot_date);
     plot_date_minus_1.setDate(plot_date.getDate()-1);
-    var minus_1_url = '../..'; //DATA_PLOT_ZONE_URL;
+    var minus_1_url = url_date_offset;
     minus_1_url = minus_1_url + "/" + plot_date_minus_1.getFullYear();
     minus_1_url = minus_1_url + "/" + ("0" + (plot_date_minus_1.getMonth()+1)).slice(-2);
     minus_1_url = minus_1_url + "/" + ("0" + plot_date_minus_1.getDate()).slice(-2);
@@ -163,7 +171,7 @@ function init()
     // set plot_date_plus_1 to the day after
     plot_date_plus_1 = plot_date_minus_1 = new Date(plot_date);
     plot_date_plus_1.setDate(plot_date.getDate()+1);
-    var plus_1_url = '../..'; //DATA_PLOT_ZONE_URL;
+    var plus_1_url = url_date_offset;
     plus_1_url = plus_1_url + "/" + plot_date_plus_1.getFullYear();
     plus_1_url = plus_1_url + "/" + ("0" + (plot_date_plus_1.getMonth()+1)).slice(-2);
     plus_1_url = plus_1_url + "/" + ("0" + plot_date_plus_1.getDate()).slice(-2);
