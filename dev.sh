@@ -12,4 +12,6 @@ java -cp target/tfc_server-1.0-alpha-fat.jar io.vertx.core.Launcher run "service
 
 #java -cp target/tfc_server-1.0-alpha-fat.jar io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.dataserver.dev" -cluster -cluster-port 10084 >/var/log/tfc/dataserver.log 2>>/var/log/dataserver.error.log & disown
 
-java -cp target/tfc_server-1.0-alpha-fat.jar io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.feeddb.dev" -cluster -cluster-port 10085 >/var/log/tfc/feeddb.log 2>>/var/log/tfc/feeddb.error.log & disown
+java -cp target/tfc_server-1.0-alpha-fat.jar io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.feeddb.dev" -cluster -cluster-port 10090 >/var/log/tfc/feeddb.log 2>>/var/log/tfc/feeddb.error.log & disown
+
+java -cp target/tfc_server-1.0-alpha-fat.jar io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.feedcarto.dev" -cluster -cluster-port 10091 >/var/log/tfc/feedcarto.log 2>>/var/log/tfc/feedcarto.error.log & disown
