@@ -1,0 +1,30 @@
+                                                                                
+{
+    "main":    "uk.ac.cam.tfc_server.feedscraper.FeedScraper",
+    "options":
+        { "config":
+          {
+
+            "module.name":           "feedscraper",
+            "module.id":             "test",
+
+            "eb.system_status":      "tfc.system_status",
+            "eb.console_out":        "tfc.console_out",
+            "eb.manager":            "tfc.manager",
+              
+            "feedscraper.log_level": 1,
+
+            "feedscraper.feeds":     [
+                                       { "period" :    15,
+                                         "host":       "www.cambridge.gov.uk",              
+                                         "uri" :       "/jdi_parking_ajax/complete",
+                                         "ssl":        true,
+                                         "port":       443,
+                                         "address" :   "tfc.feedscraper.test",
+                                         "data_bin" :  "/media/tfc/test/cam_park_and_ride/data_bin",
+                                         "data_monitor" : "/media/tfc/test/cam_park_and_ride/data_monitor"
+                                        }
+                                     ]
+          }
+        }
+}
