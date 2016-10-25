@@ -47,6 +47,7 @@ public class ParseCamParkingLocal {
     private String MODULE_NAME;
     private String MODULE_ID;
     private String area_id;
+    private String feed_id;
 
     private JsonObject msg;
     
@@ -55,6 +56,7 @@ public class ParseCamParkingLocal {
            this.MODULE_NAME = MODULE_NAME;
            this.MODULE_ID = MODULE_ID;
            area_id = config.getString("area_id");
+           feed_id = config.getString("feed_id");
 
         }
 
@@ -64,7 +66,7 @@ public class ParseCamParkingLocal {
             msg.put("module_name", MODULE_NAME);
             msg.put("module_id", MODULE_ID);
             msg.put("msg_type", Constants.FEED_CAR_PARKING);
-            msg.put("area_id", area_id);
+            msg.put("feed_id", feed_id);
             //debug
             System.out.println("processing "+area_id);
             return msg;

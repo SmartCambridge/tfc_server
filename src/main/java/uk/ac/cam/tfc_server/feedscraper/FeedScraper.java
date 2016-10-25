@@ -109,12 +109,11 @@ public class FeedScraper extends AbstractVerticle {
           logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
                      ": starting FeedScraper for "+config.getString("host")+config.getString("uri"));
 
+          ParseCamParkingLocal parser = new ParseCamParkingLocal(MODULE_NAME, MODULE_ID, config);
+          
           // set up periodic 'GET' requests for data (.setPeriodic requires milliseconds)
           vertx.setPeriodic( config.getInteger("period") * 1000,
-                             id -> { get_feed(config,
-                                              new ParseCamParkingLocal(MODULE_NAME,
-                                                                       MODULE_ID,
-                                                                       config));
+                             id -> { get_feed(config, parser);
                            });
         }
 
@@ -138,17 +137,33 @@ public class FeedScraper extends AbstractVerticle {
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                                ": get_feed "+config.getString("host")+config.getString("uri"));
 
+        // Do a GET to the config feed hostname/uri
         http_clients.get(config.getString("feed_id")).getNow(config.getString("uri"), new Handler<HttpClientResponse>() {
 
+            // this handler called when GET response is received
             @Override
             public void handle(HttpClientResponse client_response) {
+                // specify this 'bodyHandler' to handle the entire body of the response (as opposed to parts
+                // as they arrive).
                 client_response.bodyHandler(new Handler<Buffer>() {
+                    // and here we go... handle() will be called with the GET response buffer
                     @Override
                     public void handle(Buffer buffer) {
-                        System.out.println("Response (" + buffer.length() + "): ");
-                        System.out.println(buffer.getString(0, buffer.length()));
+                        // print out the received GET data for LOG_LEVEL=1 (debug)
+                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                                   ": GET reponse length=" + buffer.length() );
+
+
+                        // Now send the buffer to be processed, which may cause exception if bad data
+                        try {
+                          process_feed(buffer, config, parser);
                         }
-                    });
+                        catch (Exception e) {
+                            logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+": proceed_feed error");
+                            logger.log(Constants.LOG_WARN, e.getMessage());
+                        }
+                    }
+                });
                 System.out.println("Response received");
             }
         });
@@ -162,7 +177,7 @@ public class FeedScraper extends AbstractVerticle {
     }
 
   // process the received raw data
-  private void process_feed(Buffer buf, JsonObject config) throws Exception 
+  private void process_feed(Buffer buf, JsonObject config, ParseCamParkingLocal parser) throws Exception 
   {
 
     LocalDateTime local_time = LocalDateTime.now();
@@ -181,6 +196,20 @@ public class FeedScraper extends AbstractVerticle {
     // Vert.x non-blocking file write...
     FileSystem fs = vertx.fileSystem();
 
+                        
+    // Parse the received data into a suitable EventBus JsonObject message
+    JsonObject msg = parser.parse(buf.toString());
+
+    msg.put("filename", filename);
+    msg.put("filepath", filepath);
+    
+    // debug print out the JsonObject message
+    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": prepared EventBus msg:");
+    logger.log(Constants.LOG_DEBUG, msg.toString());
+
+    //debug returning early before file writes
+    if (400 > 200) return;
+    
     // Write file to DATA_BIN
     //
     // if full directory path exists, then write file
