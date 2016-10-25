@@ -20,29 +20,8 @@ package uk.ac.cam.tfc_server.feedscraper;
 // where <filename> = <UTC TIMESTAMP>_YYYY-MM-DD-hh-mm-ss.bin
 // and any prior '.bin' files in TFC_DATA_MONITOR will be deleted
 //
-// Config values are read from provided vertx config() json file, e.g.
-/*
-{
-    "main":    "uk.ac.cam.tfc_server.feedscraper.FeedScraper",
-    "options":
-        { "config":
-                {
-
-                    "module.name":           "feedscraper",
-                    "module.id":             "cam_park_and_ride",
-
-                    "eb.system_status":      "tfc.system_status",
-                    "eb.console_out":        "tfc.console_out",
-                    "eb.manager":            "tfc.manager",
-
-                    "feedscraper.address" :   "tfc.feedscraper.cam_park_and_ride",
-
-                    "feedscraper.tfc_data_bin":     "/media/tfc/cam/data_bin_cam_park_and_ride",
-                    "feedscraper.tfc_data_monitor": "/media/tfc/cam/data_monitor_cam_park_and_ride"
-                }
-        }
-}
-*/
+// Config values are read from provided vertx config() json file, e.g. see README.md
+//
 // FeedScraper will publish the feed data as a JSON string on eventbus.
 //
 // *************************************************************************************************
@@ -73,7 +52,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class FeedScraper extends AbstractVerticle {
 
-    private final String VERSION = "0.11";
+    private final String VERSION = "0.21";
     
     // from config()
     private String MODULE_NAME;       // config module.name - normally "feedscraper"
@@ -82,7 +61,7 @@ public class FeedScraper extends AbstractVerticle {
     private String EB_MANAGER;        // config eb.manager
     
     // scraper config:
-    private ArrayList<FeedConfig> START_FEEDS; // config module_name.feeds parameters
+    private JsonArray START_FEEDS; // config module_name.feeds parameters
     
     public int LOG_LEVEL; // optional in config(), defaults to Constants.LOG_INFO
 
@@ -92,16 +71,16 @@ public class FeedScraper extends AbstractVerticle {
     private final int SYSTEM_STATUS_RED_SECONDS = 35;
 
     // global vars
-    private HttpClient http_client = null;
+    private HashMap<String,HttpClient> http_clients; // used to store a HttpClient for each feed_id
     private EventBus eb = null;
 
     private Log logger;
     
-    
   @Override
   public void start(Future<Void> fut) throws Exception {
 
-    boolean ok = true; // simple boolean to flag an abort during startup
+    // create holder for HttpClients
+    http_clients = new HashMap<String,HttpClient>();
 
     // load FeedScraper initialization values from config()
     if (!get_config())
@@ -115,11 +94,10 @@ public class FeedScraper extends AbstractVerticle {
     
     logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": Version "+VERSION+" started");
 
+    
+
     // create link to EventBus
     eb = vertx.eventBus();
-
-    // create webserver
-    http_client = vertx.createHttpClient();
 
     // send periodic "system_status" messages
     vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> { send_status();  });
@@ -127,12 +105,17 @@ public class FeedScraper extends AbstractVerticle {
     // iterate through all the filers to be started
     for (int i=0; i<START_FEEDS.size(); i++)
         {
-          FeedConfig config = START_FEEDS.get(i);
+          JsonObject config = START_FEEDS.getJsonObject(i);
           logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
-                     ": starting FeedScraper for "+config.host+config.uri);
+                     ": starting FeedScraper for "+config.getString("host")+config.getString("uri"));
 
           // set up periodic 'GET' requests for data (.setPeriodic requires milliseconds)
-          vertx.setPeriodic( config.period * 1000, id -> { get_feed(config);  });
+          vertx.setPeriodic( config.getInteger("period") * 1000,
+                             id -> { get_feed(config,
+                                              new ParseCamParkingLocal(MODULE_NAME,
+                                                                       MODULE_ID,
+                                                                       config));
+                           });
         }
 
   } // end start()
@@ -150,12 +133,12 @@ public class FeedScraper extends AbstractVerticle {
                  "}" );
     }
 
-    private void get_feed(FeedConfig config)
+    private void get_feed(JsonObject config, ParseCamParkingLocal parser)
     {
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                               ": get_feed "+config.host+config.uri);
+                               ": get_feed "+config.getString("host")+config.getString("uri"));
 
-        config.http_client.getNow(config.uri, new Handler<HttpClientResponse>() {
+        http_clients.get(config.getString("feed_id")).getNow(config.getString("uri"), new Handler<HttpClientResponse>() {
 
             @Override
             public void handle(HttpClientResponse client_response) {
@@ -179,7 +162,7 @@ public class FeedScraper extends AbstractVerticle {
     }
 
   // process the received raw data
-  private void process_feed(Buffer buf, FeedConfig config) throws Exception 
+  private void process_feed(Buffer buf, JsonObject config) throws Exception 
   {
 
     LocalDateTime local_time = LocalDateTime.now();
@@ -202,15 +185,17 @@ public class FeedScraper extends AbstractVerticle {
     //
     // if full directory path exists, then write file
     // otherwise create full path first
-    final String bin_path = config.data_bin+"/"+filepath;
+    final String bin_path = config.getString("data_bin")+"/"+filepath;
+    final String file_suffix = config.getString("file_suffix");
+    
     logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-               ": Writing "+bin_path+"/"+filename + config.file_suffix);
+               ": Writing "+bin_path+"/"+filename + file_suffix);
     fs.exists(bin_path, result -> {
             if (result.succeeded() && result.result())
                 {
                     logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                                ": process_feed: path "+bin_path+" exists");
-                    write_file(fs, buf, bin_path+"/"+filename+ config.file_suffix);
+                    write_file(fs, buf, bin_path+"/"+filename+ file_suffix);
                 }
             else
                 {
@@ -219,11 +204,11 @@ public class FeedScraper extends AbstractVerticle {
                     fs.mkdirs(bin_path, mkdirs_result -> {
                             if (mkdirs_result.succeeded())
                                 {
-                                    write_file(fs, buf, bin_path+"/"+filename+ config.file_suffix);
+                                    write_file(fs, buf, bin_path+"/"+filename+ file_suffix);
                                 }
                             else
                                 {
-                                    Log.log_err("FeedScraper."+MODULE_ID+": error creating tfc_data_bin path "+bin_path);
+                                    Log.log_err(MODULE_NAME+"."+MODULE_ID+": error creating tfc_data_bin path "+bin_path);
                                 }
                         });
                 }
@@ -231,9 +216,11 @@ public class FeedScraper extends AbstractVerticle {
 
     // Write file to DATA_MONITOR
     //
+    final String monitor_path = config.getString("data_monitor");
+    
     logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-               ": Writing "+config.data_monitor+"/"+filename+ config.file_suffix);
-    fs.readDir(config.data_monitor, ".*\\"+config.file_suffix, monitor_result -> {
+               ": Writing "+monitor_path+"/"+filename+ file_suffix);
+    fs.readDir(monitor_path, ".*\\"+file_suffix, monitor_result -> {
                             if (monitor_result.succeeded())
                                 {
                                     // directory exists, delete previous files of same suffix
@@ -243,15 +230,18 @@ public class FeedScraper extends AbstractVerticle {
                                             fs.delete(f, delete_result -> {
                                                     if (!delete_result.succeeded())
                                                         {
-                                                          Log.log_err("FeedScraper."+MODULE_ID+": error tfc_data_monitor delete: "+f);
+                                                          Log.log_err("FeedScraper."+MODULE_ID+
+                                                                      ": error tfc_data_monitor delete: "+f);
                                                         }
                                                 });
                                         }
-                                    write_file(fs, buf, config.data_monitor+"/"+filename+ config.file_suffix);
+                                    write_file(fs, buf, monitor_path+"/"+filename+ file_suffix);
                                 }
                             else
                                 {
-                                    Log.log_err("FeedScraper."+MODULE_ID+": error reading tfc_data_monitor path: "+config.data_monitor);
+                                    Log.log_err(MODULE_NAME+"."+MODULE_ID+
+                                                ": error reading data_monitor path: "+
+                                                monitor_path);
                                     Log.log_err(monitor_result.cause().getMessage());
                                 }
     });
@@ -299,7 +289,7 @@ public class FeedScraper extends AbstractVerticle {
                 Log.log_err("FeedScraper: config() not set");
                 return false;
             }
-        
+
         MODULE_ID = config().getString("module.id");
         if (MODULE_ID == null)
             {
@@ -327,80 +317,87 @@ public class FeedScraper extends AbstractVerticle {
                 return false;
             }
 
-        START_FEEDS = new ArrayList<FeedConfig>();
-        JsonArray config_feed_list = config().getJsonArray(MODULE_NAME+".feeds");
-        for (int i=0; i<config_feed_list.size(); i++)
+
+        START_FEEDS = config().getJsonArray(MODULE_NAME+".feeds");
+        
+        if (!validate_feeds())
             {
-                JsonObject config_json = config_feed_list.getJsonObject(i);
-
-                // add MODULE_NAME, MODULE_ID to every FeedConfig
-                config_json.put("module_name", MODULE_NAME);
-                config_json.put("module_id", MODULE_ID);
-                
-                FeedConfig feed_config = new FeedConfig(config_json);
-                
-                if (feed_config.valid)
-                {
-                    START_FEEDS.add(feed_config);
-                }
-                else
-                {
-                   Log.log_err(MODULE_NAME+"."+MODULE_ID+": FeedConfig skipped "+feed_config.host+feed_config.uri);
-                }
+                Log.log_err(MODULE_NAME+"."+MODULE_ID+": feeds config() not valid");
+                return false;
             }
-
+                
         return true;
     }
 
-    class FeedConfig {
-        public int period;
-        public String host = null;
-        public String uri = null;
-        public boolean ssl;
-        public int port;
+    // validate_feeds() will validate a FeedScraper feeds config, and insert default values
+    // The config is kept as a JsonArray
+    private boolean validate_feeds()
+    {
+        if (START_FEEDS.size() < 1)
+            {
+                Log.log_err(MODULE_NAME+"."+MODULE_ID+": no "+MODULE_NAME+".feeds in config");
+                return false;
+            }
+        for (int i=0; i<START_FEEDS.size(); i++)
+            {
+                JsonObject config = START_FEEDS.getJsonObject(i);
 
-        public String address = null;
-        public String data_bin = null;
-        public String data_monitor = null;
-        public String file_suffix = null;
+                // feed_id is unique for this feed
+                if (config.getString("feed_id")==null)
+                    {
+                        Log.log_err(MODULE_NAME+"."+MODULE_ID+": feed_id missing in config");
+                        return false;
+                    }
 
-        public HttpClient http_client;
+                // ssl yes/no for http request
+                if (config.getBoolean("ssl")==null)
+                    {
+                        config.put("ssl", false);
+                    }
 
-        public boolean valid;
+                // http port to be used to request the data
+                if (config.getInteger("port")==null)
+                    {
+                        config.put("port", 80);
+                    }
 
-        FeedConfig(JsonObject config)
-        {
-            // eventbus address this FeedScraper will broadcast onto
-            address = config.getString("address");
+                // period (in seconds) between successive 'get' requests for data
+                if (config.getInteger("period")==null)
+                    {
+                        Log.log_err(MODULE_NAME+"."+MODULE_ID+": period missing in config");
+                        return false;
+                    }
 
-            // web address this FeedScraper will poll for data
-            host = config.getString("host");
-            uri = config.getString("uri");
+                if (config.getString("data_bin")==null)
+                    {
+                        Log.log_err(MODULE_NAME+"."+MODULE_ID+": data_bin missing in config");
+                        return false;
+                    }
 
-            ssl = config.getBoolean("ssl",false);
+                // filesystem path to store the latest 'post_data.bin' file so it can be monitored for inotifywait processing
+                if (config.getString("data_monitor")==null)
+                    {
+                        Log.log_err(MODULE_NAME+"."+MODULE_ID+": data_monitor missing in config");
+                        return false;
+                    }
 
-            port = config.getInteger("port", 80);
+                if (config.getString("file_suffix")==null)
+                    {
+                        config.put("file_suffix","bin");
+                    }
 
-            // period (in seconds) between successive 'get' requests for data
-            period = config.getInteger("period", 100);
-
-            // primary filesystem path to store the data exactly as received (i.e. GTFS binary .bin files)
-            data_bin = config.getString("data_bin");
-
-            // filesystem path to store the latest 'post_data.bin' file so it can be monitored for inotifywait processing
-            data_monitor = config.getString("data_monitor");
-        
-            // filename suffix for file, default '.bin'
-            file_suffix = config.getString("file_suffix");
-
-            http_client = vertx.createHttpClient( new HttpClientOptions()
-                                                       .setSsl(ssl)
+                // create a new HttpClient for this feed, and add to http_clients list
+                http_clients.put(config.getString("feed_id"),
+                             vertx.createHttpClient( new HttpClientOptions()
+                                                       .setSsl(config.getBoolean("ssl"))
                                                        .setTrustAll(true)
-                                                       .setDefaultPort(port)
-                                                       .setDefaultHost(host)
-                                                );
+                                                       .setDefaultPort(config.getInteger("port"))
+                                                       .setDefaultHost(config.getString("host"))
+                            ));
 
-            valid = true;
-        }        
-    }    
+            }
+
+        return true; // if we got to here then we can return ok, error would have exitted earlier
+    }        
+
 } // end FeedScraper class

@@ -37,11 +37,11 @@ the 'system_status' eventbus address to be interpreted by the Console.
 ```
 {
    "module_name": "feedscraper",                // as given to the FeedScraper in config, typically "feedscraper"
-   "module_id"  : "abc",                        // from config, but platform unique value within module_name
-   "feed_id"    : "cam_local_parking",          // identifies http source, matches config
-   "feed_format" : "car_parking",
-   "filename":"1459762951_2016-04-04-10-42-31",
-   "filepath":"2016/04/04",
+   "module_id":   "cam_parking_local",          // from config, but platform unique value within module_name
+   "msg_type":    "car_parking",                // unique id for this message format
+   "feed_id":     "cam_parking_local",          // identifies http source, matches config
+   "filename":    "1459762951_2016-04-04-10-42-31",
+   "filepath":    "2016/04/04",
    "request_data":[                             // actual parsed data from source, in this case car park occupancy
                     { "area_id":         "cam",
                       "parking_id":      "grafton_east",
@@ -53,9 +53,44 @@ the 'system_status' eventbus address to be interpreted by the Console.
                    ]
 }
 ```
-In the (real) example above, the parking occupancy record batch was written to a file called
+In the example above, the parking occupancy record batch was written to a file called
 "2016/04/04/1459762951_2016-04-04-10-42-31.bin" by FeedScraper. The Unix timestamp is
 in UTC, while the 2016/04/04 and 10-42-31 is local time. That path is beneath a 'data_bin' root
 specified in the FeedScraper config.
 
+## FeedScraper app config format
+```
+{
+    "main":    "uk.ac.cam.tfc_server.feedscraper.FeedScraper",
+    "options":
+        { "config":
+          {
+
+            "module.name":           "feedscraper",
+            "module.id":             "test",
+
+            "eb.system_status":      "tfc.system_status",
+            "eb.console_out":        "tfc.console_out",
+            "eb.manager":            "tfc.manager",
+              
+            "feedscraper.log_level": 1,
+
+            "feedscraper.feeds":     [
+                                       { "period" :    15,
+                                         "area_id" :   "cam",
+                                         "feed_id" :   "cam_local_car_parks",
+                                         "msg_type" :  "feed_car_parking",
+                                         "host":       "www.cambridge.gov.uk",              
+                                         "uri" :       "/jdi_parking_ajax/complete",
+                                         "ssl":        true,
+                                         "port":       443,
+                                         "address" :   "tfc.feedscraper.test",
+                                         "data_bin" :  "/media/tfc/test/cam_park_and_ride/data_bin",
+                                         "data_monitor" : "/media/tfc/test/cam_park_and_ride/data_monitor"
+                                        }
+                                     ]
+          }
+        }
+}
+```
 

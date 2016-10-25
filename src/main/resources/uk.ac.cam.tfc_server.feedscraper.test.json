@@ -16,6 +16,9 @@
 
             "feedscraper.feeds":     [
                                        { "period" :    15,
+                                         "area_id" :   "cam",
+                                         "feed_id" :   "cam_local_car_parks",
+                                         "msg_type" :  "feed_car_parking",
                                          "host":       "www.cambridge.gov.uk",              
                                          "uri" :       "/jdi_parking_ajax/complete",
                                          "ssl":        true,
