@@ -72,11 +72,20 @@ an http POST every 30 seconds) and parses/publishes the data as a 'json' message
 
 FeedHandler also archives each post of binary data as a timestamped file in the server filesystem.
 
-### FeedPlayer (see [FeedPlayer README](src/main/java/uk/ac/cam/tfc_server/feedplayer))
+### FeedHandler (see [FeedHandler README](src/main/java/uk/ac/cam/tfc_server/feedhandler))
 
-FeedPlayer can read the archived posts of historical binary data, and publish that at a user-selected
-frequency on the Vertx eventbus. This facilitates the use of the system for analysis of historical
-data.
+Receives the realtime batched of vehicle position data (currently as GTFS format binary data as
+an http POST every 30 seconds) and parses/publishes the data as a 'json' message on the Vertx eventbus.
+
+FeedHandler also archives each post of binary data as a timestamped file in the server filesystem.
+
+### FeedScraper (see [FeedScraper README](src/main/java/uk/ac/cam/tfc_server/feedscraper))
+
+FeedScraper is in effect a 'FeedHandler' for data sources that do not themselves provide a real-time
+'push'-style feed, i.e. it will *poll* a website periodically, immediately store the data in the raw
+format in which it was received, and parse the data and publish it as a message on the EventBus.
+
+Like FeedHandler, FeedScraper can use MsgFiler to store the json parsed data it generates.
 
 ### Console (see [Console README](src/main/java/uk/ac/cam/tfc_server/console))
 
