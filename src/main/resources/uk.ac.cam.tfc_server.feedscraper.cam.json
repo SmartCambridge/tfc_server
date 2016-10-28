@@ -6,16 +6,16 @@
           {
 
             "module.name":           "feedscraper",
-            "module.id":             "test",
+            "module.id":             "cam",
 
             "eb.system_status":      "tfc.system_status",
             "eb.console_out":        "tfc.console_out",
             "eb.manager":            "tfc.manager",
               
-            "feedscraper.log_level": 1,
+            "feedscraper.log_level": 2,
 
             "feedscraper.feeds":     [
-                                       { "period" :    10,
+                                       { "period" :    300,
                                          "area_id" :   "cam",
                                          "feed_id" :   "cam_park_local",
                                          "msg_type" :  "feed_car_parks",
@@ -23,10 +23,10 @@
                                          "uri" :       "/jdi_parking_ajax/complete",
                                          "ssl":        true,
                                          "port":       443,
-                                         "address" :   "tfc.feedscraper.test",
+                                         "address" :   "tfc.feedscraper.cam",
                                          "file_suffix": ".html",
-                                         "data_bin" :  "/media/tfc/test/cam_park_local/data_bin",
-                                         "data_monitor" : "/media/tfc/test/cam_park_local/data_monitor"
+                                         "data_bin" :  "/media/tfc/cam/cam_park_local/data_bin",
+                                         "data_monitor" : "/media/tfc/cam/cam_park_local/data_monitor"
                                         }
                                      ]
           }

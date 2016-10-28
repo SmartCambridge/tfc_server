@@ -36,13 +36,13 @@ the 'system_status' eventbus address to be interpreted by the Console.
 
 ```
 {
-   "module_name": "feedscraper",                // as given to the FeedScraper in config, typically "feedscraper"
+   "module_name": "feedscraper",                // given to the FeedScraper in config, typically "feedscraper"
    "module_id":   "cam_parking_local",          // from config, but platform unique value within module_name
    "msg_type":    "car_parking",                // unique id for this message format
    "feed_id":     "cam_parking_local",          // identifies http source, matches config
    "filename":    "1459762951_2016-04-04-10-42-31",
    "filepath":    "2016/04/04",
-   "request_data":[                             // actual parsed data from source, in this case car park occupancy
+   "request_data":[                             // parsed data from source, in this case car park occupancy
                     { "area_id":         "cam",
                       "parking_id":      "grafton_east",
                       "parking_name":    "Grafton East",

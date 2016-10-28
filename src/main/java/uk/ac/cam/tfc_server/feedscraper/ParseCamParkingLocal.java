@@ -1,9 +1,17 @@
 package uk.ac.cam.tfc_server.feedscraper;
 
+//**********************************************************************
+//**********************************************************************
+//   ParseCamParkingLocal.java
+//
+//   Convert the data read from the local parking web feed into Json
+//**********************************************************************
+//**********************************************************************
+
 // parse the data returned from Cambridge local parking occupancy API
 
 // Polls https://www.cambridge.go.uk/jdi_parking_ajax/complete
-// Gets:
+// Gets (without these added linebreaks):
 /*
 <h2><a href="/grafton-east-car-park">Grafton East car park</a></h2><p><strong>384 spaces</strong> (51% full and filling)</p>
 <h2><a href="/grafton-west-car-park">Grafton West car park</a></h2><p><strong>98 spaces</strong> (65% full and filling)</p>
@@ -25,7 +33,7 @@ package uk.ac.cam.tfc_server.feedscraper;
                     { "area_id":         "cam",
                       "parking_id":      "grafton_east",
                       "parking_name":    "Grafton East",
-                      "spaces_total":    874,
+                      "spaces_capacity": 874,
                       "spaces_free":     384,
                       "spaces_occupied": 490
                     } ...
@@ -36,7 +44,10 @@ package uk.ac.cam.tfc_server.feedscraper;
 
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.json.JsonArray;
 
 // other tfc_server classes
 import uk.ac.cam.tfc_server.util.Log;
@@ -44,32 +55,93 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class ParseCamParkingLocal {
 
-    private String MODULE_NAME;
-    private String MODULE_ID;
     private String area_id;
-    private String feed_id;
 
-    private JsonObject msg;
+    ArrayList<ParkingRecord> car_parks;
     
-    ParseCamParkingLocal(String MODULE_NAME, String MODULE_ID, JsonObject config)
+    ParseCamParkingLocal(String area_id)
         {
-           this.MODULE_NAME = MODULE_NAME;
-           this.MODULE_ID = MODULE_ID;
-           area_id = config.getString("area_id");
-           feed_id = config.getString("feed_id");
+           this.area_id = area_id;
 
+           car_parks = new ArrayList<ParkingRecord>();
+           car_parks.add( new ParkingRecord() {{ id       = "grafton-east-car-park";
+                                                 name     = "Grafton East";
+                                                 capacity = 874;
+                                                 tag1     = "<strong>";
+                                                 tag2     = " spaces";
+                                              }});
+           car_parks.add( new ParkingRecord() {{ id       = "grafton-west-car-park";
+                                                 name     = "Grafton West";
+                                                 capacity = 280;
+                                                 tag1     = "<strong>";
+                                                 tag2     = " spaces";
+                                              }});
+           car_parks.add( new ParkingRecord() {{ id       = "grand-arcade-car-park";
+                                                 name     = "Grand Arcade";
+                                                 capacity = 953;
+                                                 tag1     = "<strong>";
+                                                 tag2     = " spaces";
+                                              }});
+           car_parks.add( new ParkingRecord() {{ id       = "park-street-car-park";
+                                                 name     = "Park Street";
+                                                 capacity = 390;
+                                                 tag1     = "<strong>";
+                                                 tag2     = " spaces";
+                                              }});
+           car_parks.add( new ParkingRecord() {{ id       = "queen-anne-terrace-car-park";
+                                                 name     = "Queen Anne Terrace";
+                                                 capacity = 570;
+                                                 tag1     = "<strong>";
+                                                 tag2     = " spaces";
+                                              }});
         }
 
-    public JsonObject parse(String page)
+    // Here is where we try and parse the page and return a JsonArray
+    public JsonArray parse_array(String page)
         {
-            msg = new JsonObject();
-            msg.put("module_name", MODULE_NAME);
-            msg.put("module_id", MODULE_ID);
-            msg.put("msg_type", Constants.FEED_CAR_PARKING);
-            msg.put("feed_id", feed_id);
-            //debug
-            System.out.println("processing "+area_id);
-            return msg;
+
+            JsonArray records = new JsonArray();
+            // try and match each known car park to the data
+            for (int i=0; i<car_parks.size(); i++)
+                {
+                    ParkingRecord parking = car_parks.get(i);
+                    
+                    // ...grafton-east-car-park...<strong>384 spaces...
+                    int rec_start = page.indexOf(parking.id); // find start of record for this car park
+                    if (rec_start < 0) continue;  // if not found then skip current parking
+
+                    // find index of start of 'spaces' number, or skip this parking
+                    int spaces_start = page.indexOf(parking.tag1, rec_start);
+                    if (spaces_start < 0) continue;
+                    spaces_start = spaces_start + parking.tag1.length();
+
+                    // find index of end of 'spaces' number, or skip this parking
+                    int spaces_end = page.indexOf(parking.tag2, spaces_start);
+                    if (spaces_end < 0) continue;
+                    if (spaces_end - spaces_start > 5) continue;
+
+                    // pick out the 'XX spaces' number, or skip if not recognized
+                    int spaces_free;
+                    try {
+                        spaces_free = Integer.parseInt(page.substring(spaces_start, spaces_end));
+                    } catch (NumberFormatException e) {
+                        continue;
+                    }
+                
+                    JsonObject json_record = new JsonObject();
+                    json_record.put("area_id",area_id);
+                    json_record.put("parking_id",parking.id);
+                    json_record.put("parking_name",parking.name);
+                    json_record.put("spaces_capacity",parking.capacity);
+                    json_record.put("spaces_free",spaces_free);
+                    int spaces_occupied = parking.capacity - spaces_free;
+                    if (spaces_occupied < 0) spaces_occupied = 0;
+                    json_record.put("spaces_occupied", spaces_occupied);
+
+                    records.add(json_record);
+                }
+
+            return records;
         }
     
     // get current local time as "YYYY-MM-DD hh:mm:ss"
@@ -79,4 +151,12 @@ public class ParseCamParkingLocal {
         return local_time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
     }
 
+    class ParkingRecord {
+        String id;
+        String name;
+        String tag1;
+        String tag2;
+        int capacity;
+    }
+        
 }

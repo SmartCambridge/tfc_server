@@ -29,7 +29,7 @@ public class Log {
     // print msg to stderr prepended with local time
     public static void log_err(String msg)
     {
-        System.err.println(local_datetime_string()+": "+msg);
+        System.out.println(local_datetime_string()+" ERROR: "+msg);
     }
     
     public void log(int l, String msg) {

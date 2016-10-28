@@ -1,0 +1,41 @@
+                                                                                
+{
+    "main":    "uk.ac.cam.tfc_server.msgfiler.MsgFiler",
+    "options":
+        { "config":
+          {
+
+            "module.name":           "msgfiler",
+            "module.id":             "cam_to_json",
+
+            "eb.system_status":      "tfc.system_status",
+            "eb.console_out":        "tfc.console_out",
+            "eb.manager":            "tfc.manager",
+
+            "msgfiler.address": "tfc.msgfiler.cam_to_json",
+
+            "msgfiler.filers":
+            [
+                { "source_address": "tfc.feedscraper.cam",
+                  "source_filter": { "field": "msg_type",
+                                     "compare": "=",
+                                     "value": "feed_car_parks"
+                                   },
+                  "store_path": "/media/tfc/cam/{{feed_id}}/data_bin_json/{{filepath}}",
+                  "store_name": "{{filename}}.json",
+                  "store_mode": "write"
+                },
+                { "source_address": "tfc.feedscraper.cam",
+                  "source_filter": { "field": "msg_type",
+                                     "compare": "=",
+                                     "value": "feed_car_parks"
+                                   },
+                  "store_path": "/media/tfc/cam/{{feed_id}}/data_monitor_json",
+                  "store_name": "post_data.json",
+                  "store_mode": "write"
+                }
+            ]
+              
+          }
+        }
+}

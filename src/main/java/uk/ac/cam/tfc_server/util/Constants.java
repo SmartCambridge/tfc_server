@@ -5,9 +5,9 @@ package uk.ac.cam.tfc_server.util;
 public class Constants {
 // module message types
 //
-    // FeedPlayer msg_type values
+    // FeedPlayer/FeedScraper msg_type values
     public static final String FEED_BUS_POSITION = "feed_bus_position"; // e.g. as derived from GTFS bus
-    public static final String FEED_CAR_PARKING  = "feed_car_parking";
+    public static final String FEED_CAR_PARKS  = "feed_car_parks"; // occupancy of multiple car parks
     public static final int    FEEDHANDLER_MAX_POST = 1000000; // max feed post in bytes
     
     // Zone msg_type values which flow on zone.address

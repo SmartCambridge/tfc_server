@@ -8,10 +8,7 @@ package uk.ac.cam.tfc_server.feedscraper;
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
 //
-// Polls external websites and creates new feeds based on that data
-//
-// Data is currently received as a POST to <MODULE_NAME>/<MODULE_ID>
-// every 30 seconds for approx 1200 vehicles
+// Polls external websites and creates new feeds based on that data.
 //
 // FeedScraper will WRITE the raw binary post data into:
 //   TFC_DATA_MONITOR/<filename>
@@ -52,7 +49,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class FeedScraper extends AbstractVerticle {
 
-    private final String VERSION = "0.21";
+    private final String VERSION = "0.32";
     
     // from config()
     private String MODULE_NAME;       // config module.name - normally "feedscraper"
@@ -102,22 +99,46 @@ public class FeedScraper extends AbstractVerticle {
     // send periodic "system_status" messages
     vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> { send_status();  });
 
-    // iterate through all the filers to be started
+    // iterate through all the feedscrapers to be started
     for (int i=0; i<START_FEEDS.size(); i++)
         {
-          JsonObject config = START_FEEDS.getJsonObject(i);
+          start_scraper(START_FEEDS.getJsonObject(i));
+        }
+
+  } // end start()
+
+    // start a scraper with a given config
+    private void start_scraper(JsonObject config)
+    {
+          ParseCamParkingLocal parser = new ParseCamParkingLocal(config.getString("area_id"));
+
+          // create monitor directory if necessary
+          FileSystem fs = vertx.fileSystem();          
+          String monitor_path = config.getString("data_monitor");
+          if (!fs.existsBlocking(monitor_path))
+          {
+            try {
+                fs.mkdirsBlocking(monitor_path);
+                logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
+                                        ": start_scraper created monitor path "+monitor_path);
+            } catch (Exception e) {
+                logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                                        ": start_scraper FAIL: error creating monitor path "+monitor_path);
+                return;
+            }
+          }
+
           logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
                      ": starting FeedScraper for "+config.getString("host")+config.getString("uri"));
 
-          ParseCamParkingLocal parser = new ParseCamParkingLocal(MODULE_NAME, MODULE_ID, config);
-          
+          // call immediately, then every 'period' seconds
+          get_feed(config, parser);
+
           // set up periodic 'GET' requests for data (.setPeriodic requires milliseconds)
           vertx.setPeriodic( config.getInteger("period") * 1000,
                              id -> { get_feed(config, parser);
                            });
-        }
-
-  } // end start()
+    }
 
     // send UP status to the EventBus
     private void send_status()
@@ -138,7 +159,8 @@ public class FeedScraper extends AbstractVerticle {
                                ": get_feed "+config.getString("host")+config.getString("uri"));
 
         // Do a GET to the config feed hostname/uri
-        http_clients.get(config.getString("feed_id")).getNow(config.getString("uri"), new Handler<HttpClientResponse>() {
+        http_clients.get(config.getString("feed_id"))
+           .getNow(config.getString("uri"), new Handler<HttpClientResponse>() {
 
             // this handler called when GET response is received
             @Override
@@ -164,7 +186,6 @@ public class FeedScraper extends AbstractVerticle {
                         }
                     }
                 });
-                System.out.println("Response received");
             }
         });
     }
@@ -191,103 +212,112 @@ public class FeedScraper extends AbstractVerticle {
     String filename = utc_ts+"_"+local_time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss"));
     // sub-dir structure to store the file
     String filepath = year+"/"+month+"/"+day;
-    // First just save the binary file to $TFC_DATA_MONITOR
+    
+    // Write file to DATA_BIN
+    //
+    final String bin_path = config.getString("data_bin")+"/"+filepath;
+    final String file_suffix = config.getString("file_suffix");
+    write_bin_file(buf, bin_path, filename, file_suffix);
 
-    // Vert.x non-blocking file write...
-    FileSystem fs = vertx.fileSystem();
+    // Write file to DATA_MONITOR
+    //
+    final String monitor_path = config.getString("data_monitor");
+    write_monitor_file(buf, monitor_path, filename, file_suffix);
 
-                        
     // Parse the received data into a suitable EventBus JsonObject message
-    JsonObject msg = parser.parse(buf.toString());
+    JsonObject msg = new JsonObject();
 
+    msg.put("module_name", MODULE_NAME);
+    msg.put("module_id", MODULE_ID);
+    msg.put("msg_type", Constants.FEED_CAR_PARKS);
+    msg.put("feed_id", config.getString("feed_id"));
     msg.put("filename", filename);
     msg.put("filepath", filepath);
+
+    JsonArray request_data = parser.parse_array(buf.toString());
+
+    msg.put("request_data", request_data);
     
     // debug print out the JsonObject message
     logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": prepared EventBus msg:");
     logger.log(Constants.LOG_DEBUG, msg.toString());
 
-    //debug returning early before file writes
-    if (400 > 200) return;
-    
-    // Write file to DATA_BIN
-    //
-    // if full directory path exists, then write file
-    // otherwise create full path first
-    final String bin_path = config.getString("data_bin")+"/"+filepath;
-    final String file_suffix = config.getString("file_suffix");
+    String feedscraper_address = config.getString("address");
+
+    eb.publish(feedscraper_address, msg);
     
     logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-               ": Writing "+bin_path+"/"+filename + file_suffix);
-    fs.exists(bin_path, result -> {
-            if (result.succeeded() && result.result())
+               ": published latest GET data to "+feedscraper_address);
+    
+  } // end process_feed()
+
+    private void write_bin_file(Buffer buf, String bin_path, String filename, String file_suffix)
+    {
+        FileSystem fs = vertx.fileSystem();
+        // if full directory path exists, then write file
+        // otherwise create full path first
+    
+        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                   ": Writing "+bin_path+"/"+filename + file_suffix);
+        fs.exists(bin_path, result -> {
+                if (result.succeeded() && result.result())
+                    {
+                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                                   ": process_feed: path "+bin_path+" exists");
+                        write_file(fs, buf, bin_path+"/"+filename+ file_suffix);
+                    }
+                else
+                    {
+                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                                   ": Creating directory "+bin_path);
+                        fs.mkdirs(bin_path, mkdirs_result -> {
+                                if (mkdirs_result.succeeded())
+                                    {
+                                        write_file(fs, buf, bin_path+"/"+filename+ file_suffix);
+                                    }
+                                else
+                                    {
+                                        Log.log_err(MODULE_NAME+"."+MODULE_ID+
+                                                    ": error creating tfc_data_bin path "+bin_path);
+                                    }
+                            });
+                    }
+        });
+    }        
+
+    private void write_monitor_file(Buffer buf, String monitor_path, String filename, String file_suffix)
+    {
+        FileSystem fs = vertx.fileSystem();
+
+        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+               ": Writing "+monitor_path+"/"+filename+ file_suffix);
+        fs.readDir(monitor_path, ".*\\"+file_suffix, monitor_result -> {
+            if (monitor_result.succeeded())
                 {
-                    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                               ": process_feed: path "+bin_path+" exists");
-                    write_file(fs, buf, bin_path+"/"+filename+ file_suffix);
+                    // directory exists, delete previous files of same suffix
+                    for (String f: monitor_result.result())
+                        {
+                            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                                       ": Deleting "+f);
+                            fs.delete(f, delete_result -> {
+                                    if (!delete_result.succeeded())
+                                        {
+                                          Log.log_err("FeedScraper."+MODULE_ID+
+                                                      ": error tfc_data_monitor delete: "+f);
+                                        }
+                                });
+                        }
+                    write_file(fs, buf, monitor_path+"/"+filename+ file_suffix);
                 }
             else
                 {
-                    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                               ": Creating directory "+bin_path);
-                    fs.mkdirs(bin_path, mkdirs_result -> {
-                            if (mkdirs_result.succeeded())
-                                {
-                                    write_file(fs, buf, bin_path+"/"+filename+ file_suffix);
-                                }
-                            else
-                                {
-                                    Log.log_err(MODULE_NAME+"."+MODULE_ID+": error creating tfc_data_bin path "+bin_path);
-                                }
-                        });
+                    Log.log_err(MODULE_NAME+"."+MODULE_ID+
+                                ": error reading data_monitor path: "+
+                                monitor_path);
+                    Log.log_err(monitor_result.cause().getMessage());
                 }
         });
-
-    // Write file to DATA_MONITOR
-    //
-    final String monitor_path = config.getString("data_monitor");
-    
-    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-               ": Writing "+monitor_path+"/"+filename+ file_suffix);
-    fs.readDir(monitor_path, ".*\\"+file_suffix, monitor_result -> {
-                            if (monitor_result.succeeded())
-                                {
-                                    // directory exists, delete previous files of same suffix
-                                    for (String f: monitor_result.result())
-                                        {
-                                            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"Deleting "+f);
-                                            fs.delete(f, delete_result -> {
-                                                    if (!delete_result.succeeded())
-                                                        {
-                                                          Log.log_err("FeedScraper."+MODULE_ID+
-                                                                      ": error tfc_data_monitor delete: "+f);
-                                                        }
-                                                });
-                                        }
-                                    write_file(fs, buf, monitor_path+"/"+filename+ file_suffix);
-                                }
-                            else
-                                {
-                                    Log.log_err(MODULE_NAME+"."+MODULE_ID+
-                                                ": error reading data_monitor path: "+
-                                                monitor_path);
-                                    Log.log_err(monitor_result.cause().getMessage());
-                                }
-    });
-
-    // Here is where we process the individual position records
-    //JsonObject msg = GTFS.buf_to_json(buf, filename, filepath);
-
-    //msg.put("module_name", MODULE_NAME);
-    //msg.put("module_id", MODULE_ID);
-    //msg.put("msg_type", Constants.FEED_BUS_POSITION);
-
-    //eb.publish(FEEDSCRAPER_ADDRESS, msg);
-    
-    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-               ": published latest GET data");
-    
-  } // end process_gtfs()
+    }
 
   private void write_file(FileSystem fs, Buffer buf, String file_path)
   {
@@ -302,6 +332,78 @@ public class FeedScraper extends AbstractVerticle {
       }
     });
   } // end write_file
+
+    // validate_feeds() will validate a FeedScraper feeds config, and insert default values
+    // The config is kept as a JsonArray
+    private boolean validate_feeds()
+    {
+        if (START_FEEDS.size() < 1)
+            {
+                Log.log_err(MODULE_NAME+"."+MODULE_ID+": no "+MODULE_NAME+".feeds in config");
+                return false;
+            }
+        for (int i=0; i<START_FEEDS.size(); i++)
+            {
+                JsonObject config = START_FEEDS.getJsonObject(i);
+
+                // feed_id is unique for this feed
+                if (config.getString("feed_id")==null)
+                    {
+                        Log.log_err(MODULE_NAME+"."+MODULE_ID+": feed_id missing in config");
+                        return false;
+                    }
+
+                // ssl yes/no for http request
+                if (config.getBoolean("ssl")==null)
+                    {
+                        config.put("ssl", false);
+                    }
+
+                // http port to be used to request the data
+                if (config.getInteger("port")==null)
+                    {
+                        config.put("port", 80);
+                    }
+
+                // period (in seconds) between successive 'get' requests for data
+                if (config.getInteger("period")==null)
+                    {
+                        Log.log_err(MODULE_NAME+"."+MODULE_ID+": period missing in config");
+                        return false;
+                    }
+
+                if (config.getString("data_bin")==null)
+                    {
+                        Log.log_err(MODULE_NAME+"."+MODULE_ID+": data_bin missing in config");
+                        return false;
+                    }
+
+                // filesystem path to store the latest 'post_data.bin' file so 
+                // it can be monitored for inotifywait processing
+                if (config.getString("data_monitor")==null)
+                    {
+                        Log.log_err(MODULE_NAME+"."+MODULE_ID+": data_monitor missing in config");
+                        return false;
+                    }
+
+                if (config.getString("file_suffix")==null)
+                    {
+                        config.put("file_suffix",".bin");
+                    }
+
+                // create a new HttpClient for this feed, and add to http_clients list
+                http_clients.put(config.getString("feed_id"),
+                             vertx.createHttpClient( new HttpClientOptions()
+                                                       .setSsl(config.getBoolean("ssl"))
+                                                       .setTrustAll(true)
+                                                       .setDefaultPort(config.getInteger("port"))
+                                                       .setDefaultHost(config.getString("host"))
+                            ));
+
+            }
+
+        return true; // if we got to here then we can return ok, error would have exitted earlier
+    }        
 
     // Load initialization global constants defining this FeedScraper from config()
     private boolean get_config()
@@ -357,76 +459,5 @@ public class FeedScraper extends AbstractVerticle {
                 
         return true;
     }
-
-    // validate_feeds() will validate a FeedScraper feeds config, and insert default values
-    // The config is kept as a JsonArray
-    private boolean validate_feeds()
-    {
-        if (START_FEEDS.size() < 1)
-            {
-                Log.log_err(MODULE_NAME+"."+MODULE_ID+": no "+MODULE_NAME+".feeds in config");
-                return false;
-            }
-        for (int i=0; i<START_FEEDS.size(); i++)
-            {
-                JsonObject config = START_FEEDS.getJsonObject(i);
-
-                // feed_id is unique for this feed
-                if (config.getString("feed_id")==null)
-                    {
-                        Log.log_err(MODULE_NAME+"."+MODULE_ID+": feed_id missing in config");
-                        return false;
-                    }
-
-                // ssl yes/no for http request
-                if (config.getBoolean("ssl")==null)
-                    {
-                        config.put("ssl", false);
-                    }
-
-                // http port to be used to request the data
-                if (config.getInteger("port")==null)
-                    {
-                        config.put("port", 80);
-                    }
-
-                // period (in seconds) between successive 'get' requests for data
-                if (config.getInteger("period")==null)
-                    {
-                        Log.log_err(MODULE_NAME+"."+MODULE_ID+": period missing in config");
-                        return false;
-                    }
-
-                if (config.getString("data_bin")==null)
-                    {
-                        Log.log_err(MODULE_NAME+"."+MODULE_ID+": data_bin missing in config");
-                        return false;
-                    }
-
-                // filesystem path to store the latest 'post_data.bin' file so it can be monitored for inotifywait processing
-                if (config.getString("data_monitor")==null)
-                    {
-                        Log.log_err(MODULE_NAME+"."+MODULE_ID+": data_monitor missing in config");
-                        return false;
-                    }
-
-                if (config.getString("file_suffix")==null)
-                    {
-                        config.put("file_suffix","bin");
-                    }
-
-                // create a new HttpClient for this feed, and add to http_clients list
-                http_clients.put(config.getString("feed_id"),
-                             vertx.createHttpClient( new HttpClientOptions()
-                                                       .setSsl(config.getBoolean("ssl"))
-                                                       .setTrustAll(true)
-                                                       .setDefaultPort(config.getInteger("port"))
-                                                       .setDefaultHost(config.getString("host"))
-                            ));
-
-            }
-
-        return true; // if we got to here then we can return ok, error would have exitted earlier
-    }        
 
 } // end FeedScraper class
