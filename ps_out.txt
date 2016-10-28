@@ -1,0 +1,11 @@
+USER        PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+tfc_prod  23722  0.2  1.2 14183560 399868 pts/11 Sl  Oct27   3:14 java -cp tfc_2016-10-27.jar io.vertx.core.Launcher run service:uk.ac.cam.tfc_server.feedscraper.cam -cluster
+tfc_prod  23823  0.2  1.2 14166100 417008 pts/11 Sl  Oct27   2:51 java -cp tfc_2016-10-27.jar io.vertx.core.Launcher run service:uk.ac.cam.tfc_server.msgfiler.cam.to_json -cluster
+ijl20     33202  0.0  0.0  21296   948 pts/8    S+   10:52   0:00 grep --color=auto vertx
+tfc_prod  68288  0.2  0.6 14204120 224900 ?     Sl   Oct10  67:49 java -cp tfc_2016-10-10.jar io.vertx.core.Launcher run service:uk.ac.cam.tfc_server.console.A -cluster -cluster-port 10081
+tfc_prod  93254  0.2  5.3 14182592 1751576 ?    Sl   Oct17  30:49 java -cp tfc_2016-10-17.jar io.vertx.core.Launcher run service:uk.ac.cam.tfc_server.dataserver.vix -cluster -cluster-port 10084
+tfc_prod 192451  0.2  0.6 14200068 217416 ?     Sl   Oct04  86:22 java -cp tfc.jar io.vertx.core.Launcher run service:uk.ac.cam.tfc_server.feedhandler.vix -cluster -cluster-port 10085
+tfc_prod 192551  0.5  2.2 14236080 722084 ?     Sl   Oct04 178:10 java -cp tfc.jar io.vertx.core.Launcher run service:uk.ac.cam.tfc_server.rita.vix -cluster -cluster-port 10082
+tfc_prod 192688  0.2  0.7 14194064 247536 ?     Sl   Oct04  77:37 java -cp tfc.jar io.vertx.core.Launcher run service:uk.ac.cam.tfc_server.staticserver.A -cluster -cluster-port 10083
+tfc_prod 192896  0.2  0.8 14211324 262736 ?     Sl   Oct04  75:58 java -cp tfc.jar io.vertx.core.Launcher run service:uk.ac.cam.tfc_server.msgfiler.vix.zone_cambridge -cluster -cluster-port 10086
+tfc_prod 193011  0.2  1.5 14213380 515988 ?     Sl   Oct04  90:04 java -cp tfc.jar io.vertx.core.Launcher run service:uk.ac.cam.tfc_server.msgfiler.vix.feed_json -cluster -cluster-port 10087

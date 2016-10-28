@@ -3,4 +3,6 @@
 #
 # List running TFC processes
 #
-ps aux | grep '\-cluster' | grep -v grep | awk '{print $2,$(NF-3),$NF}'
+echo USER PID RSS COMMANDARGS
+ps -eo user,pid,rss,args | grep vertx | grep -v grep | awk '{print $1,$2,$3,$6,$9,$NF}'
+
