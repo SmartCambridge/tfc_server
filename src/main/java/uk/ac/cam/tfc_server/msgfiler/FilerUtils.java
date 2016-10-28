@@ -4,7 +4,7 @@ package uk.ac.cam.tfc_server.msgfiler;
 // *************************************************************************************************
 // *************************************************************************************************
 // FilerUtils.java
-// Version 0.01
+// Version 0.02
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
@@ -14,6 +14,7 @@ package uk.ac.cam.tfc_server.msgfiler;
 // Is configured via a config JsonObject which is stored as a FilerConfig
 //   "source_address": the eventbus address to listen to for messages
 //      e.g. "tfc.zone"
+//   "flatten": the name of a JsonArray sub-field that is to be iterated into multiple messages
 //   "source_filter" : a json object that specifies which subset of messages to write to disk
 //      e.g. { "field": "msg_type", "compare": "=", "value": "zone_completion" }
 //   "store_path" : a parameterized string giving the full filepath for storing the message
@@ -32,6 +33,7 @@ import java.io.*;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.buffer.Buffer;
 
@@ -50,10 +52,11 @@ public class FilerUtils {
         vertx = v;
     }
 
-    // **********************************
+    // *******************************************************************************
     // store_msg()
-    // Store the message to the filesystem
-    // **********************************
+    // Store the message to the filesystem, either as-is, or flattened by iterating a
+    // defined field (filer_config.flatten)
+    // *******************************************************************************
     public void store_msg(JsonObject msg)
     {
         // skip this message if if doesn't match the source_filter
@@ -61,8 +64,46 @@ public class FilerUtils {
             {
                 return;
             }
+
+        if (filer_config.flatten==null)
+        {
+            store_immediate(msg);
+        }
+        else
+        {
+            JsonArray flatten_array = msg.getJsonArray(filer_config.flatten);
+            //System.out.println("MsgFiler."+filer_config.module_id+": flattening " +
+            //               filer_config.flatten + " " +
+            //               filer_config.store_mode + " " + 
+            //               filer_config.store_path + " " + filer_config.store_name );
+
+            // create a new JsonObject which is the original msg WITHOUT the field we'll flatten
+            JsonObject flat_msg = msg.copy();
+            flat_msg.remove(filer_config.flatten);
+
+            // Iterate through the JsonObjects in the JsonArray field to flatten
+            // and add those fields to the flat msg, creating immediate_msg to save
+            for (int i=0; i<flatten_array.size(); i++)
+            {
+                // start with flat_msg, i.e. original excluding flatten_array
+                JsonObject immediate_msg = flat_msg.copy();
+                // merge in the fields from current element in flatten-array
+                immediate_msg.mergeIn(flatten_array.getJsonObject(i));
+
+                //System.out.println("will store "+immediate_msg.toString());
+                store_immediate(immediate_msg);
+            }
+            //System.out.println("MsgFiler."+filer_config.module_id+": leaving store_msg\n");
+        }
+    }
+
+    // Store the message as-is to the file system
+    // This may be a flattened sub-record of the original message
+    private void store_immediate(JsonObject msg)
+    {
         //System.out.println("MsgFiler."+filer_config.module_id+": store_msg " +
-        //                   filer_config.store_mode + " " + filer_config.store_path + " " + filer_config.store_name );
+        //                   filer_config.store_mode + " " + 
+        //                   filer_config.store_path + " " + filer_config.store_name );
         //System.out.println(msg);
 
         // map the message values into the {{..}} placeholders in path and name
@@ -71,7 +112,8 @@ public class FilerUtils {
         filepath = build_string(filer_config.store_path, msg);
         filename = build_string(filer_config.store_name, msg);
 
-        //System.out.println("MsgFiler."+filer_config.module_id+": "+filer_config.store_mode+ " " +filepath+"/"+filename);
+        //System.out.println("MsgFiler."+filer_config.module_id+": "+
+        //                   filer_config.store_mode+ " " +filepath+"/"+filename);
 
         String msg_str = msg.toString();
         
@@ -96,7 +138,8 @@ public class FilerUtils {
                                 }
                             else
                                 {
-                                    Log.log_err("MsgFiler."+filer_config.module_id+": error creating path "+filepath);
+                                    Log.log_err("MsgFiler."+filer_config.module_id+
+                                                ": error creating path "+filepath);
                                 }
                         });
                 }

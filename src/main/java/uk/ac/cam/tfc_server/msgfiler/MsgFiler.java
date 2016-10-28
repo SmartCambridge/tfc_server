@@ -58,8 +58,8 @@ public class MsgFiler extends AbstractVerticle {
     private ArrayList<FilerConfig> START_FILERS; // config msgfilers.filers parameters
     
     private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
-    private final int SYSTEM_STATUS_AMBER_SECONDS = 15;
-    private final int SYSTEM_STATUS_RED_SECONDS = 25;
+    private final int SYSTEM_STATUS_AMBER_SECONDS = 25;
+    private final int SYSTEM_STATUS_RED_SECONDS = 35;
 
     private EventBus eb = null;
     
@@ -84,19 +84,27 @@ public class MsgFiler extends AbstractVerticle {
             start_filer(START_FILERS.get(i));
         }
 
+    // send system status message from this module (i.e. to itself) immediately on startup, then periodically
+    send_status();
+      
     // send periodic "system_status" messages
-    vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> {
-      eb.publish(EB_SYSTEM_STATUS,
-                 "{ \"module_name\": \""+MODULE_NAME+"\"," +
-                   "\"module_id\": \""+MODULE_ID+"\"," +
-                   "\"status\": \"UP\"," +
-                   "\"status_amber_seconds\": "+String.valueOf( SYSTEM_STATUS_AMBER_SECONDS ) + "," +
-                   "\"status_red_seconds\": "+String.valueOf( SYSTEM_STATUS_RED_SECONDS ) +
-                 "}" );
-    });
+    vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> { send_status();  });
 
   } // end start()
 
+    // send UP status to the EventBus
+    private void send_status()
+    {
+        eb.publish(EB_SYSTEM_STATUS,
+                 "{ \"module_name\": \""+MODULE_NAME+"\"," +
+                   "\"module_id\": \""+MODULE_ID+"\"," +
+                   "\"status\": \"UP\"," +
+                   "\"status_msg\": \"UP\"," +
+                   "\"status_amber_seconds\": "+String.valueOf( SYSTEM_STATUS_AMBER_SECONDS ) + "," +
+                   "\"status_red_seconds\": "+String.valueOf( SYSTEM_STATUS_RED_SECONDS ) +
+                 "}" );
+    }
+    
     // ************************************************************
     // start_filer()
     // start a Filer by registering a consumer to the given address

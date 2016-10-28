@@ -1,0 +1,33 @@
+                                                                                
+{
+    "main":    "uk.ac.cam.tfc_server.msgfiler.MsgFiler",
+    "options":
+        { "config":
+          {
+
+            "module.name":           "msgfiler",
+            "module.id":             "test_to_json",
+
+            "eb.system_status":      "tfc.system_status",
+            "eb.console_out":        "tfc.console_out",
+            "eb.manager":            "tfc.manager",
+
+            "msgfiler.address": "tfc.msgfiler.test_to_json",
+
+            "msgfiler.filers":
+            [
+                { "source_address": "tfc.feedscraper.test",
+                  "source_filter": { "field": "msg_type",
+                                     "compare": "=",
+                                     "value": "feed_car_parks"
+                                   },
+                  "flatten":    "request_data",
+                  "store_path": "/media/tfc/test/{{feed_id}}/data_park/{{ts|yyyy}}/{{ts|MM}}/{{ts|dd}}",
+                  "store_name": "{{parking_id}}_{{ts|yyyy}}-{{ts|MM}}-{{ts|dd}}.txt",
+                  "store_mode": "append"
+                }
+            ]
+              
+          }
+        }
+}

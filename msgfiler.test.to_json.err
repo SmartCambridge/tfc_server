@@ -1,0 +1,85 @@
+Oct 28, 2016 3:08:05 PM io.vertx.core.impl.launcher.commands.RunCommand
+INFO: Starting clustering...
+Oct 28, 2016 3:08:05 PM io.vertx.core.impl.launcher.commands.RunCommand
+INFO: No cluster-host specified so using address 128.232.98.202
+Oct 28, 2016 3:08:05 PM com.hazelcast.instance.DefaultAddressPicker
+INFO: [LOCAL] [dev] [3.6.3] Interfaces is disabled, trying to pick one address from TCP-IP config addresses: [127.0.0.1]
+Oct 28, 2016 3:08:05 PM com.hazelcast.instance.DefaultAddressPicker
+INFO: [LOCAL] [dev] [3.6.3] Picked Address[127.0.0.1]:5711, using socket ServerSocket[addr=/0:0:0:0:0:0:0:0,localport=5711], bind any local is true
+Oct 28, 2016 3:08:05 PM com.hazelcast.system
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Hazelcast 3.6.3 (20160527 - 08b28c3) starting at Address[127.0.0.1]:5711
+Oct 28, 2016 3:08:05 PM com.hazelcast.system
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Copyright (c) 2008-2016, Hazelcast, Inc. All Rights Reserved.
+Oct 28, 2016 3:08:05 PM com.hazelcast.system
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Configured Hazelcast Serialization version : 1
+Oct 28, 2016 3:08:06 PM com.hazelcast.spi.OperationService
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Backpressure is disabled
+Oct 28, 2016 3:08:06 PM com.hazelcast.spi.impl.operationexecutor.classic.ClassicOperationExecutor
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Starting with 4 generic operation threads and 8 partition operation threads.
+Oct 28, 2016 3:08:07 PM com.hazelcast.instance.Node
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Creating TcpIpJoiner
+Oct 28, 2016 3:08:07 PM com.hazelcast.core.LifecycleService
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Address[127.0.0.1]:5711 is STARTING
+Oct 28, 2016 3:08:07 PM com.hazelcast.nio.tcp.nonblocking.NonBlockingIOThreadingModel
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] TcpIpConnectionManager configured with Non Blocking IO-threading model: 3 input threads and 3 output threads
+Oct 28, 2016 3:08:07 PM com.hazelcast.nio.tcp.InitConnectionTask
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Connecting to /127.0.0.1:5701, timeout: 0, bind-any: true
+Oct 28, 2016 3:08:07 PM com.hazelcast.nio.tcp.InitConnectionTask
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Connecting to /127.0.0.1:5702, timeout: 0, bind-any: true
+Oct 28, 2016 3:08:07 PM com.hazelcast.nio.tcp.InitConnectionTask
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Connecting to /127.0.0.1:5703, timeout: 0, bind-any: true
+Oct 28, 2016 3:08:07 PM com.hazelcast.nio.tcp.TcpIpConnectionManager
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Established socket connection between /127.0.0.1:60108 and /127.0.0.1:5702
+Oct 28, 2016 3:08:07 PM com.hazelcast.nio.tcp.TcpIpConnectionManager
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Established socket connection between /127.0.0.1:56438 and /127.0.0.1:5703
+Oct 28, 2016 3:08:07 PM com.hazelcast.nio.tcp.TcpIpConnectionManager
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Established socket connection between /127.0.0.1:51632 and /127.0.0.1:5701
+Oct 28, 2016 3:08:08 PM com.hazelcast.nio.tcp.SocketAcceptorThread
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Accepting socket connection from /127.0.0.1:58090
+Oct 28, 2016 3:08:08 PM com.hazelcast.nio.tcp.SocketAcceptorThread
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Accepting socket connection from /127.0.0.1:37032
+Oct 28, 2016 3:08:08 PM com.hazelcast.nio.tcp.TcpIpConnectionManager
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Established socket connection between /127.0.0.1:5711 and /127.0.0.1:58090
+Oct 28, 2016 3:08:08 PM com.hazelcast.partition.InternalPartitionService
+WARNING: [127.0.0.1]:5711 [dev] [3.6.3] Ignoring received partition table, startup is not completed yet. Sender: Address[127.0.0.1]:5702
+Oct 28, 2016 3:08:08 PM com.hazelcast.nio.tcp.TcpIpConnectionManager
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Established socket connection between /127.0.0.1:5711 and /127.0.0.1:37032
+Oct 28, 2016 3:08:08 PM com.hazelcast.nio.tcp.SocketAcceptorThread
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Accepting socket connection from /127.0.0.1:42778
+Oct 28, 2016 3:08:08 PM com.hazelcast.nio.tcp.SocketAcceptorThread
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Accepting socket connection from /127.0.0.1:33780
+Oct 28, 2016 3:08:08 PM com.hazelcast.nio.tcp.TcpIpConnectionManager
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Established socket connection between /127.0.0.1:5711 and /127.0.0.1:42778
+Oct 28, 2016 3:08:08 PM com.hazelcast.nio.tcp.TcpIpConnectionManager
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Established socket connection between /127.0.0.1:5711 and /127.0.0.1:33780
+Oct 28, 2016 3:08:08 PM com.hazelcast.nio.tcp.SocketAcceptorThread
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Accepting socket connection from /127.0.0.1:49998
+Oct 28, 2016 3:08:08 PM com.hazelcast.nio.tcp.SocketAcceptorThread
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Accepting socket connection from /127.0.0.1:58183
+Oct 28, 2016 3:08:08 PM com.hazelcast.nio.tcp.TcpIpConnectionManager
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Established socket connection between /127.0.0.1:5711 and /127.0.0.1:49998
+Oct 28, 2016 3:08:08 PM com.hazelcast.nio.tcp.TcpIpConnectionManager
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Established socket connection between /127.0.0.1:5711 and /127.0.0.1:58183
+Oct 28, 2016 3:08:08 PM com.hazelcast.nio.tcp.SocketAcceptorThread
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Accepting socket connection from /127.0.0.1:51534
+Oct 28, 2016 3:08:08 PM com.hazelcast.nio.tcp.TcpIpConnectionManager
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Established socket connection between /127.0.0.1:5711 and /127.0.0.1:51534
+Oct 28, 2016 3:08:08 PM com.hazelcast.cluster.ClusterService
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] 
+
+Members [11] {
+	Member [127.0.0.1]:5702
+	Member [127.0.0.1]:5703
+	Member [127.0.0.1]:5704
+	Member [127.0.0.1]:5706
+	Member [127.0.0.1]:5707
+	Member [127.0.0.1]:5701
+	Member [127.0.0.1]:5705
+	Member [127.0.0.1]:5709
+	Member [127.0.0.1]:5708
+	Member [127.0.0.1]:5710
+	Member [127.0.0.1]:5711 this
+}
+
+Oct 28, 2016 3:08:10 PM com.hazelcast.core.LifecycleService
+INFO: [127.0.0.1]:5711 [dev] [3.6.3] Address[127.0.0.1]:5711 is STARTED

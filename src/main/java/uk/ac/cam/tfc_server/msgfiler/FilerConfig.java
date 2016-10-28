@@ -4,7 +4,7 @@ package uk.ac.cam.tfc_server.msgfiler;
 // *************************************************************************************************
 // *************************************************************************************************
 // FilerConfig.java
-// Version 0.01
+// Version 0.02
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
@@ -25,6 +25,7 @@ public class FilerConfig {
     
     public String source_address;     // eventbus address to listen for messages
     public FilerFilter source_filter; // filter criteria defining which message to store
+    public String flatten;            // field name that contains a JsonArray to be flattened
     public String store_path;         // directory path to store message
     public String store_name;         // filename to store message
     public String store_mode;         // append | write
@@ -45,13 +46,14 @@ public class FilerConfig {
             {
                 source_filter = new FilerFilter(config.getJsonObject("source_filter"));
             }
+        flatten = config.getString("flatten");
         store_path = config.getString("store_path");
         store_name = config.getString("store_name");
         store_mode = config.getString("store_mode");
 
         System.out.println(module_name+"."+module_id+": FilerConfig loaded:");
         System.out.println(module_name+"."+module_id+": "+source_address+","+source_filter.toString()+","+
-                           store_path+","+store_name+","+store_mode);
+                           flatten+","+store_path+","+store_name+","+store_mode);
         
     }
 } // end class FilterConfig

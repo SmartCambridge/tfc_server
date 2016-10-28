@@ -233,7 +233,8 @@ public class FeedScraper extends AbstractVerticle {
     msg.put("feed_id", config.getString("feed_id"));
     msg.put("filename", filename);
     msg.put("filepath", filepath);
-
+    msg.put("ts", Integer.parseInt(utc_ts));
+            
     JsonArray request_data = parser.parse_array(buf.toString());
 
     msg.put("request_data", request_data);

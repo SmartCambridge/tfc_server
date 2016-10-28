@@ -33,6 +33,16 @@
                   "store_path": "/media/tfc/cam/{{feed_id}}/data_monitor_json",
                   "store_name": "post_data.json",
                   "store_mode": "write"
+                },
+                { "source_address": "tfc.feedscraper.cam",
+                  "source_filter": { "field": "msg_type",
+                                     "compare": "=",
+                                     "value": "feed_car_parks"
+                                   },
+                  "flatten":    "request_data",
+                  "store_path": "/media/tfc/cam/{{feed_id}}/data_park/{{ts|yyyy}}/{{ts|MM}}/{{ts|dd}}",
+                  "store_name": "{{parking_id}}_{{ts|yyyy}}-{{ts|MM}}-{{ts|dd}}.txt",
+                  "store_mode": "append"
                 }
             ]
               
