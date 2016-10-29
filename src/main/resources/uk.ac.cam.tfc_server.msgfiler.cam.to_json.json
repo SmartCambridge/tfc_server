@@ -16,7 +16,7 @@
 
             "msgfiler.filers":
             [
-                { "source_address": "tfc.feedscraper.cam",
+                { "source_address": "tfc.feedmaker.cam",
                   "source_filter": { "field": "msg_type",
                                      "compare": "=",
                                      "value": "feed_car_parks"
@@ -25,7 +25,7 @@
                   "store_name": "{{filename}}.json",
                   "store_mode": "write"
                 },
-                { "source_address": "tfc.feedscraper.cam",
+                { "source_address": "tfc.feedmaker.cam",
                   "source_filter": { "field": "msg_type",
                                      "compare": "=",
                                      "value": "feed_car_parks"
@@ -34,7 +34,7 @@
                   "store_name": "post_data.json",
                   "store_mode": "write"
                 },
-                { "source_address": "tfc.feedscraper.cam",
+                { "source_address": "tfc.feedmaker.cam",
                   "source_filter": { "field": "msg_type",
                                      "compare": "=",
                                      "value": "feed_car_parks"

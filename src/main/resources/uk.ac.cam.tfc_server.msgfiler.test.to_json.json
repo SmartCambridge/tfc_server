@@ -16,7 +16,7 @@
 
             "msgfiler.filers":
             [
-                { "source_address": "tfc.feedscraper.test",
+                { "source_address": "tfc.feedmaker.test",
                   "source_filter": { "field": "msg_type",
                                      "compare": "=",
                                      "value": "feed_car_parks"

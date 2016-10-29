@@ -1,16 +1,16 @@
-package uk.ac.cam.tfc_server.feedscraper;
+package uk.ac.cam.tfc_server.feedmaker;
 
 // *************************************************************************************************
 // *************************************************************************************************
 // *************************************************************************************************
-// FeedScraper.java
+// FeedMaker.java
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
 //
 // Polls external websites and creates new feeds based on that data.
 //
-// FeedScraper will WRITE the raw binary post data into:
+// FeedMaker will WRITE the raw binary post data into:
 //   TFC_DATA_MONITOR/<filename>
 //   TFC_DATA_BIN/YYYY/MM/DD/<filename>
 //
@@ -19,7 +19,7 @@ package uk.ac.cam.tfc_server.feedscraper;
 //
 // Config values are read from provided vertx config() json file, e.g. see README.md
 //
-// FeedScraper will publish the feed data as a JSON string on eventbus.
+// FeedMaker will publish the feed data as a JSON string on eventbus.
 //
 // *************************************************************************************************
 // *************************************************************************************************
@@ -47,9 +47,9 @@ import java.util.ArrayList;
 import uk.ac.cam.tfc_server.util.Log;
 import uk.ac.cam.tfc_server.util.Constants;
 
-public class FeedScraper extends AbstractVerticle {
+public class FeedMaker extends AbstractVerticle {
 
-    private final String VERSION = "0.32";
+    private final String VERSION = "0.33";
     
     // from config()
     private String MODULE_NAME;       // config module.name - normally "feedscraper"
@@ -57,7 +57,7 @@ public class FeedScraper extends AbstractVerticle {
     private String EB_SYSTEM_STATUS;  // config eb.system_status
     private String EB_MANAGER;        // config eb.manager
     
-    // scraper config:
+    // maker configs:
     private JsonArray START_FEEDS; // config module_name.feeds parameters
     
     public int LOG_LEVEL; // optional in config(), defaults to Constants.LOG_INFO
@@ -79,10 +79,10 @@ public class FeedScraper extends AbstractVerticle {
     // create holder for HttpClients
     http_clients = new HashMap<String,HttpClient>();
 
-    // load FeedScraper initialization values from config()
+    // load FeedMaker initialization values from config()
     if (!get_config())
           {
-              Log.log_err("FeedScraper: "+ MODULE_ID + " failed to load initial config()");
+              Log.log_err("FeedMaker: "+ MODULE_ID + " failed to load initial config()");
               vertx.close();
               return;
           }
@@ -99,16 +99,16 @@ public class FeedScraper extends AbstractVerticle {
     // send periodic "system_status" messages
     vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> { send_status();  });
 
-    // iterate through all the feedscrapers to be started
+    // iterate through all the feedmakers to be started
     for (int i=0; i<START_FEEDS.size(); i++)
         {
-          start_scraper(START_FEEDS.getJsonObject(i));
+          start_maker(START_FEEDS.getJsonObject(i));
         }
 
   } // end start()
 
-    // start a scraper with a given config
-    private void start_scraper(JsonObject config)
+    // start a maker with a given config
+    private void start_maker(JsonObject config)
     {
           ParseCamParkingLocal parser = new ParseCamParkingLocal(config.getString("area_id"));
 
@@ -120,16 +120,16 @@ public class FeedScraper extends AbstractVerticle {
             try {
                 fs.mkdirsBlocking(monitor_path);
                 logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
-                                        ": start_scraper created monitor path "+monitor_path);
+                                        ": start_maker created monitor path "+monitor_path);
             } catch (Exception e) {
                 logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
-                                        ": start_scraper FAIL: error creating monitor path "+monitor_path);
+                                        ": start_maker FAIL: error creating monitor path "+monitor_path);
                 return;
             }
           }
 
           logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
-                     ": starting FeedScraper for "+config.getString("host")+config.getString("uri"));
+                     ": starting FeedMaker for "+config.getString("host")+config.getString("uri"));
 
           // call immediately, then every 'period' seconds
           get_feed(config, parser);
@@ -243,12 +243,12 @@ public class FeedScraper extends AbstractVerticle {
     logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": prepared EventBus msg:");
     logger.log(Constants.LOG_DEBUG, msg.toString());
 
-    String feedscraper_address = config.getString("address");
+    String feedmaker_address = config.getString("address");
 
-    eb.publish(feedscraper_address, msg);
+    eb.publish(feedmaker_address, msg);
     
     logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-               ": published latest GET data to "+feedscraper_address);
+               ": published latest GET data to "+feedmaker_address);
     
   } // end process_feed()
 
@@ -303,7 +303,7 @@ public class FeedScraper extends AbstractVerticle {
                             fs.delete(f, delete_result -> {
                                     if (!delete_result.succeeded())
                                         {
-                                          Log.log_err("FeedScraper."+MODULE_ID+
+                                          logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
                                                       ": error tfc_data_monitor delete: "+f);
                                         }
                                 });
@@ -312,10 +312,10 @@ public class FeedScraper extends AbstractVerticle {
                 }
             else
                 {
-                    Log.log_err(MODULE_NAME+"."+MODULE_ID+
+                    logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
                                 ": error reading data_monitor path: "+
                                 monitor_path);
-                    Log.log_err(monitor_result.cause().getMessage());
+                    logger.log(Constants.LOG_WARN, monitor_result.cause().getMessage());
                 }
         });
     }
@@ -334,7 +334,7 @@ public class FeedScraper extends AbstractVerticle {
     });
   } // end write_file
 
-    // validate_feeds() will validate a FeedScraper feeds config, and insert default values
+    // validate_feeds() will validate a FeedMaker feeds config, and insert default values
     // The config is kept as a JsonArray
     private boolean validate_feeds()
     {
@@ -406,7 +406,7 @@ public class FeedScraper extends AbstractVerticle {
         return true; // if we got to here then we can return ok, error would have exitted earlier
     }        
 
-    // Load initialization global constants defining this FeedScraper from config()
+    // Load initialization global constants defining this FeedMaker from config()
     private boolean get_config()
     {
         // config() values needed by all TFC modules are:
@@ -418,7 +418,7 @@ public class FeedScraper extends AbstractVerticle {
         MODULE_NAME = config().getString("module.name");
         if (MODULE_NAME == null)
             {
-                Log.log_err("FeedScraper: config() not set");
+                Log.log_err("FeedMaker: config() not set");
                 return false;
             }
 
@@ -461,4 +461,4 @@ public class FeedScraper extends AbstractVerticle {
         return true;
     }
 
-} // end FeedScraper class
+} // end FeedMaker class

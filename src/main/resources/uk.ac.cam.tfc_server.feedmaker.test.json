@@ -1,32 +1,33 @@
                                                                                 
 {
-    "main":    "uk.ac.cam.tfc_server.feedscraper.FeedScraper",
+    "main":    "uk.ac.cam.tfc_server.feedmaker.FeedMaker",
     "options":
         { "config":
           {
 
-            "module.name":           "feedscraper",
-            "module.id":             "cam",
+            "module.name":           "feedmaker",
+            "module.id":             "test",
 
             "eb.system_status":      "tfc.system_status",
             "eb.console_out":        "tfc.console_out",
             "eb.manager":            "tfc.manager",
               
-            "feedscraper.log_level": 2,
+            "feedmaker.log_level": 1,
 
-            "feedscraper.feeds":     [
-                                       { "period" :    300,
-                                         "area_id" :   "cam",
+            "feedmaker.feeds":     [
+                                       { 
                                          "feed_id" :   "cam_park_local",
                                          "msg_type" :  "feed_car_parks",
+                                         "period" :    10,
+                                         "area_id" :   "cam",
                                          "host":       "www.cambridge.gov.uk",              
                                          "uri" :       "/jdi_parking_ajax/complete",
                                          "ssl":        true,
                                          "port":       443,
-                                         "address" :   "tfc.feedscraper.cam",
+                                         "address" :   "tfc.feedmaker.test",
                                          "file_suffix": ".html",
-                                         "data_bin" :  "/media/tfc/cam/cam_park_local/data_bin",
-                                         "data_monitor" : "/media/tfc/cam/cam_park_local/data_monitor"
+                                         "data_bin" :  "/media/tfc/test/cam_park_local/data_bin",
+                                         "data_monitor" : "/media/tfc/test/cam_park_local/data_monitor"
                                         }
                                      ]
           }

@@ -1,4 +1,4 @@
-package uk.ac.cam.tfc_server.feedscraper;
+package uk.ac.cam.tfc_server.feedmaker;
 
 //**********************************************************************
 //**********************************************************************
@@ -23,7 +23,7 @@ package uk.ac.cam.tfc_server.feedscraper;
 // Returns:
 /*
 {
-   "module_name": "feedscraper",                // as given to the FeedScraper in config, typically "feedscraper"
+   "module_name": "feedmaker",                  // as given to the FeedMaker in config, typically "feedmaker"
    "module_id":   "cam_parking_local",          // from config, but platform unique value within module_name
    "msg_type":    "car_parking",                // Constants.FEED_CAR_PARKING
    "feed_id":     "cam_parking_local",          // identifies http source, matches config
