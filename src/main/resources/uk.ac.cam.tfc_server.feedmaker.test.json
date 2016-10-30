@@ -12,22 +12,28 @@
             "eb.console_out":        "tfc.console_out",
             "eb.manager":            "tfc.manager",
               
-            "feedmaker.log_level": 1,
+            "feedmaker.log_level":   1,
+
+            "feedmaker.http.port" :  8099,
 
             "feedmaker.feeds":     [
                                        { 
                                          "feed_id" :   "cam_park_local",
-                                         "msg_type" :  "feed_car_parks",
-                                         "period" :    10,
                                          "area_id" :   "cam",
-                                         "host":       "www.cambridge.gov.uk",              
-                                         "uri" :       "/jdi_parking_ajax/complete",
-                                         "ssl":        true,
-                                         "port":       443,
-                                         "address" :   "tfc.feedmaker.test",
-                                         "file_suffix": ".html",
-                                         "data_bin" :  "/media/tfc/test/cam_park_local/data_bin",
-                                         "data_monitor" : "/media/tfc/test/cam_park_local/data_monitor"
+
+                                         "http.host":  "www.cambridge.gov.uk",              
+                                         "http.uri" :  "/jdi_parking_ajax/complete",
+                                         "http.ssl":   true,
+                                         "http.port":  443,
+                                         "http.token": "cam-auth-test",
+
+                                         "file_suffix":   ".html",
+                                         "data_bin" :     "/media/tfc/test/cam_park_local/data_bin",
+                                         "data_monitor" : "/media/tfc/test/cam_park_local/data_monitor",
+
+                                         "period" :    1000,
+                                         "msg_type" :  "feed_car_parks",
+                                         "address" :   "tfc.feedmaker.test"
                                         }
                                      ]
           }

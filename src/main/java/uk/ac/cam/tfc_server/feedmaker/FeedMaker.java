@@ -8,7 +8,9 @@ package uk.ac.cam.tfc_server.feedmaker;
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
 //
-// Polls external websites and creates new feeds based on that data.
+// Polls external websites with http GET and creates new feeds based on that data.
+// Can also receive same data via POST on 'module_name/module_id/feed_id'
+//
 //
 // FeedMaker will WRITE the raw binary post data into:
 //   TFC_DATA_MONITOR/<filename>
@@ -29,9 +31,20 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.Handler;
+import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.http.HttpMethod;
+
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.Route;
+import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BodyHandler;
+
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientResponse;
+
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonObject;
@@ -62,6 +75,8 @@ public class FeedMaker extends AbstractVerticle {
     
     public int LOG_LEVEL; // optional in config(), defaults to Constants.LOG_INFO
 
+    private int HTTP_PORT;            // config feedmaker.http.port
+
     // local constants
     private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
     private final int SYSTEM_STATUS_AMBER_SECONDS = 25;
@@ -91,24 +106,55 @@ public class FeedMaker extends AbstractVerticle {
     
     logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": Version "+VERSION+" started");
 
-    
-
     // create link to EventBus
     eb = vertx.eventBus();
 
     // send periodic "system_status" messages
     vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> { send_status();  });
 
+    // create webserver
+    HttpServer http_server = vertx.createHttpServer();
+
+    // create request router for webserver
+    Router router = Router.router(vertx);
+
+    String BASE_URI = MODULE_NAME+"/"+MODULE_ID;
+
+    add_get_handler(router, "/"+BASE_URI);
+    
+
+
     // iterate through all the feedmakers to be started
+    // This will start the 'setPeriodic' GET pollers and also add the required
+    // BASE_URI/FEED_ID http POST handlers to the router
     for (int i=0; i<START_FEEDS.size(); i++)
         {
-          start_maker(START_FEEDS.getJsonObject(i));
+          start_maker(START_FEEDS.getJsonObject(i), router, BASE_URI);
         }
 
+    // *********************************************************************
+    // connect router to http_server, including the feed POST handlers added
+    http_server.requestHandler(router::accept).listen(HTTP_PORT);
+    
   } // end start()
 
-    // start a maker with a given config
-    private void start_maker(JsonObject config)
+    // ************************************
+    // create handler for GET from uri
+    // ************************************
+    private void add_get_handler(Router router, String uri)
+    {
+        router.route(HttpMethod.GET,uri).handler( ctx -> {
+
+                HttpServerResponse response = ctx.response();
+                response.putHeader("content-type", "text/html");
+
+                response.end("<h1>TFC Rita FeedMaker at "+uri+"</h1><p>Version "+VERSION+"</p>");
+            });
+    }
+
+    // *************************************
+    // start a feed maker with a given config
+    private void start_maker(JsonObject config, Router router, String BASE_URI)
     {
           ParseCamParkingLocal parser = new ParseCamParkingLocal(config.getString("area_id"));
 
@@ -127,9 +173,17 @@ public class FeedMaker extends AbstractVerticle {
                 return;
             }
           }
+          // monitor_path now exists
 
           logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
-                     ": starting FeedMaker for "+config.getString("host")+config.getString("uri"));
+                     ": starting FeedMaker for "+
+                     config.getString("http.host")+
+                     config.getString("http.uri"));
+
+          // create a HTTP POST 'listener' for this feed at BASE_URI/FEED_ID
+          add_feed_handler(router, BASE_URI, config, parser);
+
+          // Now start polling the defined web address with GET requests
 
           // call immediately, then every 'period' seconds
           get_feed(config, parser);
@@ -140,6 +194,7 @@ public class FeedMaker extends AbstractVerticle {
                            });
     }
 
+    // ******************************
     // send UP status to the EventBus
     private void send_status()
     {
@@ -153,26 +208,73 @@ public class FeedMaker extends AbstractVerticle {
                  "}" );
     }
 
+    // ************************************************
+    // ************************************************
+    // Here is where the essential feed POST is handled
+    // create handler for POST from BASE_URI/FEED_ID
+    // ************************************************
+    // ************************************************
+    private void add_feed_handler(Router router, 
+                                  String BASE_URI,
+                                  JsonObject config,
+                                  ParseCamParkingLocal parser)
+    {
+        final String HTTP_TOKEN = config.getString("http.token");
+        final String FEED_ID = config.getString("feed_id");
+
+        router.route(HttpMethod.POST,"/"+BASE_URI+"/"+FEED_ID).handler( ctx -> {
+                ctx.request().bodyHandler( buffer -> {
+                        try {
+                            // read the head value "X-Auth-Token" from the POST
+                            String post_token = ctx.request().getHeader("X-Auth-Token");
+                            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
+                                       ": X-Auth-Token="+post_token);
+                            // if the token matches the config(), or config() http.token is null
+                            // then parse this assumed gtfs-realtime POST data
+                            if (HTTP_TOKEN==null || HTTP_TOKEN.equals(post_token))
+                                {
+                                    process_feed(buffer, config, parser);
+                                }
+                        } catch (Exception e) {
+                            logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
+                                       ": proceed_feed error");
+                            logger.log(Constants.LOG_WARN, e.getMessage());
+                        }
+
+                        ctx.request().response().end("");
+                    });
+
+            });
+    }
+
+    // ************************************************************************************
+    // get_feed()
+    //
+    // This is the routine called periodically to GET the feed from the defined web address.
+    // it will pass the data to 'parser' to convert to a JsonObject to send on the EventBus
+    //
     private void get_feed(JsonObject config, ParseCamParkingLocal parser)
     {
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                               ": get_feed "+config.getString("host")+config.getString("uri"));
+                               ": get_feed "+config.getString("http.host")+config.getString("http.uri"));
+
+        final String FEED_ID = config.getString("feed_id");
 
         // Do a GET to the config feed hostname/uri
-        http_clients.get(config.getString("feed_id"))
-           .getNow(config.getString("uri"), new Handler<HttpClientResponse>() {
+        http_clients.get(FEED_ID)
+           .getNow(config.getString("http.uri"), new Handler<HttpClientResponse>() {
 
             // this handler called when GET response is received
             @Override
             public void handle(HttpClientResponse client_response) {
-                // specify this 'bodyHandler' to handle the entire body of the response (as opposed to parts
-                // as they arrive).
+                // specify this 'bodyHandler' to handle the entire body of the response (as
+                // opposed to parts as they arrive).
                 client_response.bodyHandler(new Handler<Buffer>() {
                     // and here we go... handle() will be called with the GET response buffer
                     @Override
                     public void handle(Buffer buffer) {
                         // print out the received GET data for LOG_LEVEL=1 (debug)
-                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
                                    ": GET reponse length=" + buffer.length() );
 
 
@@ -181,22 +283,25 @@ public class FeedMaker extends AbstractVerticle {
                           process_feed(buffer, config, parser);
                         }
                         catch (Exception e) {
-                            logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+": proceed_feed error");
+                            logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
+                                       ": proceed_feed error");
                             logger.log(Constants.LOG_WARN, e.getMessage());
                         }
                     }
                 });
             }
         });
-    }
-    
+    } // end get_feed()
+
+    // ***********************************************    
     // get current local time as "YYYY-MM-DD-hh-mm-ss"
-  private String local_datetime_string()
+    private String local_datetime_string()
     {
         LocalDateTime local_time = LocalDateTime.now();
         return local_time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss"));
     }
 
+  // *****************************************************************
   // process the received raw data
   private void process_feed(Buffer buf, JsonObject config, ParseCamParkingLocal parser) throws Exception 
   {
@@ -252,6 +357,12 @@ public class FeedMaker extends AbstractVerticle {
     
   } // end process_feed()
 
+    // ******************************************************************
+    // write_bin_file()
+    //
+    // Write the 'buf' (i.e. the binary data as received) into a file at
+    // 'bin_path/filename/file_suffix'
+    //
     private void write_bin_file(Buffer buf, String bin_path, String filename, String file_suffix)
     {
         FileSystem fs = vertx.fileSystem();
@@ -286,6 +397,13 @@ public class FeedMaker extends AbstractVerticle {
         });
     }        
 
+    // ************************************************************************************
+    // write_monitor_file()
+    //
+    // Write 'buf' to file in the filesystem, deleting previous files in the same directory
+    // This is convenient for a separate 'inotifywait' process to listen for file-close-write
+    // events on that directory and trigger separate processes, e.g. to POST the file onward.
+    //
     private void write_monitor_file(Buffer buf, String monitor_path, String filename, String file_suffix)
     {
         FileSystem fs = vertx.fileSystem();
@@ -320,6 +438,8 @@ public class FeedMaker extends AbstractVerticle {
         });
     }
 
+  // ***************************************************
+  // Write the 'buf' as a file 'filepath' (non-blocking)
   private void write_file(FileSystem fs, Buffer buf, String file_path)
   {
     fs.writeFile(file_path, 
@@ -354,28 +474,40 @@ public class FeedMaker extends AbstractVerticle {
                         return false;
                     }
 
-                // ssl yes/no for http request
-                if (config.getBoolean("ssl")==null)
+                String FEED_ID = config.getString("feed_id");
+
+                // host name from which to GET data
+                if (config.getString("http.host")==null)
                     {
-                        config.put("ssl", false);
+                        Log.log_err(MODULE_NAME+"."+MODULE_ID+".feeds."+FEED_ID+
+                                    ": http.host missing in config");
+                        return false;
+                    }
+
+                // ssl yes/no for http request
+                if (config.getBoolean("http.ssl")==null)
+                    {
+                        config.put("http.ssl", false);
                     }
 
                 // http port to be used to request the data
-                if (config.getInteger("port")==null)
+                if (config.getInteger("http.port")==null)
                     {
-                        config.put("port", 80);
+                        config.put("http.port", 80);
                     }
 
                 // period (in seconds) between successive 'get' requests for data
-                if (config.getInteger("period")==null)
+                if (config.getInteger("period",0)==0)
                     {
-                        Log.log_err(MODULE_NAME+"."+MODULE_ID+": period missing in config");
+                        Log.log_err(MODULE_NAME+"."+MODULE_ID+".feeds."+FEED_ID+
+                                    ": period missing in config");
                         return false;
                     }
 
                 if (config.getString("data_bin")==null)
                     {
-                        Log.log_err(MODULE_NAME+"."+MODULE_ID+": data_bin missing in config");
+                        Log.log_err(MODULE_NAME+"."+MODULE_ID+".feeds."+FEED_ID+
+                                    ": data_bin missing in config");
                         return false;
                     }
 
@@ -383,7 +515,8 @@ public class FeedMaker extends AbstractVerticle {
                 // it can be monitored for inotifywait processing
                 if (config.getString("data_monitor")==null)
                     {
-                        Log.log_err(MODULE_NAME+"."+MODULE_ID+": data_monitor missing in config");
+                        Log.log_err(MODULE_NAME+"."+MODULE_ID+".feeds."+FEED_ID+
+                                    ": data_monitor missing in config");
                         return false;
                     }
 
@@ -395,10 +528,10 @@ public class FeedMaker extends AbstractVerticle {
                 // create a new HttpClient for this feed, and add to http_clients list
                 http_clients.put(config.getString("feed_id"),
                              vertx.createHttpClient( new HttpClientOptions()
-                                                       .setSsl(config.getBoolean("ssl"))
+                                                       .setSsl(config.getBoolean("http.ssl"))
                                                        .setTrustAll(true)
-                                                       .setDefaultPort(config.getInteger("port"))
-                                                       .setDefaultHost(config.getString("host"))
+                                                       .setDefaultPort(config.getInteger("http.port"))
+                                                       .setDefaultHost(config.getString("http.host"))
                             ));
 
             }
@@ -449,6 +582,13 @@ public class FeedMaker extends AbstractVerticle {
                 return false;
             }
 
+        // web address for this FeedHandler to receive POST data messages from original source
+        HTTP_PORT = config().getInteger(MODULE_NAME+".http.port",0);
+        if (HTTP_PORT == 0)
+            {
+                Log.log_err(MODULE_NAME+"."+MODULE_ID+": "+MODULE_NAME+".http.port config() var not set");
+                return false;
+            }
 
         START_FEEDS = config().getJsonArray(MODULE_NAME+".feeds");
         
