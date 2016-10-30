@@ -5,15 +5,50 @@ supported by the Smart Cambridge programme.
 
 ## Overview
 
+FeedMaker supports two HTTP methods to get the data:
+1 Periodic polling with GET
+2 Passive event-driven receipt of the data via POST
+
+It's function is very similar to
+[FeedHandler](https://github.com/ijl20/tfc_server/src/main/java/uk/ac/cam/tfc_server/feedhandler).
+
+FeedMaker receives its configuration parameters (e.g. the eventbus address to
+use for the feed messages) in its [Vertx](vertx.io) config().
+
+FeedMaker also publishes regular 'status=UP' messages to
+the 'system_status' eventbus address to be interpreted by the Console.
+
+FeedMaker supports multiple simultaneous feeds (in the ```feedmaker.feeds``` config
+property, each of which will have a unique ```feed_id``` property.
+
+### GET
+
 FeedMaker periodically polls provided web addesses, archives the raw data
 received, parses that data and sends it as a json message on Rita's real-time
-EventBus. It's function is very similar to
-[FeedHandler](https://github.com/ijl20/tfc_server/src/main/java/uk/ac/cam/tfc_server/feedhandler).
+EventBus.
+
+The app config feed property ```"http.get": true``` tells FeedMaker to poll with GET
+requests to the defined web address.
+
+### POST
+
+FeedMaker sets up a handler for POST events to the local URI
+MODULE_NAME/MODULE_ID/FEED_ID
+
+E.g. with the example app config() listed below, FeedMaker will listen for POSTs to
+feedmaker/cam/cam_park_local
+
+The app config feed property ```"http.post": true``` tells FeedMaker to register
+a handler for POSTs with the expected data. For any feed to have the "http.post"
+option set, the FeedMaker must have the "feedmaker.http.port" propery set to give
+the port on which the webserver will listen.
+
+## Data storage
 
 To preserve the data, FeedMaker immediately writes this binary data to the
 file system in two places (as set in the Vertx verticle config):
-- a binary archive directory as YYYY/MM/DD/&lt;filename&gt;.bin
-- as a file in a "monitor" directory so it is available to trigger
+- a 'data_bin' binary archive directory as YYYY/MM/DD/&lt;filename&gt;.bin
+- as a file in a "data_monitor" directory so it is available to trigger
 other linux processes via inotifywait, as &lt;filename&gt;.bin, *deleting any
 prior .bin files in that directory*
 
@@ -24,12 +59,6 @@ congestion tends to correlate with local time, not UTC).
 
 FeedMaker then parses the raw received data (depending on a local parsing
 module typically unique to the source) and 'publishes' the data to the eventbus as Json.
-
-FeedMaker receives its configuration parameters (e.g. the eventbus address to
-use for the feed messages) in its [Vertx](vertx.io) config().
-
-FeedMaker also publishes regular 'status=UP' messages to
-the 'system_status' eventbus address to be interpreted by the Console.
 
 ## FeedMaker eventbus message format
 
@@ -67,30 +96,42 @@ specified in the FeedMaker config.
           {
 
             "module.name":           "feedmaker",
-            "module.id":             "test",
+            "module.id":             "cam",
 
             "eb.system_status":      "tfc.system_status",
             "eb.console_out":        "tfc.console_out",
             "eb.manager":            "tfc.manager",
               
-            "feedmaker.log_level": 1,
+            "feedmaker.log_level":   2,
+
+            "feedmaker.http.port":   8086,
 
             "feedmaker.feeds":     [
-                                       { "period" :    15,
+                                       { 
+                                         "feed_id" :   "cam_park_local",
                                          "area_id" :   "cam",
-                                         "feed_id" :   "cam_local_car_parks",
-                                         "msg_type" :  "feed_car_parking",
-                                         "host":       "www.cambridge.gov.uk",              
-                                         "uri" :       "/jdi_parking_ajax/complete",
-                                         "ssl":        true,
-                                         "port":       443,
-                                         "address" :   "tfc.feedmaker.test",
-                                         "data_bin" :  "/media/tfc/test/cam_park_and_ride/data_bin",
-                                         "data_monitor" : "/media/tfc/test/cam_park_and_ride/data_monitor"
+
+                                         "http.get":   "true";
+                                         "period" :    300,
+                                         "http.host":  "www.cambridge.gov.uk",              
+                                         "http.uri" :  "/jdi_parking_ajax/complete",
+                                         "http.ssl":   true,
+                                         "http.port":  443,
+
+                                         "http.post":  true,
+                                         "http.token": "cam-auth-test",
+
+                                         "file_suffix": ".html",
+                                         "data_bin" :  "/media/tfc/cam/cam_park_local/data_bin",
+                                         "data_monitor" : "/media/tfc/cam/cam_park_local/data_monitor",
+
+                                         "msg_type" :  "feed_car_parks",
+                                         "address" :   "tfc.feedmaker.cam"
                                         }
                                      ]
           }
         }
 }
+
 ```
 

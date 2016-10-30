@@ -62,7 +62,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class FeedMaker extends AbstractVerticle {
 
-    private final String VERSION = "0.33";
+    private final String VERSION = "0.34";
     
     // from config()
     private String MODULE_NAME;       // config module.name - normally "feedscraper"
@@ -91,6 +91,10 @@ public class FeedMaker extends AbstractVerticle {
   @Override
   public void start(Future<Void> fut) throws Exception {
 
+    Router router = null;
+
+    String BASE_URI = null;
+
     // create holder for HttpClients
     http_clients = new HashMap<String,HttpClient>();
 
@@ -116,13 +120,12 @@ public class FeedMaker extends AbstractVerticle {
     HttpServer http_server = vertx.createHttpServer();
 
     // create request router for webserver
-    Router router = Router.router(vertx);
-
-    String BASE_URI = MODULE_NAME+"/"+MODULE_ID;
-
-    add_get_handler(router, "/"+BASE_URI);
-    
-
+    if (HTTP_PORT != 0)
+        {
+             router = Router.router(vertx);
+             BASE_URI = MODULE_NAME+"/"+MODULE_ID;
+             add_get_handler(router, "/"+BASE_URI);
+        }
 
     // iterate through all the feedmakers to be started
     // This will start the 'setPeriodic' GET pollers and also add the required
@@ -134,7 +137,11 @@ public class FeedMaker extends AbstractVerticle {
 
     // *********************************************************************
     // connect router to http_server, including the feed POST handlers added
-    http_server.requestHandler(router::accept).listen(HTTP_PORT);
+    if (HTTP_PORT != 0) 
+        {
+            http_server.requestHandler(router::accept).listen(HTTP_PORT);
+            logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": http server started");
+        }
     
   } // end start()
 
@@ -148,7 +155,7 @@ public class FeedMaker extends AbstractVerticle {
                 HttpServerResponse response = ctx.response();
                 response.putHeader("content-type", "text/html");
 
-                response.end("<h1>TFC Rita FeedMaker at "+uri+"</h1><p>Version "+VERSION+"</p>");
+                response.end("<h1>TFC Rita FeedMaker at "+uri+"</h1><p>Version "+VERSION+"</p>\n");
             });
     }
 
@@ -181,17 +188,24 @@ public class FeedMaker extends AbstractVerticle {
                      config.getString("http.uri"));
 
           // create a HTTP POST 'listener' for this feed at BASE_URI/FEED_ID
-          add_feed_handler(router, BASE_URI, config, parser);
+          if (HTTP_PORT != 0 && config.getBoolean("http.post", false))
+              {
+                  add_feed_handler(router, BASE_URI, config, parser);
+              }
 
-          // Now start polling the defined web address with GET requests
+          // Now start GET polling the defined web address with GET requests
+          if (config.getBoolean("http.get", false))
+              {
+                  logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+"."+
+                             config.getString("feed_id")+": GET poller started");
+                  // call immediately, then every 'period' seconds
+                  get_feed(config, parser);
 
-          // call immediately, then every 'period' seconds
-          get_feed(config, parser);
-
-          // set up periodic 'GET' requests for data (.setPeriodic requires milliseconds)
-          vertx.setPeriodic( config.getInteger("period") * 1000,
-                             id -> { get_feed(config, parser);
-                           });
+                  // set up periodic 'GET' requests for data (.setPeriodic requires milliseconds)
+                  vertx.setPeriodic( config.getInteger("period") * 1000,
+                                     id -> { get_feed(config, parser);
+                                     });
+              }
     }
 
     // ******************************
@@ -245,6 +259,7 @@ public class FeedMaker extends AbstractVerticle {
                     });
 
             });
+        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+": POST handler started");
     }
 
     // ************************************************************************************
@@ -476,8 +491,26 @@ public class FeedMaker extends AbstractVerticle {
 
                 String FEED_ID = config.getString("feed_id");
 
+                // http.get and http.post bools tell FeedMaker whether to GET or receive POSTS
+                boolean http_get = config.getBoolean("http.get", false);
+                boolean http_post = config.getBoolean("http.post", false);
+
+                if ( !http_get && !http_post)
+                    {
+                        Log.log_err(MODULE_NAME+"."+MODULE_ID+".feeds."+FEED_ID+
+                                    ": require http.post or http.get in config");
+                        return false;
+                    }
+
+                if ( http_post && HTTP_PORT==0)
+                    {
+                        Log.log_err(MODULE_NAME+"."+MODULE_ID+".feeds."+FEED_ID+
+                                    ": http.post requires "+MODULE_NAME+".http.port in config");
+                        return false;
+                    }
+
                 // host name from which to GET data
-                if (config.getString("http.host")==null)
+                if (http_get && config.getString("http.host")==null)
                     {
                         Log.log_err(MODULE_NAME+"."+MODULE_ID+".feeds."+FEED_ID+
                                     ": http.host missing in config");
@@ -485,19 +518,19 @@ public class FeedMaker extends AbstractVerticle {
                     }
 
                 // ssl yes/no for http request
-                if (config.getBoolean("http.ssl")==null)
+                if (http_get && config.getBoolean("http.ssl")==null)
                     {
                         config.put("http.ssl", false);
                     }
 
                 // http port to be used to request the data
-                if (config.getInteger("http.port")==null)
+                if (http_get && config.getInteger("http.port")==null)
                     {
                         config.put("http.port", 80);
                     }
 
                 // period (in seconds) between successive 'get' requests for data
-                if (config.getInteger("period",0)==0)
+                if (http_get && config.getInteger("period",0)==0)
                     {
                         Log.log_err(MODULE_NAME+"."+MODULE_ID+".feeds."+FEED_ID+
                                     ": period missing in config");
@@ -526,14 +559,16 @@ public class FeedMaker extends AbstractVerticle {
                     }
 
                 // create a new HttpClient for this feed, and add to http_clients list
-                http_clients.put(config.getString("feed_id"),
+                if (http_get)
+                    {
+                        http_clients.put(config.getString("feed_id"),
                              vertx.createHttpClient( new HttpClientOptions()
                                                        .setSsl(config.getBoolean("http.ssl"))
                                                        .setTrustAll(true)
                                                        .setDefaultPort(config.getInteger("http.port"))
                                                        .setDefaultHost(config.getString("http.host"))
                             ));
-
+                    }
             }
 
         return true; // if we got to here then we can return ok, error would have exitted earlier
@@ -584,11 +619,6 @@ public class FeedMaker extends AbstractVerticle {
 
         // web address for this FeedHandler to receive POST data messages from original source
         HTTP_PORT = config().getInteger(MODULE_NAME+".http.port",0);
-        if (HTTP_PORT == 0)
-            {
-                Log.log_err(MODULE_NAME+"."+MODULE_ID+": "+MODULE_NAME+".http.port config() var not set");
-                return false;
-            }
 
         START_FEEDS = config().getJsonArray(MODULE_NAME+".feeds");
         

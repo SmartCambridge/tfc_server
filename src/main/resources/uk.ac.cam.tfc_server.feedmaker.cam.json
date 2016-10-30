@@ -12,22 +12,31 @@
             "eb.console_out":        "tfc.console_out",
             "eb.manager":            "tfc.manager",
               
-            "feedmaker.log_level": 2,
+            "feedmaker.log_level":   2,
+
+            "feedmaker.http.port":   8086,
 
             "feedmaker.feeds":     [
                                        { 
                                          "feed_id" :   "cam_park_local",
-                                         "msg_type" :  "feed_car_parks",
-                                         "period" :    300,
                                          "area_id" :   "cam",
-                                         "host":       "www.cambridge.gov.uk",              
-                                         "uri" :       "/jdi_parking_ajax/complete",
-                                         "ssl":        true,
-                                         "port":       443,
-                                         "address" :   "tfc.feedmaker.cam",
+
+                                         "http.get":   true,
+                                         "period" :    300,
+                                         "http.host":  "www.cambridge.gov.uk",              
+                                         "http.uri" :  "/jdi_parking_ajax/complete",
+                                         "http.ssl":   true,
+                                         "http.port":  443,
+
+                                         "http.post":  true,
+                                         "http.token": "cam-auth-test",
+
                                          "file_suffix": ".html",
                                          "data_bin" :  "/media/tfc/cam/cam_park_local/data_bin",
-                                         "data_monitor" : "/media/tfc/cam/cam_park_local/data_monitor"
+                                         "data_monitor" : "/media/tfc/cam/cam_park_local/data_monitor",
+
+                                         "msg_type" :  "feed_car_parks",
+                                         "address" :   "tfc.feedmaker.cam"
                                         }
                                      ]
           }

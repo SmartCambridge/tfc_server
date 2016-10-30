@@ -14,17 +14,20 @@
               
             "feedmaker.log_level":   1,
 
-            "feedmaker.http.port" :  8099,
+            "feedmaker.http.port":   8099,
 
             "feedmaker.feeds":     [
                                        { 
                                          "feed_id" :   "cam_park_local",
                                          "area_id" :   "cam",
 
+                                         "http.get":   true,
                                          "http.host":  "www.cambridge.gov.uk",              
                                          "http.uri" :  "/jdi_parking_ajax/complete",
                                          "http.ssl":   true,
                                          "http.port":  443,
+
+                                         "http.post":  true,
                                          "http.token": "cam-auth-test",
 
                                          "file_suffix":   ".html",
