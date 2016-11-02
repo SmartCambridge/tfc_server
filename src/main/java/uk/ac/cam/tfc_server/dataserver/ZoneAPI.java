@@ -29,6 +29,10 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class ZoneAPI {
 
+    // data filename concat string to directory containing zone config files
+    // i.e. files are in /media/tfc/vix/data_ZONE_CONFIG/<files>
+    static final String ZONE_CONFIG = "zone_config";
+
     private DataServer parent;
 
     public ZoneAPI(Vertx vertx, DataServer caller, Router router)
@@ -56,6 +60,14 @@ public class ZoneAPI {
                 parent.logger.log(Constants.LOG_DEBUG, parent.MODULE_NAME+"."+parent.MODULE_ID+
                            ": API zone/config/"+zone_id);
                 serve_config(vertx, ctx, zone_id);
+            });
+
+        // ZONE LIST API e.g. /api/dataserver/zone/list
+        
+        router.route(HttpMethod.GET, "/api/"+parent.MODULE_NAME+"/zone/list").handler( ctx -> {
+                parent.logger.log(Constants.LOG_DEBUG, parent.MODULE_NAME+"."+parent.MODULE_ID+
+                           ": API zone/config/list");
+                serve_list(vertx, ctx);
             });
    }
 
@@ -96,10 +108,23 @@ public class ZoneAPI {
         {
 
             // build full filepath for data to be retrieved
-            String filename = parent.DATA_PATH+"zone_config/uk.ac.cam.tfc_server.zone."+zone_id+".json";
+            String filename = parent.DATA_PATH+ZONE_CONFIG+"/uk.ac.cam.tfc_server.zone."+zone_id+".json";
 
             serve_file(vertx, ctx, filename);
         }
+    }
+
+    // Serve the 'list of zones' json data
+    //debug, until we have postgres, this is simply served from a file in the data_zone_config directory
+    void serve_list(Vertx vertx, RoutingContext ctx)
+    {
+        parent.logger.log(Constants.LOG_DEBUG, parent.MODULE_NAME+"."+parent.MODULE_ID+
+                   ": serving /api/"+parent.MODULE_NAME+"/zone/list");
+            
+            // build full filepath for data to be retrieved
+            String filename = parent.DATA_PATH+ZONE_CONFIG+"/list.json";
+
+            serve_file(vertx, ctx, filename);
     }
 
     void serve_transit_file(Vertx vertx, RoutingContext ctx, String filename)
