@@ -39,6 +39,27 @@ reasonable thresholds after which an alarm is appropriate (as this may vary by m
 }
 ```
 
+### /api/dataserver/zone/list
+
+Lists the zone_id's of the configured Zones.
+
+Returns (but the properties per zone return will be expanded later):
+```
+{
+  "module_name":"dataserver",
+  "module_id":"vix",
+  "request_data": {
+     "zone_list": [
+            {"zone_id":"madingley_road_in"},
+            {"zone_id":"madingley_road_out"},
+            {"zone_id":"histon_road_out"},
+            {"zone_id":"newmarket_road_in"},
+            {"zone_id":"huntingdon_road_in"},
+            ...
+            {"zone_id":"milton_road_out"}
+  ]}}
+```
+
 ### /api/dataserver/zone/transits/<zone_id>/YYYY/MM/DD
 
 These are the duration (in seconds) of each vehicle 'completion' of its journey through the zone.
