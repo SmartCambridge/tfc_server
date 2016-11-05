@@ -78,8 +78,8 @@ public class DataServer extends AbstractVerticle {
     public String BASE_URI; // used as template parameter for web pages, built from config()
 
     private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
-    private final int SYSTEM_STATUS_AMBER_SECONDS = 15;
-    private final int SYSTEM_STATUS_RED_SECONDS = 25;
+    private final int SYSTEM_STATUS_AMBER_SECONDS = 25;
+    private final int SYSTEM_STATUS_RED_SECONDS = 35;
 
     public  Log logger;
     public  HandlebarsTemplateEngine template_engine;
@@ -133,10 +133,12 @@ public class DataServer extends AbstractVerticle {
     });
 
     // ********************************
-    // create handler for Zone API
+    // create handler for APIs
     // ********************************
 
-    ZoneAPI datazone = new ZoneAPI(vertx, this, router);
+    ZoneAPI zone_api = new ZoneAPI(vertx, this, router);
+    
+    ParkingAPI parking_api = new ParkingAPI(vertx, this, router);
     
     // **************************************
     // **************************************
