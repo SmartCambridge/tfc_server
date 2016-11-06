@@ -21,7 +21,7 @@
                                      "compare": "=",
                                      "value": "feed_car_parks"
                                    },
-                  "store_path": "/media/tfc/cam/{{feed_id}}/data_bin_json/{{filepath}}",
+                  "store_path": "/media/tfc/{{feed_id}}/data_bin_json/{{filepath}}",
                   "store_name": "{{filename}}.json",
                   "store_mode": "write"
                 },
@@ -30,7 +30,7 @@
                                      "compare": "=",
                                      "value": "feed_car_parks"
                                    },
-                  "store_path": "/media/tfc/cam/{{feed_id}}/data_monitor_json",
+                  "store_path": "/media/tfc/{{feed_id}}/data_monitor_json",
                   "store_name": "post_data.json",
                   "store_mode": "write"
                 },
@@ -40,7 +40,7 @@
                                      "value": "feed_car_parks"
                                    },
                   "flatten":    "request_data",
-                  "store_path": "/media/tfc/cam/{{feed_id}}/data_park/{{ts|yyyy}}/{{ts|MM}}/{{ts|dd}}",
+                  "store_path": "/media/tfc/{{feed_id}}/data_park/{{ts|yyyy}}/{{ts|MM}}/{{ts|dd}}",
                   "store_name": "{{parking_id}}_{{ts|yyyy}}-{{ts|MM}}-{{ts|dd}}.txt",
                   "store_mode": "append"
                 }

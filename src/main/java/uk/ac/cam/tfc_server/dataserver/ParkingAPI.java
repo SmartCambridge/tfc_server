@@ -33,6 +33,7 @@ public class ParkingAPI {
     // data filename concat string to directory containing zone config files
     // i.e. files are in /media/FEED_ID/data_PARKING_CONFIG/<files>
     static final String PARKING_CONFIG = "/sys/data_parking_config";
+    static final String PARKING_OCCUPANCY = "/data_park"; // will be <feed_id>/data_park
 
     private DataServer parent;
 
@@ -92,7 +93,7 @@ public class ParkingAPI {
         {
 
             // build full filepath for data to be retrieved
-            String filename = parent.DATA_PATH+"/"+feed_id+"/data_park/"+
+            String filename = parent.DATA_PATH+"/"+feed_id+PARKING_OCCUPANCY+"/"+
                               yyyy+"/"+MM+"/"+dd+"/"+parking_id+"_"+yyyy+"-"+MM+"-"+dd+".txt";
 
             // read file which is actually a line-per-JsonObject, convert to JsonArray, and serve it

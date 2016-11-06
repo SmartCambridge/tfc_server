@@ -32,8 +32,8 @@
                                          "http.token": "cam-auth-test",
 
                                          "file_suffix": ".html",
-                                         "data_bin" :  "/media/tfc/cam/cam_park_local/data_bin",
-                                         "data_monitor" : "/media/tfc/cam/cam_park_local/data_monitor",
+                                         "data_bin" :  "/media/tfc/cam_park_local/data_bin",
+                                         "data_monitor" : "/media/tfc/cam_park_local/data_monitor",
 
                                          "msg_type" :  "feed_car_parks",
                                          "address" :   "tfc.feedmaker.cam"
