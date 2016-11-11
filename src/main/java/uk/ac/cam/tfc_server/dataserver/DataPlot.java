@@ -29,6 +29,13 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class DataPlot {
 
+    //debug we are using a hard_coded feed_id until system extended for multiple feeds
+    static final String FEED_ID = "gccd_bus";
+
+    // data directory name for zone transit data
+    // i.e. files are in /media/tfc/<FEED_ID>/data_zone/YYYY/MM/DD/<files>
+    static final String ZONE_TRANSITS = "/data_zone";
+
     private DataServer parent;
     
     public DataPlot(Vertx vertx, DataServer caller, Router router)
@@ -85,7 +92,8 @@ public class DataPlot {
             ctx.put("config_dd", dd);
             
             // build full filepath for data to be retrieved
-            String filename = parent.DATA_PATH+"zone/"+yyyy+"/"+MM+"/"+dd+"/"+zone_id+"_"+yyyy+"-"+MM+"-"+dd+".txt";
+            String filename = parent.DATA_PATH+"/"+FEED_ID+ZONE_TRANSITS+"/"+
+                                yyyy+"/"+MM+"/"+dd+"/"+zone_id+"_"+yyyy+"-"+MM+"-"+dd+".txt";
 
             // read the file containing the data
             vertx.fileSystem().readFile(filename, fileres -> {

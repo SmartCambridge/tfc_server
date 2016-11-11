@@ -4,6 +4,8 @@ package uk.ac.cam.tfc_server.dataserver;
 //
 // serves zone data via http / json (/api/zone/...)
 // E.g.
+//   /api/dataserver/zone/list
+//   /api/dataserver/zone/config/madingley_road_in
 //   /api/dataserver/zone/transits/madingley_road_in/2016/10/01
 //
 
@@ -29,9 +31,16 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class ZoneAPI {
 
-    // data filename concat string to directory containing zone config files
-    // i.e. files are in /media/tfc/vix/data_ZONE_CONFIG/<files>
-    static final String ZONE_CONFIG = "zone_config";
+    //debug we are using a hard_coded feed_id until system extended for multiple feeds
+    static final String FEED_ID = "gccd_bus";
+
+    // data directory name containing zone config files
+    // i.e. files are in /media/tfc/<ZONE_CONFIG>/<files>
+    static final String ZONE_CONFIG = "/sys/data_zone_config";
+
+    // data directory name for zone transit data
+    // i.e. files are in /media/tfc/<FEED_ID>/data_zone/YYYY/MM/DD/<files>
+    static final String ZONE_TRANSITS = "/data_zone";
 
     private DataServer parent;
 
@@ -86,7 +95,8 @@ public class ZoneAPI {
         {
 
             // build full filepath for data to be retrieved
-            String filename = parent.DATA_PATH+"zone/"+yyyy+"/"+MM+"/"+dd+"/"+zone_id+"_"+yyyy+"-"+MM+"-"+dd+".txt";
+            String filename = parent.DATA_PATH+"/"+FEED_ID+ZONE_TRANSITS+"/"+
+                                yyyy+"/"+MM+"/"+dd+"/"+zone_id+"_"+yyyy+"-"+MM+"-"+dd+".txt";
 
             // read file which is actually a line-per-JsonObject, convert to JsonArray, and serve it
             serve_transit_file(vertx, ctx, filename);
@@ -129,6 +139,9 @@ public class ZoneAPI {
 
     void serve_transit_file(Vertx vertx, RoutingContext ctx, String filename)
     {
+        parent.logger.log(Constants.LOG_DEBUG, parent.MODULE_NAME+"."+parent.MODULE_ID+
+                   ": serving transit file "+filename);
+            
         // read the file containing the data
         vertx.fileSystem().readFile(filename, fileres -> {
 
@@ -171,6 +184,9 @@ public class ZoneAPI {
     // serve file, assumed to contain a valid JsonObject
     void serve_file(Vertx vertx, RoutingContext ctx, String filename)
     {
+        parent.logger.log(Constants.LOG_DEBUG, parent.MODULE_NAME+"."+parent.MODULE_ID+
+                   ": serving file "+filename);
+            
         // read the file containing the data
         vertx.fileSystem().readFile(filename, fileres -> {
 
