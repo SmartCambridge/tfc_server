@@ -31,9 +31,6 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class ZoneAPI {
 
-    //debug we are using a hard_coded feed_id until system extended for multiple feeds
-    static final String FEED_ID = "gccd_bus";
-
     // data directory name containing zone config files
     // i.e. files are in /media/tfc/<ZONE_CONFIG>/<files>
     static final String ZONE_CONFIG = "/sys/data_zone_config";
@@ -95,7 +92,7 @@ public class ZoneAPI {
         {
 
             // build full filepath for data to be retrieved
-            String filename = parent.DATA_PATH+"/"+FEED_ID+ZONE_TRANSITS+"/"+
+            String filename = parent.DATA_PATH+"/"+parent.FEED_ID+ZONE_TRANSITS+"/"+
                                 yyyy+"/"+MM+"/"+dd+"/"+zone_id+"_"+yyyy+"-"+MM+"-"+dd+".txt";
 
             // read file which is actually a line-per-JsonObject, convert to JsonArray, and serve it

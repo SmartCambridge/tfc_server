@@ -88,7 +88,7 @@ public class DataRaw {
 
                 ds.logger.log(Constants.LOG_DEBUG, ds.MODULE_NAME+"."+ds.MODULE_ID+
                            ": raw file "+rawname+"/"+filename);
-                serve_filepath(vertx, ctx, ds.DATA_PATH+rawname+"/"+ filename);
+                serve_filepath(vertx, ctx, ds.DATA_PATH+"/"+ds.FEED_ID+"/data_"+rawname+"/"+ filename);
             });
 
    }
@@ -117,7 +117,7 @@ public class DataRaw {
             ctx.put("config_dd", dd);
             
             // build full filepath for data to be retrieved
-            String raw_path = ds.DATA_PATH+rawname+"/"+yyyy+"/"+MM+"/"+dd;
+            String raw_path = ds.DATA_PATH+"/"+ds.FEED_ID+"/data_"+rawname+"/"+yyyy+"/"+MM+"/"+dd;
 
             // read list of filenames from directory
             vertx.fileSystem().readDir(raw_path, res -> {
@@ -200,7 +200,7 @@ public class DataRaw {
         {
 
             // build full filepath for data to be retrieved
-            String filepath = ds.DATA_PATH+rawname+"/"+yyyy+"/"+MM+"/"+dd+"/"+filename;
+            String filepath = ds.DATA_PATH+"/"+ds.FEED_ID+"/data_"+rawname+"/"+yyyy+"/"+MM+"/"+dd+"/"+filename;
 
             serve_filepath(vertx, ctx, filepath);
 

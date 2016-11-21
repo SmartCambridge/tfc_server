@@ -73,6 +73,8 @@ public class DataServer extends AbstractVerticle {
     private int    LOG_LEVEL; // from config(), defaults to Constants.LOG_INFO
     
     public String DATA_PATH; // from config() base filesystem path to data
+
+    public String FEED_ID = "vix"; //debug until we manage alternative feeds properly
     
     // Globals
     public String BASE_URI; // used as template parameter for web pages, built from config()

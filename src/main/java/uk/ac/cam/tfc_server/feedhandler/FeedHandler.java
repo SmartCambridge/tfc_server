@@ -38,6 +38,7 @@ package uk.ac.cam.tfc_server.feedhandler;
 
                     "feedhandler.address" :   "tfc.feedhandler.A",
                     "feedhandler.http.port" : 8080,
+                    "feedhandler.http.uri" :  "/feedhandler/gccd_bus",
                     "feedhandler.http.token": "test-token",
                     "feedhandler.tfc_data_bin":     "/home/ijl20/tfc_server_data/data_bin",
                     "feedhandler.tfc_data_cache":   "/home/ijl20/tfc_server_data/data_cache",
@@ -90,7 +91,8 @@ public class FeedHandler extends AbstractVerticle {
     private String EB_SYSTEM_STATUS;  // config eb.system_status
     private String EB_MANAGER;        // config eb.manager
     
-    private int HTTP_PORT;            // config feedplayer.http.port
+    private int    HTTP_PORT;         // config feedplayer.http.port
+    private String HTTP_URI;          // config feedplayer.http.uri
     private String HTTP_TOKEN;        // config feedplayer.http.token, can be null
 
     private String FEEDHANDLER_ADDRESS; // config MODULE_NAME.address
@@ -114,7 +116,6 @@ public class FeedHandler extends AbstractVerticle {
 
     private Log logger;
     
-    private String BASE_URI; // defined the http POST base for this FeedHandler
     
   @Override
   public void start(Future<Void> fut) throws Exception {
@@ -133,9 +134,6 @@ public class FeedHandler extends AbstractVerticle {
     
     logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": Version "+VERSION+" started on "+FEEDHANDLER_ADDRESS);
 
-    // set up base URI that will be used for feed post, e.g. feedhandler/vix
-    BASE_URI = MODULE_NAME + "/" + MODULE_ID;
-
     // create link to EventBus
     eb = vertx.eventBus();
 
@@ -149,25 +147,25 @@ public class FeedHandler extends AbstractVerticle {
     //router.route().handler(BodyHandler.create().setBodyLimit(Constants.FEEDHANDLER_MAX_POST));
     
     // ************************************
-    // create handler for GET from BASE_URI
+    // create handler for GET from feed HTTP_URI
     // ************************************
 
-    router.route(HttpMethod.GET,"/"+BASE_URI).handler( ctx -> {
+    router.route(HttpMethod.GET,HTTP_URI).handler( ctx -> {
 
         HttpServerResponse response = ctx.response();
         response.putHeader("content-type", "text/html");
 
-        response.end("<h1>TFC Rita FeedHandler at "+BASE_URI+"</h1><p>Vertx-Web!</p>");
+        response.end("<h1>TFC Rita FeedHandler at "+HTTP_URI+"</h1><p>Vertx-Web!</p>");
     });
 
     // ************************************************
     // ************************************************
     // Here is where the essential feed POST is handled
-    // create handler for POST from BASE_URI
+    // create handler for POST from HTTP_URI
     // ************************************************
     // ************************************************
 
-    router.route(HttpMethod.POST,"/"+BASE_URI).handler( ctx -> {
+    router.route(HttpMethod.POST,HTTP_URI).handler( ctx -> {
             ctx.request().bodyHandler( body_data -> {
                 try {
                     // read the head value "X-Auth-Token" from the POST
@@ -414,6 +412,14 @@ public class FeedHandler extends AbstractVerticle {
         if (HTTP_PORT == 0)
         {
           Log.log_err(MODULE_NAME+"."+MODULE_ID+": "+MODULE_NAME+".http.port config() var not set");
+          return false;
+        }
+
+        // URI for this FeedHandler to receive POST data messages from original source
+        HTTP_URI = config().getString(MODULE_NAME+".http.uri");
+        if (HTTP_URI == null)
+        {
+          Log.log_err(MODULE_NAME+"."+MODULE_ID+": http.uri config() var not set");
           return false;
         }
 

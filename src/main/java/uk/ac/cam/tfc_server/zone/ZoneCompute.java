@@ -34,7 +34,7 @@ public class ZoneCompute {
 
     private Log logger;
 
-    private final Long TS_DELTA_LIMIT = 100L; // if time delta (s) between consecutive position records is greater
+    private final Long TS_DELTA_LIMIT = 350L; // if time delta (s) between consecutive position records is greater
                                               // than TS_DELTA_LIMIT, then do NOT use record for Zone entry/exit
     
     // zone_msg_buffer has a MsgBuffer entry for each zone.address
