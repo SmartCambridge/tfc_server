@@ -4,8 +4,8 @@ package uk.ac.cam.tfc_server.dataserver;
 //
 // serves parking data via http / json (/api/dataserver/parking/...)
 // E.g.
-//   /api/dataserver/parking/occupancy/cam_park_local/grand-arcade-car-park/2016/10/01
-//   /api/dataserver/parking/config/cam_park_local/grand-arcade-car-park
+//   /api/dataserver/parking/occupancy/grand-arcade-car-park?date=2016-10-01[&feed_id=cam_park_local]
+//   /api/dataserver/parking/config/grand-arcade-car-park
 //   /api/dataserver/parking/list
 //
 
@@ -30,10 +30,14 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class ParkingAPI {
 
-    // data filename concat string to directory containing zone config files
-    // i.e. files are in /media/FEED_ID/data_PARKING_CONFIG/<files>
+    // parking config path:
+    // data filename concat string to directory containing parking config files
+    // i.e. files are in /media/tfc/sys/data_parking_config >
     static final String PARKING_CONFIG = "/sys/data_parking_config";
-    static final String PARKING_OCCUPANCY = "/data_park"; // will be <feed_id>/data_park
+    // parking list path:
+    static final String PARKING_LIST = PARKING_CONFIG+"/list.json";
+    // parking occupancy path:
+    static final String PARKING_OCCUPANCY = "/data_park"; // will be <feed_id>/data_park/yyyy/MM/dd
 
     private DataServer parent;
 
@@ -43,29 +47,54 @@ public class ParkingAPI {
 
 	parent.logger.log(Constants.LOG_INFO, parent.MODULE_NAME+"."+parent.MODULE_ID+": ParkingAPI started");
 
-        // PARKING OCCUPANCY API e.g. /api/dataserver/parking/occupancy/cam_park_local/grand-arcade-car-park/2016/10/01
+        // PARKING OCCUPANCY API e.g. 
+        // /api/dataserver/parking/occupancy/grand-arcade-car-park?date=2016-10-01[&feed_id=cam_park_local]
         
         router.route(HttpMethod.GET, "/api/"+parent.MODULE_NAME+
-                                     "/parking/occupancy/:feedid/:parkingid/:yyyy/:MM/:dd").handler( ctx -> {
-                String feed_id = ctx.request().getParam("feedid");
+                                     "/parking/occupancy/:parkingid").handler( ctx -> {
                 String parking_id =  ctx.request().getParam("parkingid");
-                String yyyy =  ctx.request().getParam("yyyy");
-                String MM =  ctx.request().getParam("MM");
-                String dd =  ctx.request().getParam("dd");
-                parent.logger.log(Constants.LOG_DEBUG, parent.MODULE_NAME+"."+parent.MODULE_ID+
-                           ": API parking/occupancy/"+feed_id+"/"+parking_id+"/"+yyyy+"/"+MM+"/"+dd);
-                serve_occupancy(vertx, ctx, feed_id, parking_id, yyyy, MM, dd);
+                String date =  ctx.request().getParam("date");
+                String yyyy = date.substring(0,4);
+                String MM =  date.substring(5,7);
+                String dd =  date.substring(8,10);
+                // Either get the feed_id from the query or use default in parking config
+                String feed_id = ctx.request().getParam("feed_id");
+                // if we didn't get a feed_id in the query, get it from the config for that car park
+                if (feed_id==null)
+                {
+                    parent.logger.log(Constants.LOG_DEBUG, parent.MODULE_NAME+"."+parent.MODULE_ID+
+                                      ": no feed_id in request, looking up in config");
+                    // build full filepath for config data to be retrieved
+                    String filename = parent.DATA_PATH+PARKING_CONFIG+"/"+parking_id+".json";
+
+                    // read the config file and get the default feed_id for this car park
+                    vertx.fileSystem().readFile(filename, fileres -> {
+                            if (fileres.succeeded()) {
+                                String config_data = fileres.result().toString();
+                                JsonObject config_json = new JsonObject(config_data);
+                                String config_feed_id = config_json.getString("feed_id");
+                                parent.logger.log(Constants.LOG_DEBUG, parent.MODULE_NAME+"."+parent.MODULE_ID+
+                                      ": feed_id from config = "+config_feed_id);
+                                serve_occupancy(vertx, ctx, config_feed_id, parking_id, yyyy, MM, dd);
+                            } else {
+                                ctx.response().setStatusCode(404).end();
+                            }
+                        });
+                }
+                else
+                {
+                    serve_occupancy(vertx, ctx, feed_id, parking_id, yyyy, MM, dd);
+                }
             });
         
-        // PARKING CONFIG API e.g. /api/dataserver/parking/config/cam_park_local/grand-arcade-car-park
+        // PARKING CONFIG API e.g. /api/dataserver/parking/config/grand-arcade-car-park
         
         router.route(HttpMethod.GET, "/api/"+parent.MODULE_NAME+
-                                     "/parking/config/:feedid/:parkingid").handler( ctx -> {
-                String feed_id =  ctx.request().getParam("feedid");
+                                     "/parking/config/:parkingid").handler( ctx -> {
                 String parking_id =  ctx.request().getParam("parkingid");
                 parent.logger.log(Constants.LOG_DEBUG, parent.MODULE_NAME+"."+parent.MODULE_ID+
-                           ": API zone/config/"+feed_id+"/"+parking_id);
-                serve_config(vertx, ctx, feed_id, parking_id);
+                           ": API parking/config/"+parking_id);
+                serve_config(vertx, ctx, parking_id);
             });
 
         // PARKING LIST API e.g. /api/dataserver/parking/list
@@ -82,8 +111,8 @@ public class ParkingAPI {
                                  String feed_id, String parking_id, String yyyy, String MM, String dd)
     {
         parent.logger.log(Constants.LOG_DEBUG, parent.MODULE_NAME+"."+parent.MODULE_ID+
-                   ": serving /api/"+parent.MODULE_NAME+"/parking/occupancy for "+
-                   feed_id+"."+parking_id+" "+yyyy+"/"+MM+"/"+dd);
+                   ": serving /api/"+parent.MODULE_NAME+"/parking/occupancy/"+parking_id+
+                   " from feed "+feed_id+" "+yyyy+"/"+MM+"/"+dd);
             
         if (parking_id == null)
         {
@@ -102,8 +131,7 @@ public class ParkingAPI {
     }
 
     // Serve the zone/config json data
-    void serve_config(Vertx vertx, RoutingContext ctx,
-                      String feed_id, String parking_id)
+    void serve_config(Vertx vertx, RoutingContext ctx, String parking_id)
     {
         parent.logger.log(Constants.LOG_DEBUG, parent.MODULE_NAME+"."+parent.MODULE_ID+
                    ": serving /api/"+parent.MODULE_NAME+"/parking/config for "+parking_id);
@@ -130,7 +158,7 @@ public class ParkingAPI {
                    ": serving /api/"+parent.MODULE_NAME+"/parking/list");
             
             // build full filepath for data to be retrieved
-            String filename = parent.DATA_PATH+PARKING_CONFIG+"/list.json";
+            String filename = parent.DATA_PATH+PARKING_LIST;
 
             serve_file(vertx, ctx, filename);
     }
