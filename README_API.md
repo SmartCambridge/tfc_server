@@ -147,3 +147,80 @@ is between 2..3 (as defined by zone.finish_index).
     }
 }
 ```
+
+### /api/dataserver/parking/config/<parking_id>
+
+Returns the configuration parameters of the car park with that parking_id, e.g. for grand-arcade-car-park:
+```
+{
+  "module_name":"dataserver",
+  "module_id":"vix",
+  "request_data":
+  {
+     "feed_id":"cam_park_local",
+     "parking_id":"grand-arcade-car-park",
+     "parking_name":"Grand Arcade",
+     "latitude":52.2038,
+     "longitude":0.1207,
+     "capacity":890
+  }
+}
+```
+Note that the parking_id is the *default* value for a feed that provides occupancy data for this car park but
+another can be specified at the time the occupancy data is requested.
+
+### /api/dataserver/parking/list
+
+Returns the full list of car parks in the system, with each entry being as the config above:
+```
+{
+   "module_name":"dataserver",
+   "module_id":"vix",
+   "request_data":
+     {
+        "parking_list":
+          [
+             {
+               "feed_id":"cam_park_local",
+               "parking_id":"grafton-east-car-park",
+               "parking_name":"Grafton East",
+               "latitude":52.2072,
+               "longitude":0.1348,
+               "capacity":780
+             },
+             ...
+          ]
+     }
+}
+```
+
+### /api/dataserver/parking/occupancy/<parking_id>?date=YYYY-MM-DD[&feed_id=<feed_id>]
+
+Returns the occupancy data for the requested parking_id on given date. An optional feed_id
+can be specified, otherwise the feed_id in the car park config file will be used.
+
+Returns:
+```
+{
+   "module_name":"dataserver",
+   "module_id":"vix",
+   "request_data":
+     [
+       {
+         "filename":"1478822640_2016-11-11-00-04-00",
+         "ts":1478822640,
+         "spaces_occupied":63
+         "area_id":"cam",
+         "feed_id":"cam_park_local",
+         "capacity":953,
+         "module_id":"cam",
+         "filepath":"2016/11/11",
+         "msg_type":"feed_car_parks",
+         "parking_id":"grand-arcade-car-park",
+         "module_name":"feedmaker",
+         "parking_name":"Grand Arcade",
+       },
+       ...
+     ]
+}
+```
