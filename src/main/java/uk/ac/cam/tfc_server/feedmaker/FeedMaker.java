@@ -62,7 +62,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class FeedMaker extends AbstractVerticle {
 
-    private final String VERSION = "0.34";
+    private final String VERSION = "0.44";
     
     // from config()
     private String MODULE_NAME;       // config module.name - normally "feedscraper"
@@ -163,7 +163,7 @@ public class FeedMaker extends AbstractVerticle {
     // start a feed maker with a given config
     private void start_maker(JsonObject config, Router router, String BASE_URI)
     {
-          ParseCamParkingLocal parser = new ParseCamParkingLocal(config.getString("area_id"));
+          ParseFeed parser = new ParseFeed(config.getString("feed_type"), config.getString("area_id"), logger);
 
           // create monitor directory if necessary
           FileSystem fs = vertx.fileSystem();          
@@ -231,7 +231,7 @@ public class FeedMaker extends AbstractVerticle {
     private void add_feed_handler(Router router, 
                                   String BASE_URI,
                                   JsonObject config,
-                                  ParseCamParkingLocal parser)
+                                  ParseFeed parser)
     {
         final String HTTP_TOKEN = config.getString("http.token");
         final String FEED_ID = config.getString("feed_id");
@@ -268,7 +268,7 @@ public class FeedMaker extends AbstractVerticle {
     // This is the routine called periodically to GET the feed from the defined web address.
     // it will pass the data to 'parser' to convert to a JsonObject to send on the EventBus
     //
-    private void get_feed(JsonObject config, ParseCamParkingLocal parser)
+    private void get_feed(JsonObject config, ParseFeed parser)
     {
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                                ": get_feed "+config.getString("http.host")+config.getString("http.uri"));
@@ -318,7 +318,7 @@ public class FeedMaker extends AbstractVerticle {
 
   // *****************************************************************
   // process the received raw data
-  private void process_feed(Buffer buf, JsonObject config, ParseCamParkingLocal parser) throws Exception 
+  private void process_feed(Buffer buf, JsonObject config, ParseFeed parser) throws Exception 
   {
 
     LocalDateTime local_time = LocalDateTime.now();
@@ -349,27 +349,33 @@ public class FeedMaker extends AbstractVerticle {
 
     msg.put("module_name", MODULE_NAME);
     msg.put("module_id", MODULE_ID);
-    msg.put("msg_type", Constants.FEED_CAR_PARKS);
+    msg.put("msg_type", config.getString("msg_type"));
     msg.put("feed_id", config.getString("feed_id"));
     msg.put("filename", filename);
     msg.put("filepath", filepath);
     msg.put("ts", Integer.parseInt(utc_ts));
-            
-    JsonArray request_data = parser.parse_array(buf.toString());
 
-    msg.put("request_data", request_data);
-    
-    // debug print out the JsonObject message
-    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": prepared EventBus msg:");
-    logger.log(Constants.LOG_DEBUG, msg.toString());
+    try {            
+        JsonArray request_data = parser.parse_array(buf.toString());
 
-    String feedmaker_address = config.getString("address");
+        msg.put("request_data", request_data);
+    
+        // debug print out the JsonObject message
+        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": prepared EventBus msg:");
+        logger.log(Constants.LOG_DEBUG, msg.toString());
 
-    eb.publish(feedmaker_address, msg);
+        String feedmaker_address = config.getString("address");
+
+        eb.publish(feedmaker_address, msg);
     
-    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-               ": published latest GET data to "+feedmaker_address);
-    
+        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                   ": published latest GET data to "+feedmaker_address);
+    }
+    catch (Exception e) {
+        logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                   ": exception raised during parsing of feed "+config.getString("feed_id")+":");
+        logger.log(Constants.LOG_WARN, e.getMessage());
+    }
   } // end process_feed()
 
     // ******************************************************************
