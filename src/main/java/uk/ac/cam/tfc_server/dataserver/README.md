@@ -32,3 +32,8 @@ the binary GTFS bus position files.
 
 ![DataRaw screenshot](../../../../../../../../images/raw_day_screenshot.png)
 
+### API
+
+DataServer is the main TFC module that provides the http request-based API, see
+![API Readme](https://github.com/ijl20/tfc_server/README_API.md)
+

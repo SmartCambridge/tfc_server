@@ -224,3 +224,83 @@ Returns:
      ]
 }
 ```
+
+### /api/dataserver/feed/list
+
+Provides the current list of feeds with configuration information for each.
+
+Returns:
+```
+{
+    "module_name":"dataserver",
+    "module_id":"test",
+    "request_data":
+      {
+        "feed_list":
+          [
+            {
+              "feed_id":"cam_park_local",
+              "feed_name":"Cambridge Local car parks",
+              "feed_description":"Feed received giving car park occupancy data for Cambridge City local car parks"
+            },
+            ...
+          ]
+      }
+}
+```
+
+### /api/dataserver/feed/config/<feed_id>
+
+Provides configuration data for a given feed.
+
+Returns:
+```
+{
+    "module_name":"dataserver",
+    "module_id":"test",
+    "request_data":
+      {
+        "feed_id":"cam_park_rss",
+        "feed_name":"Cambridge car parks incl P&R",
+        "feed_description":"Car park occupancy data for Cambridge City local car parks plus P&R car parks"
+      }
+}
+```
+
+### /api/dataserver/feed/now/<feed_id>
+
+Provides the LATEST JSON data for the requested feed.
+
+Returns:
+```
+{
+  "module_name":"dataserver",
+  "module_id":"test",
+  "request_data":<whatever JSON data was most recent for that feed>
+}
+```
+
+E.g. for the parking occupancy feed 'cam_park_local', the API returns:
+```
+{
+  "module_name":"dataserver",
+  "module_id":"test",
+  "request_data":{
+    "module_name":"feedmaker",
+    "module_id":"park_local_rss",
+    "msg_type":"feed_car_parks",
+    "feed_id":"cam_park_local",
+    "filename":"1481111458_2016-12-07-11-50-58",
+    "filepath":"2016/12/07",
+    "ts":1481111458,
+    "request_data":
+      [
+        {"parking_id":"grafton-east-car-park","spaces_capacity":780,"spaces_free":409,"spaces_occupied":371},
+        {"parking_id":"grafton-west-car-park","spaces_capacity":280,"spaces_free":41,"spaces_occupied":239},
+        {"parking_id":"grand-arcade-car-park","spaces_capacity":890,"spaces_free":108,"spaces_occupied":782},
+        {"parking_id":"park-street-car-park","spaces_capacity":375,"spaces_free":108,"spaces_occupied":267},
+        {"parking_id":"queen-anne-terrace-car-park","spaces_capacity":540,"spaces_free":84,"spaces_occupied":456}
+      ]
+  }
+}
+```
