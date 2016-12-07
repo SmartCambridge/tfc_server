@@ -142,6 +142,8 @@ public class DataServer extends AbstractVerticle {
     
     ParkingAPI parking_api = new ParkingAPI(vertx, this, router);
     
+    FeedAPI feed_api = new FeedAPI(vertx, this, router);
+    
     // **************************************
     // **************************************
     // create handlers for template pages
