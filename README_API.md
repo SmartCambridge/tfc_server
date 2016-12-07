@@ -4,7 +4,7 @@
 
 ## Overview
 
-The Rita platform provides an HTTP restful API for data, generally returning the data as
+The TFC platform provides an HTTP restful API for data, generally returning the data as
 Json but also providing binary data (i.e. as originally received by Rita) if requested.
 
 ### /api/console/status
@@ -60,7 +60,7 @@ Returns (but the properties per zone return will be expanded later):
   ]}}
 ```
 
-### /api/dataserver/zone/transits/<zone_id>/YYYY/MM/DD
+### /api/dataserver/zone/transits/&lt;zone_id&gt;/YYYY/MM/DD
 
 These are the duration (in seconds) of each vehicle 'completion' of its journey through the zone.
 
@@ -106,7 +106,7 @@ E.g.
 ]}
 ```
 
-### /api/dataserver/zone/config/<zone_id>
+### /api/dataserver/zone/config/&lt;zone_id&gt;
 
 This currently returns the complete vertx service configuration file the Zone was started with, which includes
 the lat/log path defining the zone boundary.
@@ -148,7 +148,7 @@ is between 2..3 (as defined by zone.finish_index).
 }
 ```
 
-### /api/dataserver/parking/config/<parking_id>
+### /api/dataserver/parking/config/&lt;parking_id&gt;
 
 Returns the configuration parameters of the car park with that parking_id, e.g. for grand-arcade-car-park:
 ```
@@ -194,7 +194,7 @@ Returns the full list of car parks in the system, with each entry being as the c
 }
 ```
 
-### /api/dataserver/parking/occupancy/<parking_id>?date=YYYY-MM-DD[&feed_id=<feed_id>]
+### /api/dataserver/parking/occupancy/&lt;parking_id&gt;?date=YYYY-MM-DD[&feed_id=<feed_id>]
 
 Returns the occupancy data for the requested parking_id on given date. An optional feed_id
 can be specified, otherwise the feed_id in the car park config file will be used.
@@ -249,7 +249,7 @@ Returns:
 }
 ```
 
-### /api/dataserver/feed/config/<feed_id>
+### /api/dataserver/feed/config/&lt;feed_id&gt;
 
 Provides configuration data for a given feed.
 
@@ -267,7 +267,7 @@ Returns:
 }
 ```
 
-### /api/dataserver/feed/now/<feed_id>
+### /api/dataserver/feed/now/&lt;feed_id&gt;
 
 Provides the LATEST JSON data for the requested feed.
 
