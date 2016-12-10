@@ -18,28 +18,6 @@
 
             "feedmaker.feeds":     [
                                        { 
-                                         "feed_id" :   "cam_park_local",
-                                         "feed_type":  "cam_park_local",
-                                         "area_id" :   "cam",
-
-                                         "http.get":   true,
-                                         "period" :    1000,
-                                         "http.host":  "www.cambridge.gov.uk",              
-                                         "http.uri" :  "/jdi_parking_ajax/complete",
-                                         "http.ssl":   true,
-                                         "http.port":  443,
-
-                                         "http.post":  true,
-                                         "http.token": "cam-auth-test",
-
-                                         "file_suffix":   ".html",
-                                         "data_bin" :     "/media/tfc/test/cam_park_local/data_bin",
-                                         "data_monitor" : "/media/tfc/test/cam_park_local/data_monitor",
-
-                                         "msg_type" :  "feed_car_parks",
-                                         "address" :   "tfc.feedmaker.test_local"
-                                       },
-                                       { 
                                          "feed_id" :   "cam_park_rss",
                                          "feed_type":  "cam_park_rss",
                                          "area_id" :   "cam",
