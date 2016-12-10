@@ -123,6 +123,8 @@ public class ParseFeed {
                                " (length "+record.length()+")"+
                                "["+record_template.fields.size()+"]");
 
+                    logger.log(Constants.LOG_DEBUG, "record=\""+record+"\"");
+
                     JsonObject json_record = new JsonObject();
 
                     boolean record_ok = true;  // this flag will be set to false if a 'required' field is missing
@@ -149,7 +151,8 @@ public class ParseFeed {
                           if (field_start >= 0)
                           {
                             json_record.put(field_template.field_name, field_template.fixed_int);
-                            logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array using conditional_fixed_int "+field_template.field_name+" "+field_template.s1);
+                            logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array using conditional_fixed_int "+
+                                       field_template.field_name+" "+field_template.s1);
                           }
                           continue;
                         }
@@ -172,7 +175,8 @@ public class ParseFeed {
                             } catch (Exception e) {
                                 if (field_template.required)
                                     {
-                                        logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array skipping due to "+field_template.field_name);
+                                        logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array skipping due to "+
+                                                   field_template.field_name);
                                         record_ok = false;
                                         break;
                                     }
@@ -188,7 +192,8 @@ public class ParseFeed {
                             } catch (Exception e) {
                                 if (field_template.required)
                                     {
-                                        logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array skipping due to "+field_template.field_name);
+                                        logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array skipping due to "+
+                                                   field_template.field_name);
                                         record_ok = false;
                                         break;
                                     }
@@ -203,7 +208,8 @@ public class ParseFeed {
                             { 
                                 if (field_template.required)
                                     {
-                                        logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array skipping due to "+field_template.field_name);
+                                        logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array skipping due to "+
+                                        field_template.field_name);
                                         record_ok = false;
                                         break;
                                     }
@@ -217,7 +223,8 @@ public class ParseFeed {
                             { 
                                 if (field_template.required)
                                     {
-                                        logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array skipping due to "+field_template.field_name);
+                                        logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array skipping due to "+
+                                        field_template.field_name);
                                         record_ok = false;
                                         break;
                                     }
@@ -235,7 +242,8 @@ public class ParseFeed {
                             } catch (NumberFormatException e) {
                                 if (field_template.required)
                                     {
-                                        logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array skipping due to "+field_template.field_name);
+                                        logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array skipping due to "+
+                                                   field_template.field_name);
                                         record_ok = false;
                                         break;
                                     }
@@ -258,7 +266,8 @@ public class ParseFeed {
                         }
                     else
                         {
-                            logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array skipping matched template "+ record_template.tag_start);
+                            logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array skipping matched template "+
+                                       record_template.tag_start);
                         }
                 }
 
@@ -320,55 +329,65 @@ public class ParseFeed {
        // ********************************************************************************
        ArrayList<RecordTemplate> cam_park_local = new ArrayList<RecordTemplate>();
  
-       ArrayList<FieldTemplate> fields = new ArrayList<FieldTemplate>();
-       fields.add(new FieldTemplate("spaces_free","int",null,0,"<strong>"," spaces", true));
-       fields.add(new FieldTemplate("spaces_occupied","calc_minus",null,0,"spaces_capacity","spaces_free", true));
+       ArrayList<FieldTemplate> common_fields;
+       
+       common_fields = new ArrayList<FieldTemplate>();
+       
+       common_fields.add(new FieldTemplate("spaces_free","int",null,0,"<strong>"," spaces", false));
+       // this is an alternative 'spaces_free' fixed value if record contains "This car park is full"
+       // valid for *all* car parks in the RSS feed. We have similar rules for capacity and occupied for each car park.
+       common_fields.add(new FieldTemplate("spaces_free","conditional_fixed_int",null,0,"This car park is full",null,false));
 
        RecordTemplate ft;
 
        // Grafton East Car Park
-       ft = new RecordTemplate(fields);
+       ft = new RecordTemplate(common_fields);
        ft.tag_start = "grafton-east-car-park";
        ft.tag_end = "</p>";
        // parking_id and spaces_capacity initialized with value in template
        ft.fields.add(new FieldTemplate("parking_id","fixed_string","grafton-east-car-park",0,null,null,true));
        ft.fields.add(new FieldTemplate("spaces_capacity","fixed_int",null,780,null,null,true));
+       ft.fields.add(new FieldTemplate("spaces_occupied","calc_minus",null,0,"spaces_capacity","spaces_free", true));
        cam_park_local.add(ft);
 
        // Grafton West Car Park
-       ft = new RecordTemplate(fields);
+       ft = new RecordTemplate(common_fields);
        ft.tag_start = "grafton-west-car-park";
        ft.tag_end = "</p>";
        // parking_id and spaces_capacity initialized with value in template
        ft.fields.add(new FieldTemplate("parking_id","fixed_string","grafton-west-car-park",0,null,null,true));
        ft.fields.add(new FieldTemplate("spaces_capacity","fixed_int",null,280,null,null,true));
+       ft.fields.add(new FieldTemplate("spaces_occupied","calc_minus",null,0,"spaces_capacity","spaces_free", true));
        cam_park_local.add(ft);
 
        // Grand Arcade Car Park
-       ft = new RecordTemplate(fields);
+       ft = new RecordTemplate(common_fields);
        ft.tag_start = "grand-arcade-car-park";
        ft.tag_end = "</p>";
        // parking_id and spaces_capacity initialized with value in template
        ft.fields.add(new FieldTemplate("parking_id","fixed_string","grand-arcade-car-park",0,null,null,true));
        ft.fields.add(new FieldTemplate("spaces_capacity","fixed_int",null,890,null,null,true));
+       ft.fields.add(new FieldTemplate("spaces_occupied","calc_minus",null,0,"spaces_capacity","spaces_free", true));
        cam_park_local.add(ft);
 
        // Park Street Car Park
-       ft = new RecordTemplate(fields);
+       ft = new RecordTemplate(common_fields);
        ft.tag_start = "park-street-car-park";
        ft.tag_end = "</p>";
        // parking_id and spaces_capacity initialized with value in template
        ft.fields.add(new FieldTemplate("parking_id","fixed_string","park-street-car-park",0,null,null,true));
        ft.fields.add(new FieldTemplate("spaces_capacity","fixed_int",null,375,null,null,true));
+       ft.fields.add(new FieldTemplate("spaces_occupied","calc_minus",null,0,"spaces_capacity","spaces_free", true));
        cam_park_local.add(ft);
 
        // Queen Anne Terrace Car Park
-       ft = new RecordTemplate(fields);
+       ft = new RecordTemplate(common_fields);
        ft.tag_start = "queen-anne-terrace-car-park";
        ft.tag_end = "</p>";
        // parking_id and spaces_capacity initialized with value in template
        ft.fields.add(new FieldTemplate("parking_id","fixed_string","queen-anne-terrace-car-park",0,null,null,true));
        ft.fields.add(new FieldTemplate("spaces_capacity","fixed_int",null,540,null,null,true));
+       ft.fields.add(new FieldTemplate("spaces_occupied","calc_minus",null,0,"spaces_capacity","spaces_free", true));
        cam_park_local.add(ft);
 
        record_templates.put("cam_park_local", cam_park_local);
@@ -378,55 +397,75 @@ public class ParseFeed {
        // ********************************************************************************
        ArrayList<RecordTemplate> cam_park_rss = new ArrayList<RecordTemplate>();
 
-       fields = new ArrayList<FieldTemplate>();
-       fields.add(new FieldTemplate("spaces_capacity","int",null,0,"taken out of "," capacity",false));
-       fields.add(new FieldTemplate("spaces_occupied","int",null,0,"There are "," spaces taken ",false));
-       fields.add(new FieldTemplate("spaces_free","calc_minus",null,0,"spaces_capacity","spaces_occupied",false));
-       fields.add(new FieldTemplate("spaces_free","conditional_fixed_int",null,0,"100% full",null,false));
+       common_fields = new ArrayList<FieldTemplate>();
+       common_fields.add(new FieldTemplate("spaces_capacity","int",null,0,"taken out of "," capacity",false));
+       common_fields.add(new FieldTemplate("spaces_occupied","int",null,0,"There are "," spaces taken ",false));
+       common_fields.add(new FieldTemplate("spaces_free","calc_minus",null,0,"spaces_capacity","spaces_occupied",false));
+       // this is an alternative 'spaces_free' fixed value if record contains "100% full"
+       // valid for *all* car parks in the RSS feed. We have similar rules for capacity and occupied for each car park.
+       common_fields.add(new FieldTemplate("spaces_free","conditional_fixed_int",null,0,"100% full",null,false));
        
 
-       // Grand Arcade from cam_park_rss
-       ft = new RecordTemplate(fields);
+       // RecordTemplate for Grand Arcade Car Park from cam_park_rss (similar for each Car Park in feed as below)
+       // Pre-populate the template with fields common to all car parks (i.e. 'fields' arraylist above)
+       ft = new RecordTemplate(common_fields);
+       // Define the text strings (tags) that define the start and end of the text block in the field.
+       // The section of text containing Grand Arcade occupancy has the string "Grand Arcade" before the required values.
        ft.tag_start = "Grand Arcade";
+       // The required section of text (i.e. 'record') ends with the first '</item>' after the start string.
        ft.tag_end = "</item>";
        // parking_id and spaces_capacity initialized with value in template
+       // This 'fixed_string' value for parking_id ensures that JSON value in the result is always what is required
        ft.fields.add(new FieldTemplate("parking_id","fixed_string","grand-arcade-car-park",0,null,null,true));
+       // Then (in addition to the 'common' fields defined first) we have additional non-required fields which only
+       // generate JSON values when the record contains "100% full". This is necessary due to the changing source format.
+       ft.fields.add(new FieldTemplate("spaces_capacity","conditional_fixed_int",null,890,"100% full",null,false));
+       ft.fields.add(new FieldTemplate("spaces_occupied","conditional_fixed_int",null,890,"100% full",null,false));
+       // This RecordTemplate is completed, so add to the "cam_park_rss" ArrayList
        cam_park_rss.add(ft);
 
        // Grafton East Car Park
-       ft = new RecordTemplate(fields);
+       ft = new RecordTemplate(common_fields);
        ft.tag_start = "Grafton East";
        ft.tag_end = "</item>";
        // parking_id and spaces_capacity initialized with value in template
        ft.fields.add(new FieldTemplate("parking_id","fixed_string","grafton-east-car-park",0,null,null,true));
+       ft.fields.add(new FieldTemplate("spaces_capacity","conditional_fixed_int",null,780,"100% full",null,false));
+       ft.fields.add(new FieldTemplate("spaces_occupied","conditional_fixed_int",null,780,"100% full",null,false));
        cam_park_rss.add(ft);
 
        // Grafton West Car Park
-       ft = new RecordTemplate(fields);
+       ft = new RecordTemplate(common_fields);
        ft.tag_start = "Grafton West";
        ft.tag_end = "</item>";
        // parking_id and spaces_capacity initialized with value in template
        ft.fields.add(new FieldTemplate("parking_id","fixed_string","grafton-west-car-park",0,null,null,true));
+       ft.fields.add(new FieldTemplate("spaces_capacity","conditional_fixed_int",null,280,"100% full",null,false));
+       ft.fields.add(new FieldTemplate("spaces_occupied","conditional_fixed_int",null,280,"100% full",null,false));
        cam_park_rss.add(ft);
 
        // Park Street Car Park
-       ft = new RecordTemplate(fields);
+       ft = new RecordTemplate(common_fields);
        ft.tag_start = "Park Street";
        ft.tag_end = "</item>";
        // parking_id and spaces_capacity initialized with value in template
        ft.fields.add(new FieldTemplate("parking_id","fixed_string","park-street-car-park",0,null,null,true));
+       ft.fields.add(new FieldTemplate("spaces_capacity","conditional_fixed_int",null,375,"100% full",null,false));
+       ft.fields.add(new FieldTemplate("spaces_occupied","conditional_fixed_int",null,375,"100% full",null,false));
        cam_park_rss.add(ft);
 
        // Queen Anne Terrace Car Park
-       ft = new RecordTemplate(fields);
+       ft = new RecordTemplate(common_fields);
        ft.tag_start = "Queen Anne";
        ft.tag_end = "</item>";
        // parking_id and spaces_capacity initialized with value in template
        ft.fields.add(new FieldTemplate("parking_id","fixed_string","queen-anne-terrace-car-park",0,null,null,true));
+       ft.fields.add(new FieldTemplate("spaces_capacity","conditional_fixed_int",null,540,"100% full",null,false));
+       ft.fields.add(new FieldTemplate("spaces_occupied","conditional_fixed_int",null,540,"100% full",null,false));
        cam_park_rss.add(ft);
 
        // P&R Madingley Road
-       ft = new RecordTemplate(fields);
+       ft = new RecordTemplate(common_fields);
        ft.tag_start = "Madingley Road";
        ft.tag_end = "</item>";
        // parking_id and spaces_capacity initialized with value in template
@@ -436,43 +475,53 @@ public class ParseFeed {
        cam_park_rss.add(ft);
 
        // P&R Trumpington
-       ft = new RecordTemplate(fields);
+       ft = new RecordTemplate(common_fields);
        ft.tag_start = "Trumpington";
        ft.tag_end = "</item>";
        // parking_id and spaces_capacity initialized with value in template
        ft.fields.add(new FieldTemplate("parking_id","fixed_string","trumpington-park-and-ride",0,null,null,true));
+       ft.fields.add(new FieldTemplate("spaces_capacity","conditional_fixed_int",null,1340,"100% full",null,false));
+       ft.fields.add(new FieldTemplate("spaces_occupied","conditional_fixed_int",null,1340,"100% full",null,false));
        cam_park_rss.add(ft);
 
        // P&R Babraham
-       ft = new RecordTemplate(fields);
+       ft = new RecordTemplate(common_fields);
        ft.tag_start = "Babraham";
        ft.tag_end = "</item>";
        // parking_id and spaces_capacity initialized with value in template
        ft.fields.add(new FieldTemplate("parking_id","fixed_string","babraham-park-and-ride",0,null,null,true));
+       ft.fields.add(new FieldTemplate("spaces_capacity","conditional_fixed_int",null,1500,"100% full",null,false));
+       ft.fields.add(new FieldTemplate("spaces_occupied","conditional_fixed_int",null,1500,"100% full",null,false));
        cam_park_rss.add(ft);
 
        // P&R Milton
-       ft = new RecordTemplate(fields);
+       ft = new RecordTemplate(common_fields);
        ft.tag_start = "Milton";
        ft.tag_end = "</item>";
        // parking_id and spaces_capacity initialized with value in template
        ft.fields.add(new FieldTemplate("parking_id","fixed_string","milton-park-and-ride",0,null,null,true));
+       ft.fields.add(new FieldTemplate("spaces_capacity","conditional_fixed_int",null,800,"100% full",null,false));
+       ft.fields.add(new FieldTemplate("spaces_occupied","conditional_fixed_int",null,800,"100% full",null,false));
        cam_park_rss.add(ft);
 
        // P&R Newmarket Road Front
-       ft = new RecordTemplate(fields);
+       ft = new RecordTemplate(common_fields);
        ft.tag_start = "Newmarket Rd Front";
        ft.tag_end = "</item>";
        // parking_id and spaces_capacity initialized with value in template
        ft.fields.add(new FieldTemplate("parking_id","fixed_string","newmarket-road-front-park-and-ride",0,null,null,true));
+       ft.fields.add(new FieldTemplate("spaces_capacity","conditional_fixed_int",null,259,"100% full",null,false));
+       ft.fields.add(new FieldTemplate("spaces_occupied","conditional_fixed_int",null,259,"100% full",null,false));
        cam_park_rss.add(ft);
 
        // P&R Newmarket Road Rear
-       ft = new RecordTemplate(fields);
+       ft = new RecordTemplate(common_fields);
        ft.tag_start = "Newmarket Rd Rear";
        ft.tag_end = "</item>";
        // parking_id and spaces_capacity initialized with value in template
        ft.fields.add(new FieldTemplate("parking_id","fixed_string","newmarket-road-rear-park-and-ride",0,null,null,true));
+       ft.fields.add(new FieldTemplate("spaces_capacity","conditional_fixed_int",null,614,"100% full",null,false));
+       ft.fields.add(new FieldTemplate("spaces_occupied","conditional_fixed_int",null,614,"100% full",null,false));
        cam_park_rss.add(ft);
 
 
