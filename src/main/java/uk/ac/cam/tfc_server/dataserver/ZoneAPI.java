@@ -49,13 +49,27 @@ public class ZoneAPI {
 
         // ZONE TRANSITS API e.g. /api/dataserver/zone/transits/madingley_road_in/2016/10/01
         
-        router.route(HttpMethod.GET, "/api/"+parent.MODULE_NAME+"/zone/transits/:zoneid/:yyyy/:MM/:dd").handler( ctx -> {
+        router.route(HttpMethod.GET, "/api/"+parent.MODULE_NAME+
+                                     "/zone/transits/:zoneid/:yyyy/:MM/:dd").handler( ctx -> {
                 String zone_id =  ctx.request().getParam("zoneid");
                 String yyyy =  ctx.request().getParam("yyyy");
                 String MM =  ctx.request().getParam("MM");
                 String dd =  ctx.request().getParam("dd");
                 parent.logger.log(Constants.LOG_DEBUG, parent.MODULE_NAME+"."+parent.MODULE_ID+
                            ": API zone/transits/"+zone_id+"/"+yyyy+"/"+MM+"/"+dd);
+                serve_transits(vertx, ctx, zone_id, yyyy, MM, dd);
+            });
+
+        // alternate format /api/dataserver/zone/transits/madingley_road_in?date=2016-10-01
+        router.route(HttpMethod.GET, "/api/"+parent.MODULE_NAME+
+                                     "/zone/transits/:zoneid").handler( ctx -> {
+                String zone_id =  ctx.request().getParam("zoneid");
+                String date =  ctx.request().getParam("date");
+                String yyyy = date.substring(0,4);
+                String MM =  date.substring(5,7);
+                String dd =  date.substring(8,10);
+                parent.logger.log(Constants.LOG_DEBUG, parent.MODULE_NAME+"."+parent.MODULE_ID+
+                           ": API zone/transits/"+zone_id+"?date="+yyyy+"-"+MM+"-"+dd);
                 serve_transits(vertx, ctx, zone_id, yyyy, MM, dd);
             });
         
