@@ -6,21 +6,21 @@
           {
 
             "module.name":           "feedhandler",
-            "module.id":             "gccd_bus",
+            "module.id":             "csn",
 
             "eb.system_status":      "tfc.system_status",
             "eb.console_out":        "tfc.console_out",
             "eb.manager":            "tfc.manager",
               
-            "feedhandler.log_level": 2,
+            "feedhandler.log_level": 1,
               
-            "feedhandler.address" :   "tfc.feedhandler.gccd_bus",
-            "feedhandler.http.port" : 8085,
-            "feedhandler.http.uri"  : "/feedhandler/vix",
+            "feedhandler.address" :   "tfc.feedhandler.csn",
+            "feedhandler.http.port" : 8087,
+            "feedhandler.http.uri"  : "/feedhandler/csn",
             "feedhandler.http.token": "cam-auth-test",
-            "feedhandler.tfc_data_bin": "/media/tfc/gccd_bus/data_bin",
-            "feedhandler.tfc_data_cache": "/media/tfc/gccd_bus/data_cache",
-            "feedhandler.tfc_data_monitor": "/media/tfc/gccd_bus/data_monitor"
+            "feedhandler.tfc_data_bin": "/media/tfc/csn/data_bin",
+            "feedhandler.tfc_data_cache": "/media/tfc/csn/data_cache",
+            "feedhandler.tfc_data_monitor": "/media/tfc/csn/data_monitor"
               
           }
         }

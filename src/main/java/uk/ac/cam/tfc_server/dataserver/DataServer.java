@@ -144,6 +144,8 @@ public class DataServer extends AbstractVerticle {
     
     FeedAPI feed_api = new FeedAPI(vertx, this, router);
     
+    AQAPI aq_api = new AQAPI(vertx, this, router);
+    
     // **************************************
     // **************************************
     // create handlers for template pages
