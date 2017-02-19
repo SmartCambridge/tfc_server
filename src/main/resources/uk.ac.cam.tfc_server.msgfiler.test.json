@@ -16,14 +16,23 @@
 
             "msgfiler.filers":
             [
-                { "source_address": "tfc.zone.cambridge",
+                { "source_address": "tfc.feedhandler.vix",
                   "source_filter": { "field": "msg_type",
                                      "compare": "=",
-                                     "value": "zone_completion"
+                                     "value": "feed_bus_position"
                                    },
-                  "store_path": "/home/ijl20/tfc_server_data/data_zone/{{ts|yyyy}}/{{ts|MM}}/{{ts|dd}}",
-                  "store_name": "{{module_id}}_{{ts|yyyy}}-{{ts|MM}}-{{ts|dd}}.txt",
-                  "store_mode": "append"
+                  "store_path": "/media/tfc/test/data_bin_json/{{filepath}}",
+                  "store_name": "{{filename}}.json",
+                  "store_mode": "write"
+                },
+                { "source_address": "tfc.feedhandler.vix",
+                  "source_filter": { "field": "msg_type",
+                                     "compare": "=",
+                                     "value": "feed_bus_position"
+                                   },
+                  "store_path": "/media/tfc/test/data_monitor_json",
+                  "store_name": "post_data.json",
+                  "store_mode": "write"
                 }
             ]
               

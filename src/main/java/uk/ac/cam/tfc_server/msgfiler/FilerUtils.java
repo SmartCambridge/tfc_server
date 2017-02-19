@@ -36,6 +36,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.file.FileSystemException;
 
 import uk.ac.cam.tfc_server.util.Log;
 import uk.ac.cam.tfc_server.util.Constants;
@@ -350,9 +351,35 @@ public class FilerUtils {
     // **********************************************************
     // overwrite_file()
     // will do an ASYNCHRONOUS operation, i.e. return immediately
+    // Note: to extend the data API to 'now and previous' data sets,
+    // this function SYNCHRONOUSLY moves any existing data file 'x' to 'x.prev'
+    // before writing the new file.
     private void overwrite_file(String msg, String file_path)
     {
         FileSystem fs = vertx.fileSystem();
+
+        // First we write the PREVIOUS file to file_path.prev
+        // but skip errors if we can't delete the previous  .prev file (maybe this is the 1st)
+        try
+        {
+             fs.deleteBlocking(file_path+Constants.PREV_FILE_SUFFIX);
+        }
+        catch (FileSystemException e)
+        {
+             // we tried to remove previous 'prev' file and failed, but it doesn't matter.
+             Log.log_err("MsgFiler."+filer_config.module_id+
+                           ": overwrite_file did not find existing previous file for "+file_path);
+        }
+        try
+        {
+             fs.moveBlocking(file_path, file_path+Constants.PREV_FILE_SUFFIX);
+        }
+        catch (FileSystemException e)
+        {
+             Log.log_err("MsgFiler."+filer_config.module_id+
+                          ": overwrite_file did not find existing "+file_path);
+        }
+
         Buffer buf = Buffer.buffer(msg);
         fs.writeFile(file_path, 
                      buf, 
