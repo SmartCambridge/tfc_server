@@ -5,7 +5,8 @@ package uk.ac.cam.tfc_server.dataserver;
 // serves feed data via http / json (/api/dataserver/feed/...)
 // E.g.
 //   /api/dataserver/feed/now/cam_park_rss
-//   /api/dataserver/feed/config/cam_park_rss
+//   /api/dataserver/feed/prev/vix
+//   /api/dataserver/feed/config/cam_park_local
 //   /api/dataserver/feed/list
 //
 
@@ -64,7 +65,7 @@ public class FeedAPI {
             });
 
         // FEED NOW API e.g. /api/dataserver/feed/now/<feed_id>
-        
+        // Will return the CURRENT data for the feed, i.e. the data most recently received
         router.route(HttpMethod.GET, "/api/"+parent.MODULE_NAME+
                                      "/feed/now/:feedid").handler( ctx -> {
                 String feed_id =  ctx.request().getParam("feedid");
@@ -72,6 +73,19 @@ public class FeedAPI {
                            ": API feed/now/"+feed_id);
  
                 String filename = parent.DATA_PATH+"/"+feed_id+FEED_NOW_JSON;
+
+                serve_file(vertx, ctx, filename);
+            });
+
+        // FEED PREV API e.g. /api/dataserver/feed/prev/<feed_id>
+        // Will return the PREVIOUS received data for the feed (vs NOW above)
+        router.route(HttpMethod.GET, "/api/"+parent.MODULE_NAME+
+                                     "/feed/previous/:feedid").handler( ctx -> {
+                String feed_id =  ctx.request().getParam("feedid");
+                parent.logger.log(Constants.LOG_DEBUG, parent.MODULE_NAME+"."+parent.MODULE_ID+
+                           ": API feed/previous/"+feed_id);
+ 
+                String filename = parent.DATA_PATH+"/"+feed_id+FEED_NOW_JSON+Constants.PREV_FILE_SUFFIX;
 
                 serve_file(vertx, ctx, filename);
             });
