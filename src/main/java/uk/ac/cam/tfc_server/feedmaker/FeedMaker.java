@@ -182,14 +182,11 @@ public class FeedMaker extends AbstractVerticle {
           }
           // monitor_path now exists
 
-          logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
-                     ": starting FeedMaker for "+
-                     config.getString("http.host")+
-                     config.getString("http.uri"));
-
           // create a HTTP POST 'listener' for this feed at BASE_URI/FEED_ID
           if (HTTP_PORT != 0 && config.getBoolean("http.post", false))
               {
+                  logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+"."+
+                             config.getString("feed_id")+": starting POST listener");
                   add_feed_handler(router, BASE_URI, config, parser);
               }
 
@@ -236,6 +233,8 @@ public class FeedMaker extends AbstractVerticle {
         final String HTTP_TOKEN = config.getString("http.token");
         final String FEED_ID = config.getString("feed_id");
 
+        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
+                                       ": setting up POST listener on "+"/"+BASE_URI+"/"+FEED_ID);
         router.route(HttpMethod.POST,"/"+BASE_URI+"/"+FEED_ID).handler( ctx -> {
                 ctx.request().bodyHandler( buffer -> {
                         try {

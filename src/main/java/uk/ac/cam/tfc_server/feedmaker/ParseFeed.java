@@ -102,7 +102,17 @@ public class ParseFeed {
 
             JsonArray records = new JsonArray();
 
-            // try and match each known car park to the data
+            // if feed_type is "plain", just return a simple JsonArray of a single JsonObject {"feed_data": page }
+            if (feed_type==Constants.FEED_PLAIN)
+            {
+                logger.log(Constants.LOG_DEBUG, "ParseFeed plain record");
+                JsonObject json_record = new JsonObject();
+                json_record.put("feed_data", page);
+                records.add(json_record);
+                return records;
+            }
+
+            // otherwise try and match each known car park to the data
             for (int i=0; i<record_templates.get(feed_type).size(); i++)
                 {
                     RecordTemplate record_template = record_templates.get(feed_type).get(i);
