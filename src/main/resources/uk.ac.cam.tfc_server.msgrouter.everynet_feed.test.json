@@ -24,7 +24,13 @@
                                          "field": "dev_eui",
                                          "compare": "=",
                                          "value": "0018b2000000113e"
-                                     }
+                                     },
+                     "http.host":  "localhost",              
+                     "http.uri" :  "/everynet_feed/test/adeunis_test2",
+                     "http.ssl":   false,
+                     "http.port":  8098,
+                     "http.post":  true,
+                     "http.token": "test-msgrouter-post"
                 }
             ]
               
