@@ -1,0 +1,33 @@
+                                                                                
+{
+    "main":    "uk.ac.cam.tfc_server.msgrouter.MsgRouter",
+    "options":
+        { "config":
+          {
+
+            "module.name":           "msgrouter",
+            "module.id":             "everynet_feed_test",
+
+            "eb.system_status":      "tfc.system_status",
+            "eb.console_out":        "tfc.console_out",
+            "eb.manager":            "tfc.manager",
+
+            "msgrouter.log_level":     1,
+
+            "msgrouter.address": "tfc.msgrouter.everynet_feed_test",
+
+            "msgrouter.routers":
+            [
+                { 
+                    "source_address": "tfc.everynet_feed.test",
+                    "source_filter": { 
+                                         "field": "dev_eui",
+                                         "compare": "=",
+                                         "value": "0018b2000000113e"
+                                     }
+                }
+            ]
+              
+          }
+        }
+}
