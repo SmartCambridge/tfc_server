@@ -1,0 +1,12 @@
+{
+   "module_name": "testmodule",
+   "module_id":   "test",      
+   "msg_type":    "test_msg_type",
+   "feed_id":     "httpmsg.test",
+   "ts":          1498318746,
+   "request_data":[
+                    { "foo":             "cam",
+                      "bah":             66
+                    }
+                  ]
+}

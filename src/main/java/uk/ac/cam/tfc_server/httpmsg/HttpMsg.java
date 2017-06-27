@@ -37,11 +37,6 @@ import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 
-import io.vertx.core.http.HttpClient;
-import io.vertx.core.http.HttpClientOptions;
-import io.vertx.core.http.HttpClientResponse;
-
-import io.vertx.core.file.FileSystem;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
@@ -58,7 +53,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class HttpMsg extends AbstractVerticle {
 
-    private final String VERSION = "0.01";
+    private final String VERSION = "0.03";
     
     // from config()
     private String MODULE_NAME;       // config module.name - normally "httpmsg"
@@ -79,7 +74,6 @@ public class HttpMsg extends AbstractVerticle {
     private final int SYSTEM_STATUS_RED_SECONDS = 35;
 
     // global vars
-    private HashMap<String,HttpClient> http_clients; // used to store a HttpClient for each feed_id
     private EventBus eb = null;
 
     private Log logger;
@@ -90,9 +84,6 @@ public class HttpMsg extends AbstractVerticle {
     Router router = null;
 
     String BASE_URI = null;
-
-    // create holder for HttpClients
-    http_clients = new HashMap<String,HttpClient>();
 
     // load HttpMsg initialization values from config()
     if (!get_config())
@@ -124,7 +115,6 @@ public class HttpMsg extends AbstractVerticle {
         }
 
     // iterate through all the feedmakers to be started
-    // This will start the 'setPeriodic' GET pollers and also add the required
     // BASE_URI/FEED_ID http POST handlers to the router
     for (int i=0; i<START_FEEDS.size(); i++)
         {
@@ -133,11 +123,9 @@ public class HttpMsg extends AbstractVerticle {
 
     // *********************************************************************
     // connect router to http_server, including the feed POST handlers added
-    if (HTTP_PORT != 0) 
-        {
-            http_server.requestHandler(router::accept).listen(HTTP_PORT);
-            logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": http server started");
-        }
+    http_server.requestHandler(router::accept).listen(HTTP_PORT);
+    logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
+               ": http server started on :"+HTTP_PORT+"/"+MODULE_NAME+"/"+MODULE_ID);
     
   } // end start()
 
@@ -151,7 +139,7 @@ public class HttpMsg extends AbstractVerticle {
                 HttpServerResponse response = ctx.response();
                 response.putHeader("content-type", "text/html");
 
-                response.end("<h1>TFC Rita HttpMsg at "+uri+"</h1><p>Version "+VERSION+"</p>\n");
+                response.end("<h1>HttpMsg at "+uri+"</h1><p>Version "+VERSION+"</p>\n");
             });
     }
 
@@ -159,31 +147,10 @@ public class HttpMsg extends AbstractVerticle {
     // start a feed maker with a given config
     private void start_maker(JsonObject config, Router router, String BASE_URI)
     {
-          // create monitor directory if necessary
-          FileSystem fs = vertx.fileSystem();          
-          String monitor_path = config.getString("data_monitor");
-          if (!fs.existsBlocking(monitor_path))
-          {
-            try {
-                fs.mkdirsBlocking(monitor_path);
-                logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
-                                        ": start_maker created monitor path "+monitor_path);
-            } catch (Exception e) {
-                logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
-                                        ": start_maker FAIL: error creating monitor path "+monitor_path);
-                return;
-            }
-          }
-          // monitor_path now exists
-
           // create a HTTP POST 'listener' for this feed at BASE_URI/FEED_ID
-          if (HTTP_PORT != 0 && config.getBoolean("http.post", false))
-              {
-                  logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+"."+
-                             config.getString("feed_id")+": starting POST listener");
-                  add_feed_handler(router, BASE_URI, config);
-              }
-
+          logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+"."+
+                     config.getString("address")+": starting POST listener");
+          add_feed_handler(router, BASE_URI, config);
     }
 
     // ******************************
@@ -211,26 +178,31 @@ public class HttpMsg extends AbstractVerticle {
                                   JsonObject config)
     {
         final String HTTP_TOKEN = config.getString("http.token");
-        final String FEED_ID = config.getString("feed_id");
+        final String ADDRESS = config.getString("address");
 
-        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
-                                       ": setting up POST listener on "+"/"+BASE_URI+"/"+FEED_ID);
-        router.route(HttpMethod.POST,"/"+BASE_URI+"/"+FEED_ID).handler( ctx -> {
+        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+ADDRESS+
+                                       ": setting up POST listener on "+"/"+BASE_URI+"/"+ADDRESS);
+        router.route(HttpMethod.POST,"/"+BASE_URI+"/"+ADDRESS).handler( ctx -> {
                 ctx.request().bodyHandler( buffer -> {
                         try {
                             // read the head value "X-Auth-Token" from the POST
                             String post_token = ctx.request().getHeader("X-Auth-Token");
-                            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
+                            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+ADDRESS+
                                        ": X-Auth-Token="+post_token);
                             // if the token matches the config(), or config() http.token is null
                             // then process this particular post
                             if (HTTP_TOKEN==null || HTTP_TOKEN.equals(post_token))
-                                {
-                                    process_feed(buffer, config);
-                                }
+                            {
+                                process_feed(buffer, config);
+                            }
+                            else
+                            {
+                                logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                                       ": "+ADDRESS+" X-Auth-Token mis-match");
+                            }
                         } catch (Exception e) {
-                            logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
-                                       ": proceed_feed error");
+                            logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                                       ": "+ADDRESS+" proceed_feed error");
                             logger.log(Constants.LOG_WARN, e.getMessage());
                         }
 
@@ -238,46 +210,14 @@ public class HttpMsg extends AbstractVerticle {
                     });
 
             });
-        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+": POST handler started");
+        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": "+BASE_URI+"/"+ADDRESS+" POST handler started");
     }
 
-
-    // ***********************************************    
-    // get current local time as "YYYY-MM-DD-hh-mm-ss"
-    private String local_datetime_string()
-    {
-        LocalDateTime local_time = LocalDateTime.now();
-        return local_time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss"));
-    }
 
   // *****************************************************************
   // process the received raw data
   private void process_feed(Buffer buf, JsonObject config) throws Exception 
   {
-
-    LocalDateTime local_time = LocalDateTime.now();
-    
-    String day = local_time.format(DateTimeFormatter.ofPattern("dd"));
-    String month = local_time.format(DateTimeFormatter.ofPattern("MM"));
-    String year = local_time.format(DateTimeFormatter.ofPattern("yyyy"));
-    String utc_ts = String.valueOf(System.currentTimeMillis() / 1000);
-
-    // filename without the suffix
-    String filename = utc_ts+"_"+local_time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss"));
-    // sub-dir structure to store the file
-    String filepath = year+"/"+month+"/"+day;
-    
-    // Write file to DATA_BIN
-    //
-    final String bin_path = config.getString("data_bin")+"/"+filepath;
-    final String file_suffix = config.getString("file_suffix");
-    write_bin_file(buf, bin_path, filename, file_suffix);
-
-    // Write file to DATA_MONITOR
-    //
-    final String monitor_path = config.getString("data_monitor");
-    write_monitor_file(buf, monitor_path, filename, file_suffix);
-
     // Copy the received data into a suitable EventBus JsonObject message
     JsonObject msg;
 
@@ -288,221 +228,19 @@ public class HttpMsg extends AbstractVerticle {
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": prepared EventBus msg:");
         logger.log(Constants.LOG_DEBUG, msg.toString());
 
-        String httpmsg_address = config.getString("address");
+        String address = config.getString("address");
 
-        eb.publish(httpmsg_address, msg);
+        eb.publish(address, msg);
     
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                   ": published latest GET data to "+httpmsg_address);
+                   ": published latest POST data to "+address);
     }
     catch (Exception e) {
         logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
-                   ": exception raised during parsing of http post "+config.getString("address")+":");
+                   ": exception raised during processing of http post "+config.getString("address")+":");
         logger.log(Constants.LOG_WARN, e.getMessage());
     }
   } // end process_feed()
-
-    // ******************************************************************
-    // write_bin_file()
-    //
-    // Write the 'buf' (i.e. the binary data as received) into a file at
-    // 'bin_path/filename/file_suffix'
-    //
-    private void write_bin_file(Buffer buf, String bin_path, String filename, String file_suffix)
-    {
-        FileSystem fs = vertx.fileSystem();
-        // if full directory path exists, then write file
-        // otherwise create full path first
-    
-        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                   ": Writing "+bin_path+"/"+filename + file_suffix);
-        fs.exists(bin_path, result -> {
-                if (result.succeeded() && result.result())
-                    {
-                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                                   ": process_feed: path "+bin_path+" exists");
-                        write_file(fs, buf, bin_path+"/"+filename+ file_suffix);
-                    }
-                else
-                    {
-                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                                   ": Creating directory "+bin_path);
-                        fs.mkdirs(bin_path, mkdirs_result -> {
-                                if (mkdirs_result.succeeded())
-                                    {
-                                        write_file(fs, buf, bin_path+"/"+filename+ file_suffix);
-                                    }
-                                else
-                                    {
-                                        Log.log_err(MODULE_NAME+"."+MODULE_ID+
-                                                    ": error creating tfc_data_bin path "+bin_path);
-                                    }
-                            });
-                    }
-        });
-    }        
-
-    // ************************************************************************************
-    // write_monitor_file()
-    //
-    // Write 'buf' to file in the filesystem, deleting previous files in the same directory
-    // This is convenient for a separate 'inotifywait' process to listen for file-close-write
-    // events on that directory and trigger separate processes, e.g. to POST the file onward.
-    //
-    private void write_monitor_file(Buffer buf, String monitor_path, String filename, String file_suffix)
-    {
-        FileSystem fs = vertx.fileSystem();
-
-        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-               ": Writing "+monitor_path+"/"+filename+ file_suffix);
-        fs.readDir(monitor_path, ".*\\"+file_suffix, monitor_result -> {
-            if (monitor_result.succeeded())
-                {
-                    // directory exists, delete previous files of same suffix
-                    for (String f: monitor_result.result())
-                        {
-                            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                                       ": Deleting "+f);
-                            fs.delete(f, delete_result -> {
-                                    if (!delete_result.succeeded())
-                                        {
-                                          logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
-                                                      ": error tfc_data_monitor delete: "+f);
-                                        }
-                                });
-                        }
-                    write_file(fs, buf, monitor_path+"/"+filename+ file_suffix);
-                }
-            else
-                {
-                    logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
-                                ": error reading data_monitor path: "+
-                                monitor_path);
-                    logger.log(Constants.LOG_WARN, monitor_result.cause().getMessage());
-                }
-        });
-    }
-
-  // ***************************************************
-  // Write the 'buf' as a file 'filepath' (non-blocking)
-  private void write_file(FileSystem fs, Buffer buf, String file_path)
-  {
-    fs.writeFile(file_path, 
-                 buf, 
-                 result -> {
-      if (result.succeeded()) {
-          logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                     ": File "+file_path+" written");
-      } else {
-        Log.log_err(MODULE_NAME+"."+MODULE_ID+": write_file error ..." + result.cause());
-      }
-    });
-  } // end write_file
-
-    // validate_feeds() will validate a HttpMsg feeds config, and insert default values
-    // The config is kept as a JsonArray
-    private boolean validate_feeds()
-    {
-        if (START_FEEDS.size() < 1)
-            {
-                Log.log_err(MODULE_NAME+"."+MODULE_ID+": no "+MODULE_NAME+".feeds in config");
-                return false;
-            }
-        for (int i=0; i<START_FEEDS.size(); i++)
-            {
-                JsonObject config = START_FEEDS.getJsonObject(i);
-
-                // feed_id is unique for this feed
-                if (config.getString("feed_id")==null)
-                    {
-                        Log.log_err(MODULE_NAME+"."+MODULE_ID+": feed_id missing in config");
-                        return false;
-                    }
-
-                String FEED_ID = config.getString("feed_id");
-
-                // http.get and http.post bools tell HttpMsg whether to GET or receive POSTS
-                boolean http_get = config.getBoolean("http.get", false);
-                boolean http_post = config.getBoolean("http.post", false);
-
-                if ( !http_get && !http_post)
-                    {
-                        Log.log_err(MODULE_NAME+"."+MODULE_ID+".feeds."+FEED_ID+
-                                    ": require http.post or http.get in config");
-                        return false;
-                    }
-
-                if ( http_post && HTTP_PORT==0)
-                    {
-                        Log.log_err(MODULE_NAME+"."+MODULE_ID+".feeds."+FEED_ID+
-                                    ": http.post requires "+MODULE_NAME+".http.port in config");
-                        return false;
-                    }
-
-                // host name from which to GET data
-                if (http_get && config.getString("http.host")==null)
-                    {
-                        Log.log_err(MODULE_NAME+"."+MODULE_ID+".feeds."+FEED_ID+
-                                    ": http.host missing in config");
-                        return false;
-                    }
-
-                // ssl yes/no for http request
-                if (http_get && config.getBoolean("http.ssl")==null)
-                    {
-                        config.put("http.ssl", false);
-                    }
-
-                // http port to be used to request the data
-                if (http_get && config.getInteger("http.port")==null)
-                    {
-                        config.put("http.port", 80);
-                    }
-
-                // period (in seconds) between successive 'get' requests for data
-                if (http_get && config.getInteger("period",0)==0)
-                    {
-                        Log.log_err(MODULE_NAME+"."+MODULE_ID+".feeds."+FEED_ID+
-                                    ": period missing in config");
-                        return false;
-                    }
-
-                if (config.getString("data_bin")==null)
-                    {
-                        Log.log_err(MODULE_NAME+"."+MODULE_ID+".feeds."+FEED_ID+
-                                    ": data_bin missing in config");
-                        return false;
-                    }
-
-                // filesystem path to store the latest 'post_data.bin' file so 
-                // it can be monitored for inotifywait processing
-                if (config.getString("data_monitor")==null)
-                    {
-                        Log.log_err(MODULE_NAME+"."+MODULE_ID+".feeds."+FEED_ID+
-                                    ": data_monitor missing in config");
-                        return false;
-                    }
-
-                if (config.getString("file_suffix")==null)
-                    {
-                        config.put("file_suffix",".bin");
-                    }
-
-                // create a new HttpClient for this feed, and add to http_clients list
-                if (http_get)
-                    {
-                        http_clients.put(config.getString("feed_id"),
-                             vertx.createHttpClient( new HttpClientOptions()
-                                                       .setSsl(config.getBoolean("http.ssl"))
-                                                       .setTrustAll(true)
-                                                       .setDefaultPort(config.getInteger("http.port"))
-                                                       .setDefaultHost(config.getString("http.host"))
-                            ));
-                    }
-            }
-
-        return true; // if we got to here then we can return ok, error would have exitted earlier
-    }        
 
     // Load initialization global constants defining this HttpMsg from config()
     private boolean get_config()
@@ -547,17 +285,16 @@ public class HttpMsg extends AbstractVerticle {
                 return false;
             }
 
-        // web address for this FeedHandler to receive POST data messages from original source
+        // web address to receive POST data messages from original source
         HTTP_PORT = config().getInteger(MODULE_NAME+".http.port",0);
+        if (HTTP_PORT == 0)
+            {
+                Log.log_err(MODULE_NAME+"."+MODULE_ID+": "+MODULE_NAME+".http.port config() not set");
+                return false;
+            }
 
         START_FEEDS = config().getJsonArray(MODULE_NAME+".feeds");
         
-        if (!validate_feeds())
-            {
-                Log.log_err(MODULE_NAME+"."+MODULE_ID+": feeds config() not valid");
-                return false;
-            }
-                
         return true;
     }
 

@@ -1,0 +1,27 @@
+                                                                                
+{
+    "main":    "uk.ac.cam.tfc_server.httpmsg.HttpMsg",
+    "options":
+        { "config":
+          {
+
+            "module.name":           "httpmsg",
+            "module.id":             "test",
+
+            "eb.system_status":      "tfc.system_status",
+            "eb.console_out":        "tfc.console_out",
+            "eb.manager":            "tfc.manager",
+              
+            "httpmsg.log_level":   1,
+
+            "httpmsg.http.port":   8098,
+
+            "httpmsg.feeds":     [
+                                       { 
+                                         "http.token": "httpmsg-test",
+                                         "address" :   "tfc.httpmsg.test"
+                                        }
+                                 ]
+          }
+        }
+}
