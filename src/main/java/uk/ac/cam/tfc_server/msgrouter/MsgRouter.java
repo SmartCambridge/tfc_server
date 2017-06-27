@@ -196,7 +196,7 @@ public class MsgRouter extends AbstractVerticle {
             });
         // Now do stuff with the request
         request.putHeader("content-type", "application/json");
-        request.timeout(15000);
+        request.setTimeout(15000);
 
         String auth_token = router_config.getString("http.token");
         if (auth_token != null)
