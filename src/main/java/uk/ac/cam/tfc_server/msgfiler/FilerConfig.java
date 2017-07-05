@@ -52,9 +52,9 @@ public class FilerConfig {
         store_mode = config.getString("store_mode");
 
         System.out.println(module_name+"."+module_id+": FilerConfig loaded:");
-        System.out.println(module_name+"."+module_id+": "+source_address+","+source_filter.toString()+","+
+        System.out.println(module_name+"."+module_id+
+                           ": "+source_address+","+(source_filter != null ? source_filter.toString() : "no source filter")+","+
                            flatten+","+store_path+","+store_name+","+store_mode);
-        
     }
 } // end class FilterConfig
 
