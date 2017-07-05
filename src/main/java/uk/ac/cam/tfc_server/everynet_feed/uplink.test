@@ -1,0 +1,33 @@
+{
+  "jsonrpc": "2.0",
+  "method": "uplink",
+  "params": {
+    "radio": {
+      "rfch": 1,
+      "lsnr": 8.8,
+      "codr": "4/5",
+      "gw_gps": {
+        "lat": 52.21098,
+        "lon": 0.09186,
+        "alt": 47},
+      "modu": "LORA",
+      "freq": 868.5,
+      "gateway_time": 1486842315.909435,
+      "chan": 6,
+      "tmst": 703344068,
+      "rssi": -90,
+      "server_time": 1486842315.944692,
+      "size": 18,
+      "gw_addr": "70b3d54b138e0000",
+      "stat": 1,
+      "datr": "SF7BW125",
+      "gw_band": "EU863-870"},
+    "payload": "MjUuNDg=",
+    "dev_addr": "17850013",
+    "counter_up": 10934,
+    "dev_eui": "763953fab342fbd8",
+    "encrypted_payload": "km9K35w=",
+    "port": 1,
+    "rx_time": 1486842315.909435},
+  "id": "51b34195f6c5"
+}

@@ -1,0 +1,45 @@
+                                                                                
+{
+    "main":    "uk.ac.cam.tfc_server.everynet_feed.EverynetFeed",
+    "options":
+        { "config":
+          {
+
+            "module.name":           "everynet_feed",
+            "module.id":             "A",
+
+            "eb.system_status":      "tfc.system_status",
+            "eb.console_out":        "tfc.console_out",
+            "eb.manager":            "tfc.manager",
+              
+            "everynet_feed.log_level":   1,
+
+            "everynet_feed.http.port":   8087,
+
+            "everynet_feed.feeds":     [
+                                       { 
+                                         "feed_id" :   "ascii_decimal",
+                                         "area_id" :   "cam",
+
+                                         "file_suffix":   ".json",
+                                         "data_bin" :     "/home/ijl20/everynet_data/data_bin",
+                                         "data_monitor" : "/home/ijl20/everynet_data/data_monitor",
+
+                                         "msg_type" :  "everynet_ascii_decimal",
+                                         "address" :   "tfc.everynet_feed.A"
+                                       },
+                                       { 
+                                         "feed_id" :   "ascii_hex",
+                                         "area_id" :   "cam",
+
+                                         "file_suffix":   ".json",
+                                         "data_bin" :     "/home/ijl20/everynet_data/data_bin",
+                                         "data_monitor" : "/home/ijl20/everynet_data/data_monitor",
+
+                                         "msg_type" :  "everynet_ascii_hex",
+                                         "address" :   "tfc.everynet_feed.A"
+                                       }
+                                     ]
+          }
+        }
+}
