@@ -1,0 +1,14 @@
+{
+    "msg_type":    "module_method",
+    "to_module_name": "msgrouter",
+    "to_module_id": "test",
+    "method": "add_application",
+    "params": { "app_eui": "0018b2000000abcd",
+                "http.post": true,
+                "http.host": "localhost",
+                "http.port": 8098,
+                "http.uri": "/everynet_feed/test/adeunis_test2",
+                "http.ssl": false,
+                "http.token": "test-msgrouter-post"
+                }
+}

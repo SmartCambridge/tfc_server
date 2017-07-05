@@ -14,12 +14,16 @@
               
             "httpmsg.log_level":   1,
 
-            "httpmsg.http.port":   8098,
+            "httpmsg.http.port":   8097,
 
             "httpmsg.feeds":     [
                                        { 
                                          "http.token": "httpmsg-test",
                                          "address" :   "tfc.httpmsg.test"
+                                        },
+                                       { 
+                                         "http.token": "httpmsg-test",
+                                         "address" :   "tfc.manager"
                                         }
                                  ]
           }

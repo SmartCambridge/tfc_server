@@ -1,0 +1,9 @@
+{
+    "msg_type":    "module_method",
+    "to_module_name": "msgrouter",
+    "to_module_id": "test",
+    "method": "add_device",
+    "params": { "dev_eui": "0018b2000000113e",
+                "app_eui": "0018b2000000abcd"
+                }
+}

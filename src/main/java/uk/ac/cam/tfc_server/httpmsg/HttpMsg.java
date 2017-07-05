@@ -53,7 +53,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class HttpMsg extends AbstractVerticle {
 
-    private final String VERSION = "0.03";
+    private final String VERSION = "0.04";
     
     // from config()
     private String MODULE_NAME;       // config module.name - normally "httpmsg"
@@ -118,7 +118,7 @@ public class HttpMsg extends AbstractVerticle {
     // BASE_URI/FEED_ID http POST handlers to the router
     for (int i=0; i<START_FEEDS.size(); i++)
         {
-          start_maker(START_FEEDS.getJsonObject(i), router, BASE_URI);
+          start_feed(START_FEEDS.getJsonObject(i), router, BASE_URI);
         }
 
     // *********************************************************************
@@ -145,11 +145,9 @@ public class HttpMsg extends AbstractVerticle {
 
     // *************************************
     // start a feed maker with a given config
-    private void start_maker(JsonObject config, Router router, String BASE_URI)
+    private void start_feed(JsonObject config, Router router, String BASE_URI)
     {
           // create a HTTP POST 'listener' for this feed at BASE_URI/FEED_ID
-          logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+"."+
-                     config.getString("address")+": starting POST listener");
           add_feed_handler(router, BASE_URI, config);
     }
 
@@ -180,20 +178,20 @@ public class HttpMsg extends AbstractVerticle {
         final String HTTP_TOKEN = config.getString("http.token");
         final String ADDRESS = config.getString("address");
 
-        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+ADDRESS+
+        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                                        ": setting up POST listener on "+"/"+BASE_URI+"/"+ADDRESS);
         router.route(HttpMethod.POST,"/"+BASE_URI+"/"+ADDRESS).handler( ctx -> {
                 ctx.request().bodyHandler( buffer -> {
                         try {
                             // read the head value "X-Auth-Token" from the POST
                             String post_token = ctx.request().getHeader("X-Auth-Token");
-                            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+ADDRESS+
-                                       ": X-Auth-Token="+post_token);
+                            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                                       ": "+ADDRESS+ " POST X-Auth-Token="+post_token);
                             // if the token matches the config(), or config() http.token is null
                             // then process this particular post
                             if (HTTP_TOKEN==null || HTTP_TOKEN.equals(post_token))
                             {
-                                process_feed(buffer, config);
+                                process_post(buffer, config);
                             }
                             else
                             {
@@ -210,37 +208,44 @@ public class HttpMsg extends AbstractVerticle {
                     });
 
             });
-        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": "+BASE_URI+"/"+ADDRESS+" POST handler started");
     }
 
 
   // *****************************************************************
-  // process the received raw data
-  private void process_feed(Buffer buf, JsonObject config) throws Exception 
+  // process the received POST, and send as EventBus message
+  private void process_post(Buffer buf, JsonObject config) throws Exception 
   {
     // Copy the received data into a suitable EventBus JsonObject message
     JsonObject msg;
 
     try {            
+        // try parsing the POST message as JSON, exception on fail
         msg = new JsonObject(buf.toString());
 
-        // debug print out the JsonObject message
-        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": prepared EventBus msg:");
-        logger.log(Constants.LOG_DEBUG, msg.toString());
-
+        // get the destination EventBus address from the module config
         String address = config.getString("address");
 
+        // Embed module_name and module_id for THIS module into the EventBus message
+        msg.put("module_name", MODULE_NAME);
+        msg.put("module_id", MODULE_ID);
+
+        // debug print out the JsonObject message
+        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                   ": prepared EventBus msg for "+address+":");
+        logger.log(Constants.LOG_DEBUG, msg.toString());
+
+        // ******************************************************************
+        // ******  SEND THE POST DATA ON EVENTBUS   *************************
+        // ******************************************************************
         eb.publish(address, msg);
     
-        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                   ": published latest POST data to "+address);
     }
     catch (Exception e) {
         logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
                    ": exception raised during processing of http post "+config.getString("address")+":");
         logger.log(Constants.LOG_WARN, e.getMessage());
     }
-  } // end process_feed()
+  } // end process_post()
 
     // Load initialization global constants defining this HttpMsg from config()
     private boolean get_config()
