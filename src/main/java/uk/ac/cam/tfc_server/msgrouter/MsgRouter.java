@@ -5,6 +5,8 @@ package uk.ac.cam.tfc_server.msgrouter;
 // *************************************************************************************************
 // MsgRouter.java
 //
+// This module receives messages from the EventBus and POSTs them on to application destinations
+//
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // *************************************************************************************************
@@ -33,7 +35,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class MsgRouter extends AbstractVerticle {
 
-    private final String VERSION = "0.03";
+    private final String VERSION = "0.04";
     
     // from config()
     public int LOG_LEVEL;             // optional in config(), defaults to Constants.LOG_INFO
@@ -80,9 +82,51 @@ public class MsgRouter extends AbstractVerticle {
             start_router(START_ROUTERS.get(i));
         }
 
+    // **********************************************************************************
+    // Subscribe to 'manager' messages, e.g. to add devices and applications
+    //
+    // For the message to be processed by this module, it must be sent with this module's
+    // MODULE_NAME and MODULE_ID in the "to_module_name" and "to_module_id" fields. E.g.
+    // {
+    //    "msg_type":    "module_method",
+    //    "to_module_name": "msgrouter",
+    //    "to_module_id": "test",
+    //    "method": "add_device",
+    //    "params": { "dev_eui": "0018b2000000113e",
+    //                "app_eui": "0018b2000000abcd"
+    //                }
+    // }
+    eb.consumer(EB_MANAGER, message -> {
+        JsonObject msg = new JsonObject(message.body().toString());
+
+        // decode who this 'manager' message was sent to
+        String to_module_name = msg.getString("to_module_name");
+        String to_module_id = msg.getString("to_module_id");
+
+        // *********************************************************************************
+        // Skip this message if it has the wrong module_name/module_id
+        if (to_module_name == null || !(to_module_name.equals(MODULE_NAME)))
+        {
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                       ": skipping manager message (not for this module_name) on "+EB_MANAGER);
+            return;
+        }
+        if (to_module_id == null || !(to_module_id.equals(MODULE_ID)))
+        {
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                       ": skipping manager message (not for this module_id) on "+EB_MANAGER);
+            return;
+        }
+
+        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                   ": received manager message on "+EB_MANAGER+":");
+        logger.log(Constants.LOG_DEBUG, message.body().toString());
+
+    });
+
+    // **********************************************************************************
     // send system status message from this module (i.e. to itself) immediately on startup, then periodically
-    send_status();
-      
+    send_status();     
     // send periodic "system_status" messages
     vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> { send_status();  });
 

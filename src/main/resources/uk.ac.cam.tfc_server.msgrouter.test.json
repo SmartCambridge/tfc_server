@@ -6,7 +6,7 @@
           {
 
             "module.name":           "msgrouter",
-            "module.id":             "everynet_feed_test",
+            "module.id":             "test",
 
             "eb.system_status":      "tfc.system_status",
             "eb.console_out":        "tfc.console_out",
@@ -14,7 +14,7 @@
 
             "msgrouter.log_level":     1,
 
-            "msgrouter.address": "tfc.msgrouter.everynet_feed_test",
+            "msgrouter.address": "tfc.msgrouter.test",
 
             "msgrouter.routers":
             [
