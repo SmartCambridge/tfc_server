@@ -37,6 +37,10 @@ public class Constants {
     public static final String EVERYNET_ASCII_HEX = "everynet_ascii_hex";
     public static final String EVERYNET_ADEUNIS_TEST = "everynet_adeunis_test";
 
+    // module methods
+    public static final String METHOD_ADD_DEVICE = "add_device"; // MsgRouter
+    public static final String METHOD_ADD_APPLICATION = "add_application"; // MsgRouter
+
     // MsgFiler constants - also used in MsgFiler config()
     public static final String FILE_WRITE = "write"; // will overwrite the file
     public static final String FILE_APPEND = "append"; // will append to the file

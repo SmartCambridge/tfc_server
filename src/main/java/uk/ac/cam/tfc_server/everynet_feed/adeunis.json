@@ -1,0 +1,4 @@
+{"params": {"payload": "nhZSFzkQAABiYBQFD7U=", "port": 1, "dev_addr": "175b5b50", "radio": {"stat": 1, "gw_band": "EU863-870", "server_time": 1495228962.576152, "modu": "LORA", "gw_gps": {"lat": 52.20502, "alt": 76, "lon": 0.10843}, "gw_addr": "70b3d54b13c80000", "chan": 4, "gateway_time": 1495228962.523077, "datr": "SF12BW125", "tmst": 2295430404, "codr": "4/5", "rfch": 1, "lsnr": -16.0, "rssi": -119, "freq": 868.1, "size": 27}, "counter_up": 127, "dev_eui": "0018b2000000113e", "rx_time": 1495228962.523077, "encrypted_payload": "dKf1XcEJUJNJFnerXEY="}, "jsonrpc": "2.0", "id": "00421fc2adf8", "method": "uplink",
+"calc_lat": 52.28985,
+"calc_lng": 0.10433333333333333
+}

@@ -4,6 +4,7 @@
    "msg_type":    "test_msg_type",
    "feed_id":     "httpmsg.test",
    "ts":          1498318746,
+   "dev_eui":     "0018b2000000113e",
    "request_data":[
                     { "foo":             "cam",
                       "bah":             66

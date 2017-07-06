@@ -27,6 +27,28 @@
 
                                          "msg_type" :  "everynet_adeunis_test",
                                          "address" :   "tfc.everynet_feed.test"
+                                       },
+                                       {
+                                         "feed_id" :   "adeunis_test2",
+                                         "area_id" :   "cam",
+
+                                         "file_suffix":   ".json",
+                                         "data_bin" :     "/home/ijl20/everynet_data/test2/data_bin",
+                                         "data_monitor" : "/home/ijl20/everynet_data/test2/data_monitor",
+
+                                         "msg_type" :  "everynet_adeunis_test",
+                                         "address" :   "tfc.everynet_feed.test2"
+                                       },
+                                       {
+                                         "feed_id" :   "adeunis_test3",
+                                         "area_id" :   "cam",
+
+                                         "file_suffix":   ".json",
+                                         "data_bin" :     "/home/ijl20/everynet_data/test3/data_bin",
+                                         "data_monitor" : "/home/ijl20/everynet_data/test3/data_monitor",
+
+                                         "msg_type" :  "everynet_adeunis_test",
+                                         "address" :   "tfc.everynet_feed.test3"
                                        }
                                      ]
           }

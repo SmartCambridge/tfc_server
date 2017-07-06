@@ -17,6 +17,7 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
 
@@ -35,7 +36,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class MsgRouter extends AbstractVerticle {
 
-    private final String VERSION = "0.04";
+    private final String VERSION = "0.05";
     
     // from config()
     public int LOG_LEVEL;             // optional in config(), defaults to Constants.LOG_INFO
@@ -55,48 +56,72 @@ public class MsgRouter extends AbstractVerticle {
 
     // global vars
     private HashMap<String,HttpClient> http_clients; // used to store a HttpClient for each feed_id
-    
-  @Override
-  public void start(Future<Void> fut) throws Exception {
+
+    private HashMap<String,LoraDevice> lora_devices; // stores dev_eui -> app_eui mapping
+
+    private HashMap<String,LoraApplication> lora_applications; // stores app_eui -> http POST mapping
+
+    @Override
+    public void start(Future<Void> fut) throws Exception {
       
-    // load initialization values from config()
-    if (!get_config())
-          {
-              Log.log_err("MsgRouter."+ MODULE_ID + ": failed to load initial config()");
-              vertx.close();
-              return;
-          }
+        // load initialization values from config()
+        if (!get_config())
+            {
+                Log.log_err("MsgRouter."+ MODULE_ID + ": failed to load initial config()");
+                vertx.close();
+                return;
+            }
 
-    logger = new Log(LOG_LEVEL);
+        logger = new Log(LOG_LEVEL);
     
-    logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": Version "+VERSION+" started with log_level "+LOG_LEVEL);
+        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": Version "+VERSION+" started with log_level "+LOG_LEVEL);
 
-    eb = vertx.eventBus();
+        eb = vertx.eventBus();
 
-    // create holder for HttpClients, one per router
-    http_clients = new HashMap<String,HttpClient>();
+        // create holder for HttpClients, one per router
+        http_clients = new HashMap<String,HttpClient>();
 
-    // iterate through all the routers to be started
-    for (int i=0; i<START_ROUTERS.size(); i++)
-        {
-            start_router(START_ROUTERS.get(i));
-        }
+        // create holders for LoraWAN device and application data
+        lora_devices = new HashMap<String,LoraDevice>();
+        lora_applications = new HashMap<String,LoraApplication>();
 
-    // **********************************************************************************
-    // Subscribe to 'manager' messages, e.g. to add devices and applications
-    //
-    // For the message to be processed by this module, it must be sent with this module's
-    // MODULE_NAME and MODULE_ID in the "to_module_name" and "to_module_id" fields. E.g.
-    // {
-    //    "msg_type":    "module_method",
-    //    "to_module_name": "msgrouter",
-    //    "to_module_id": "test",
-    //    "method": "add_device",
-    //    "params": { "dev_eui": "0018b2000000113e",
-    //                "app_eui": "0018b2000000abcd"
-    //                }
-    // }
-    eb.consumer(EB_MANAGER, message -> {
+        // iterate through all the routers to be started
+        for (int i=0; i<START_ROUTERS.size(); i++)
+            {
+                start_router(START_ROUTERS.get(i));
+            }
+
+        // **********************************************************************************
+        // Subscribe to 'manager' messages, e.g. to add devices and applications
+        //
+        // For the message to be processed by this module, it must be sent with this module's
+        // MODULE_NAME and MODULE_ID in the "to_module_name" and "to_module_id" fields. E.g.
+        // {
+        //    "msg_type":    "module_method",
+        //    "to_module_name": "msgrouter",
+        //    "to_module_id": "test",
+        //    "method": "add_device",
+        //    "params": { "dev_eui": "0018b2000000113e",
+        //                "app_eui": "0018b2000000abcd"
+        //                }
+        // }
+        eb.consumer(EB_MANAGER, message -> {
+                manager_message(message);
+            });
+
+        // **********************************************************************************
+        // send system status message from this module (i.e. to itself) immediately on startup, then periodically
+        send_status();     
+        // send periodic "system_status" messages
+        vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> { send_status();  });
+
+    } // end start()
+
+    // Here is where we process the 'manager' messages received for this module on the
+    // config 'eb.manager' eventbus address.
+    // e.g. the 'add_device' and 'add_application' messages.
+    private void manager_message(Message<java.lang.Object> message)
+    {
         JsonObject msg = new JsonObject(message.body().toString());
 
         // decode who this 'manager' message was sent to
@@ -118,19 +143,97 @@ public class MsgRouter extends AbstractVerticle {
             return;
         }
 
+        // *********************************************************************************
+        // Process the manager message
+
+        // ignore the message if it has no 'method' property
+        String method = msg.getString("method");
+        if (method == null)
+        {
+            logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                       ": skipping manager message ('method' property missing) on "+EB_MANAGER);
+            return;
+        }
+        
+        switch (method)
+        {
+            case Constants.METHOD_ADD_DEVICE:
+                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                           ": received add_device manager message on "+EB_MANAGER);
+                JsonObject dev_info = msg.getJsonObject("params");
+                if (dev_info == null)
+                {
+                    logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                               ": skipping manager message ('params' property missing) on "+EB_MANAGER);
+                    return;
+                }
+                add_device(dev_info);
+                break;
+            case Constants.METHOD_ADD_APPLICATION:
+                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                           ": received add_application manager message on "+EB_MANAGER);
+                JsonObject app_info = msg.getJsonObject("params");
+                if (app_info == null)
+                {
+                    logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                               ": skipping manager message ('params' property missing) on "+EB_MANAGER);
+                    return;
+                }
+                add_application(app_info);
+                break;
+            default:
+                logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                           ": received unrecognized 'method' in manager message on "+EB_MANAGER+": "+method);
+                break;
+        }
+
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                    ": received manager message on "+EB_MANAGER+":");
         logger.log(Constants.LOG_DEBUG, message.body().toString());
 
-    });
+    }
 
-    // **********************************************************************************
-    // send system status message from this module (i.e. to itself) immediately on startup, then periodically
-    send_status();     
-    // send periodic "system_status" messages
-    vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> { send_status();  });
+    // Add a LoraWAN device to lora_devices, having received an 'add_device' manager message
+    private void add_device(JsonObject params)
+    {
+        String dev_eui = params.getString("dev_eui");
+        if (dev_eui == null)
+        {
+            logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                       ": skipping add_device manager message ('dev_eui' property missing) on "+EB_MANAGER);
+            return;
+        }
+        
+        // create a LoraDevice object for this device
+        LoraDevice device = new LoraDevice(params);
 
-  } // end start()
+        // add the device to the current list (HashMap)
+        lora_devices.put(dev_eui, device);
+
+        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                   ": device count now "+lora_devices.size());
+    }
+
+    // Add a LoraWAN application to lora_applications, having received an 'add_application' manager message
+    private void add_application(JsonObject params)
+    {
+        String app_eui = params.getString("app_eui");
+        if (app_eui == null)
+        {
+            logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                       ": skipping add_application manager message ('app_eui' property missing) on "+EB_MANAGER);
+            return;
+        }
+
+        // Create LoraApplication object for this application
+        LoraApplication application = new LoraApplication(params);
+
+        // Add to the current list (HashMap) of objects
+        lora_applications.put(app_eui, application);
+
+        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                   ": application count now "+lora_applications.size());
+    }
 
     // send UP status to the EventBus
     private void send_status()
@@ -156,12 +259,19 @@ public class MsgRouter extends AbstractVerticle {
 
         final RouterFilter source_filter = has_filter ? new RouterFilter(filter_json) : null;
 
-        final HttpClient http_client = vertx.createHttpClient( new HttpClientOptions()
-                                                       .setSsl(router_config.getBoolean("http.ssl"))
-                                                       .setTrustAll(true)
-                                                       .setDefaultPort(router_config.getInteger("http.port"))
-                                                       .setDefaultHost(router_config.getString("http.host"))
-                                                             );
+        final String app_eui = router_config.getString("app_eui");
+
+        if (app_eui != null)
+        {
+            add_application(router_config);
+        }
+
+        //final HttpClient http_client = vertx.createHttpClient( new HttpClientOptions()
+        //                                               .setSsl(router_config.getBoolean("http.ssl"))
+        //                                               .setTrustAll(true)
+        //                                               .setDefaultPort(router_config.getInteger("http.port"))
+        //                                               .setDefaultHost(router_config.getString("http.host"))
+        //                                                     );
         String router_filter_text;
         if (has_filter)
             {
@@ -175,8 +285,6 @@ public class MsgRouter extends AbstractVerticle {
         logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
                    ": starting router "+router_config.getString("source_address")+ router_filter_text);
 
-        //RouterUtils router_utils = new RouterUtils(vertx, router_config);
-        
         // register to router_config.source_address,
         // test messages with router_config.source_filter
         // and call store_msg if current message passes filter
@@ -184,13 +292,42 @@ public class MsgRouter extends AbstractVerticle {
             //System.out.println("MsgRouter."+MODULE_ID+": got message from " + router_config.source_address);
             JsonObject msg = new JsonObject(message.body().toString());
             
-            //System.out.println(msg.toString());
-
+            //**************************************************************************
+            //**************************************************************************
+            // Route the message onwards via POST to destination
+            //**************************************************************************
+            //**************************************************************************
             if (!has_filter || source_filter.match(msg))
             {
                 // route this message if it matches the filter within the RouterConfig
-                route_msg(http_client, router_config, msg);
-                return;
+                //route_msg(http_client, router_config, msg);
+                if (app_eui != null)
+                {
+                    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                               ": sending message via config app_eui "+app_eui);
+                    try 
+                    {
+                        lora_applications.get(app_eui).send(msg.getJsonArray("request_data").getJsonObject(0).toString());
+                    }
+                    catch (Exception e)
+                    {
+                        logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                                   ": send error for "+app_eui);
+                    }
+                    return;
+                }
+                else
+                {
+                    String dev_eui = msg.getString("dev_eui");
+                    if (dev_eui == null)
+                    {
+                        logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                                   ": skipping message (no dev_eui) "+app_eui);
+                        return;
+                    }
+                    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                               ": sending message via dev_eui "+dev_eui);
+                }
             }
             else
             {
@@ -201,55 +338,6 @@ public class MsgRouter extends AbstractVerticle {
         });
     
     } // end start_router
-
-    //**************************************************************************
-    //**************************************************************************
-    // Route the message onwards via POST to destination in config
-    //**************************************************************************
-    //**************************************************************************
-    private void route_msg(HttpClient http_client, JsonObject router_config, JsonObject msg)
-    {
-        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                   ": routing " + msg);
-
-        // Sample router_config
-        //        { 
-        //            "source_address": "tfc.everynet_feed.test",
-        //            "source_filter": { 
-        //                                 "field": "dev_eui",
-        //                                 "compare": "=",
-        //                                 "value": "0018b2000000113e"
-        //                             },
-        //             "http.host":  "localhost",              
-        //             "http.uri" :  "/everynet_feed/test/adeunis_test2",
-        //             "http.ssl":   false,
-        //             "http.port":  8098,
-        //             "http.post":  true,
-        //             "http.token": "cam-auth-test"
-        //        }
-
-        String http_uri = router_config.getString("http.uri");
-
-        HttpClientRequest request = http_client.post(http_uri, response -> {
-                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                     ": msg posted to " + http_uri);
-
-                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                     ": response was " + response.statusCode());
-
-            });
-        // Now do stuff with the request
-        request.putHeader("content-type", "application/json");
-        request.setTimeout(15000);
-
-        String auth_token = router_config.getString("http.token");
-        if (auth_token != null)
-        {
-            request.putHeader("X-Auth-Token", auth_token);
-        }
-        // Make sure the request is ended when you're done with it
-        request.end(msg.getJsonArray("request_data").getJsonObject(0).toString());
-    }
 
     //**************************************************************************
     //**************************************************************************
@@ -316,6 +404,103 @@ public class MsgRouter extends AbstractVerticle {
 
         return true;
     } // end get_config()
+
+    // This class holds the LoraWAN device data
+    // received in the 'params' property of the 'add_device' eventbus method message
+    private class LoraDevice {
+        public String dev_eui;
+        public JsonObject dev_info;
+        // e.g. {
+        //        "dev_eui": "0018b2000000113e",
+        //        "app_eui": "0018b2000000abcd"
+        //      }
+
+        // Constructor
+        LoraDevice(JsonObject params)
+        {
+            dev_eui = params.getString("dev_eui");
+            dev_info = params;
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                 ": added device "+dev_eui);
+        }
+    }
+
+    // This class holds the LoraWAN application (i.e. http destination) data
+    // received in the 'params' property of the 'add_application' eventbus method message
+    private class LoraApplication {
+        public String app_eui;
+        public JsonObject app_info;
+        public HttpClient http_client;
+
+        // e.g. {
+        //        "app_eui": "0018b2000000abcd",
+        //        "http.post": true,
+        //        "http.host": "localhost",
+        //        "http.port": 8098,
+        //        "http.uri": "/everynet_feed/test/adeunis_test3",
+        //        "http.ssl": false,
+        //        "http.token": "test-msgrouter-post"
+        //      }
+
+        // Constructor
+        LoraApplication(JsonObject params)
+        {
+            app_eui = params.getString("app_eui");
+            app_info = params;
+            http_client = vertx.createHttpClient( new HttpClientOptions()
+                                                       .setSsl(params.getBoolean("http.ssl"))
+                                                       .setTrustAll(true)
+                                                       .setDefaultPort(params.getInteger("http.port",80))
+                                                       .setDefaultHost(params.getString("http.host"))
+                                                );
+
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                 ": added application "+app_eui);
+        }
+
+        public void send(String msg)
+        {
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                       ": sending to "+app_eui+": " + msg);
+
+            String http_uri = app_info.getString("http.uri");
+
+            try
+            {
+                HttpClientRequest request = http_client.post(http_uri, response -> {
+                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                                   ": msg posted to " + http_uri);
+
+                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                                   ": response was " + response.statusCode());
+
+                    });
+
+                request.exceptionHandler( e -> {
+                        logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                                   ": LoraApplication HttpClientRequest error for "+app_eui);
+                        });
+
+                // Now do stuff with the request
+                request.putHeader("content-type", "application/json");
+                request.setTimeout(15000);
+
+                String auth_token = app_info.getString("http.token");
+                if (auth_token != null)
+                    {
+                        request.putHeader("X-Auth-Token", auth_token);
+                    }
+                // Make sure the request is ended when you're done with it
+                request.end(msg);
+            }
+            catch (Exception e)
+            {
+                logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                           ": LoraApplication send error for "+app_eui);
+            }
+        }
+            
+    } // end class LoraApplication
 
 } // end class MsgRouter
 
