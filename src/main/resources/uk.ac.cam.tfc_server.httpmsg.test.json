@@ -14,7 +14,7 @@
               
             "httpmsg.log_level":   1,
 
-            "httpmsg.http.port":   8097,
+            "httpmsg.http.port":   8098,
 
             "httpmsg.feeds":     [
                                        { 

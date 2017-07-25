@@ -1,0 +1,2 @@
+{"msg_type":"module_method","to_module_id":"test","to_module_name":"msgrouter",
+  "params":{"http.token":"","http.host":"localhost","http.uri":"/httpmsg/test/tfc.httpmsg.test","http.port":8098,"app_eui":"foo","http.ssl":false,"http.post":true},"method":"add_application","module_name":"httpmsg","module_id":"test"}

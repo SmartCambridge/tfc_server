@@ -217,7 +217,8 @@ public class MsgRouter extends AbstractVerticle {
     // Add a LoraWAN application to lora_applications, having received an 'add_application' manager message
     private void add_application(JsonObject params)
     {
-        String app_eui = params.getString("app_eui");
+        String app_eui = json_property_to_string(params, "app_eui");
+
         if (app_eui == null)
         {
             logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
@@ -231,8 +232,31 @@ public class MsgRouter extends AbstractVerticle {
         // Add to the current list (HashMap) of objects
         lora_applications.put(app_eui, application);
 
+        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
+                   ": added application "+application.app_eui+" -> "+
+                   (application.app_info.getBoolean("http.ssl",false) ? "https:" : "http:")+
+                   application.app_info.getInteger("http.port",80)+"//"+
+                   application.app_info.getString("http.host")+
+                   application.app_info.getString("http.uri")
+                  );
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                    ": application count now "+lora_applications.size());
+    }
+
+    // Return a String value for a JSONObject property that may be String or Integer.
+    // This is used to bridge versions of tfc_web that may use either for 'app_eui'
+    private String json_property_to_string(JsonObject jo, String property)
+    {
+        String string_value;
+        try
+        {
+            string_value = jo.getString(property);
+        }
+        catch (java.lang.ClassCastException e)
+        {
+            string_value = jo.getInteger(property).toString();
+        }
+        return string_value;
     }
 
     // send UP status to the EventBus
@@ -254,6 +278,19 @@ public class MsgRouter extends AbstractVerticle {
     // ************************************************************
     private void start_router(JsonObject router_config)
     {
+
+        // A router config() contains a minimum of a "source_address" property,
+        // which is the EventBus address it will listen to for messages to be forwarded.
+        //
+        // Note: a router config() (in msgrouter.routers) MAY contain a filter, such as
+        // "source_filter": { 
+        //                    "field": "dev_eui",
+        //                    "compare": "=",
+        //                    "value": "0018b2000000113e"
+        //                   }
+        // in which case only messages on the source_address that match this pattern will
+        // be processed.
+
         JsonObject filter_json = router_config.getJsonObject("source_filter");
         boolean has_filter =  filter_json != null;
 
@@ -445,10 +482,11 @@ public class MsgRouter extends AbstractVerticle {
         // Constructor
         LoraApplication(JsonObject params)
         {
-            app_eui = params.getString("app_eui");
+            app_eui = json_property_to_string(params, "app_eui");
+
             app_info = params;
             http_client = vertx.createHttpClient( new HttpClientOptions()
-                                                       .setSsl(params.getBoolean("http.ssl"))
+                                                       .setSsl(params.getBoolean("http.ssl",false))
                                                        .setTrustAll(true)
                                                        .setDefaultPort(params.getInteger("http.port",80))
                                                        .setDefaultHost(params.getString("http.host"))

@@ -52,3 +52,38 @@ defined destination addresses.
 }
 ```
 
+## Sample add_application JSON message
+
+```
+{ "msg_type":"module_method",
+  "to_module_id":"test",
+  "to_module_name":"msgrouter",
+  "params":{
+      "http.token":"",
+      "http.host":"localhost",
+      "http.uri":"/efgh",
+      "http.port":80,
+      "app_eui":2,
+      "http.ssl":false,
+      "http.post":true},
+  "method":"add_application",
+  "module_name":"httpmsg",
+  "module_id":"test"
+}
+```
+
+## Sample add_device JSON message
+
+```
+{ "msg_type":"module_method",
+  "to_module_id":"test",
+  "to_module_name":"msgrouter",
+  "params":{
+      "app_eui":2,
+      "dev_eui":"0018b2000000113f"},
+  "method":"add_device",
+  "module_name":"httpmsg",
+  "module_id":"test"
+}
+```
+
