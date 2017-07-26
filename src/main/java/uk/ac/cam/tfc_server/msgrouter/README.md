@@ -52,7 +52,9 @@ defined destination addresses.
 }
 ```
 
-## Sample add_application JSON message
+## API via 'tfc.manager' eventbus messages
+
+### Sample add_application JSON message
 
 ```
 { "msg_type":"module_method",
@@ -72,7 +74,20 @@ defined destination addresses.
 }
 ```
 
-## Sample add_device JSON message
+### remove_application
+
+```
+{ "msg_type":"module_method",
+  "to_module_id":"test",
+  "to_module_name":"msgrouter",
+  "params":{"app_eui":2},
+  "method":"remove_application",
+  "module_name":"httpmsg",
+  "module_id":"test"
+}
+```
+
+### Sample add_device JSON message
 
 ```
 { "msg_type":"module_method",
@@ -82,6 +97,19 @@ defined destination addresses.
       "app_eui":2,
       "dev_eui":"0018b2000000113f"},
   "method":"add_device",
+  "module_name":"httpmsg",
+  "module_id":"test"
+}
+```
+
+### Remove device
+
+```
+{ "msg_type":"module_method",
+  "to_module_id":"test",
+  "to_module_name":"msgrouter",
+  "params":{"dev_eui":"BBD70BB1EEF383E3"},
+  "method":"remove_device",
   "module_name":"httpmsg",
   "module_id":"test"
 }
