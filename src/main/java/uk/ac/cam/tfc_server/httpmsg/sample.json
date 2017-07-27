@@ -1,12 +1,13 @@
 {
-   "module_name": "testmodule",
-   "module_id":   "test",      
+   "to_module_name": "msgrouter",
+   "to_module_id":   "test",      
    "msg_type":    "test_msg_type",
    "feed_id":     "httpmsg.test",
    "ts":          1498318746,
-   "dev_eui":     "0018b2000000113e",
+   "dev_eui":     "5BE57ADDBC923A92",
    "request_data":[
                     { "foo":             "cam",
+                      "dev_eui":     "5BE57ADDBC923A92",
                       "bah":             66
                     }
                   ]

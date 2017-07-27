@@ -169,6 +169,20 @@ public class MsgRouter extends AbstractVerticle {
                 }
                 add_device(dev_info);
                 break;
+
+            case Constants.METHOD_REMOVE_DEVICE:
+                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                           ": received remove_device manager message on "+EB_MANAGER);
+                dev_info = msg.getJsonObject("params");
+                if (dev_info == null)
+                {
+                    logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                               ": skipping manager message ('params' property missing) on "+EB_MANAGER);
+                    return;
+                }
+                remove_device(dev_info);
+                break;
+
             case Constants.METHOD_ADD_APPLICATION:
                 logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                            ": received add_application manager message on "+EB_MANAGER);
@@ -181,15 +195,25 @@ public class MsgRouter extends AbstractVerticle {
                 }
                 add_application(app_info);
                 break;
+
+            case Constants.METHOD_REMOVE_APPLICATION:
+                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                           ": received remove_application manager message on "+EB_MANAGER);
+                app_info = msg.getJsonObject("params");
+                if (app_info == null)
+                {
+                    logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                               ": skipping manager message ('params' property missing) on "+EB_MANAGER);
+                    return;
+                }
+                remove_application(app_info);
+                break;
+
             default:
                 logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
                            ": received unrecognized 'method' in manager message on "+EB_MANAGER+": "+method);
                 break;
         }
-
-        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                   ": received manager message on "+EB_MANAGER+":");
-        logger.log(Constants.LOG_DEBUG, message.body().toString());
 
     }
 
@@ -214,6 +238,24 @@ public class MsgRouter extends AbstractVerticle {
                    ": device count now "+lora_devices.size());
     }
 
+    // Remove a LoraWAN device from lora_devices, having received a 'remove_device' manager message
+    private void remove_device(JsonObject params)
+    {
+        String dev_eui = params.getString("dev_eui");
+        if (dev_eui == null)
+        {
+            logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                       ": skipping remove_device manager message ('dev_eui' property missing) on "+EB_MANAGER);
+            return;
+        }
+        
+        // remove the device from the current list (HashMap)
+        lora_devices.remove(dev_eui);
+
+        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                   ": device count now "+lora_devices.size());
+    }
+
     // Add a LoraWAN application to lora_applications, having received an 'add_application' manager message
     private void add_application(JsonObject params)
     {
@@ -232,17 +274,28 @@ public class MsgRouter extends AbstractVerticle {
         // Add to the current list (HashMap) of objects
         lora_applications.put(app_eui, application);
 
-        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
-                   ": added application "+application.app_eui+" -> "+
-                   (application.app_info.getBoolean("http.ssl",false) ? "https:" : "http:")+
-                   application.app_info.getInteger("http.port",80)+"//"+
-                   application.app_info.getString("http.host")+
-                   application.app_info.getString("http.uri")
-                  );
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                    ": application count now "+lora_applications.size());
     }
 
+    private void remove_application(JsonObject params)
+    {
+        String app_eui = json_property_to_string(params, "app_eui");
+
+        if (app_eui == null)
+        {
+            logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                       ": skipping remove_application manager message ('app_eui' property missing) on "+EB_MANAGER);
+            return;
+        }
+
+        // Remove from the current list (HashMap) of objects
+        lora_applications.remove(app_eui);
+
+        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                   ": application count now "+lora_applications.size());
+    }
+        
     // Return a String value for a JSONObject property that may be String or Integer.
     // This is used to bridge versions of tfc_web that may use either for 'app_eui'
     private String json_property_to_string(JsonObject jo, String property)
@@ -296,9 +349,9 @@ public class MsgRouter extends AbstractVerticle {
 
         final RouterFilter source_filter = has_filter ? new RouterFilter(filter_json) : null;
 
-        final String app_eui = router_config.getString("app_eui");
+        final String config_app_eui = router_config.getString("app_eui");
 
-        if (app_eui != null)
+        if (config_app_eui != null)
         {
             add_application(router_config);
         }
@@ -338,32 +391,56 @@ public class MsgRouter extends AbstractVerticle {
             {
                 // route this message if it matches the filter within the RouterConfig
                 //route_msg(http_client, router_config, msg);
-                if (app_eui != null)
+                if (config_app_eui != null)
                 {
                     logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                               ": sending message via config app_eui "+app_eui);
+                               ": sending message via config app_eui "+config_app_eui);
                     try 
                     {
-                        lora_applications.get(app_eui).send(msg.getJsonArray("request_data").getJsonObject(0).toString());
+                        // Careful here!! Although FeedHandler(etc) can send an Array of data points in
+                        // the "request_data" parameter, for LoraWAN purposes we are currently assuming
+                        // only a single data value is going to be present, hence we are forwarding
+                        // msg.getJsonArray("request_data").getJsonObject(0), not the whole array.
+                        lora_applications.get(config_app_eui).send(msg.getJsonArray("request_data").getJsonObject(0).toString());
                     }
                     catch (Exception e)
                     {
                         logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
-                                   ": send error for "+app_eui);
+                                   ": send error for "+config_app_eui);
                     }
                     return;
                 }
                 else
                 {
+                    // There is no app_eui defined in the config(), so we'll try and route via
+                    // the loraWAN dev_eui -> app_eui mapping in the lora_devices HashMap
                     String dev_eui = msg.getString("dev_eui");
                     if (dev_eui == null)
                     {
                         logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
-                                   ": skipping message (no dev_eui) "+app_eui);
+                                   ": skipping message (no dev_eui) ");
                         return;
                     }
                     logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                               ": sending message via dev_eui "+dev_eui);
+                               ": using dev_eui "+dev_eui);
+
+                    String app_eui;
+
+                    try
+                    {
+                        app_eui = json_property_to_string(lora_devices.get(dev_eui).dev_info, "app_eui");
+                    }
+                    catch (Exception NullPointerException)
+                    {
+                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                                   ": ignoring "+dev_eui+" no app_eui set");
+                        return;
+                    }
+
+                    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                               ": sending to app_eui "+app_eui);
+
+                    lora_applications.get(app_eui).send(msg.getJsonArray("request_data").getJsonObject(0).toString());
                 }
             }
             else
@@ -458,7 +535,12 @@ public class MsgRouter extends AbstractVerticle {
             dev_eui = params.getString("dev_eui");
             dev_info = params;
             logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                 ": added device "+dev_eui);
+                 ": added device "+this.toString());
+        }
+
+        public String toString()
+        {
+            return dev_eui + " -> " + json_property_to_string(dev_info, "app_eui");
         }
     }
 
@@ -493,7 +575,19 @@ public class MsgRouter extends AbstractVerticle {
                                                 );
 
             logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                 ": added application "+app_eui);
+                 ": added application "+this.toString());
+        }
+
+        public String toString()
+        {
+            String http_token = app_info.getString("http.token","");
+
+            return app_eui+" -> "+
+                   "<"+http_token+"> "+
+                   (app_info.getBoolean("http.ssl",false) ? "https://" : "http://")+
+                   app_info.getString("http.host")+":"+
+                   app_info.getInteger("http.port",80)+
+                   app_info.getString("http.uri");
         }
 
         public void send(String msg)
@@ -507,7 +601,7 @@ public class MsgRouter extends AbstractVerticle {
             {
                 HttpClientRequest request = http_client.post(http_uri, response -> {
                         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                                   ": msg posted to " + http_uri);
+                                   ": msg posted to " + this.toString());
 
                         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                                    ": response was " + response.statusCode());

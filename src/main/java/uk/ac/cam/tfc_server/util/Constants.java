@@ -39,7 +39,9 @@ public class Constants {
 
     // module methods
     public static final String METHOD_ADD_DEVICE = "add_device"; // MsgRouter
+    public static final String METHOD_REMOVE_DEVICE = "remove_device"; // MsgRouter
     public static final String METHOD_ADD_APPLICATION = "add_application"; // MsgRouter
+    public static final String METHOD_REMOVE_APPLICATION = "remove_application"; // MsgRouter
 
     // MsgFiler constants - also used in MsgFiler config()
     public static final String FILE_WRITE = "write"; // will overwrite the file

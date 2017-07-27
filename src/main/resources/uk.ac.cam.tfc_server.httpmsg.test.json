@@ -18,7 +18,6 @@
 
             "httpmsg.feeds":     [
                                        { 
-                                         "http.token": "httpmsg-test",
                                          "address" :   "tfc.httpmsg.test"
                                        },
                                        { 
