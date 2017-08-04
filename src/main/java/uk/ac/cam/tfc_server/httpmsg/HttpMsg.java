@@ -8,7 +8,7 @@ package uk.ac.cam.tfc_server.httpmsg;
 //
 // Forms part of the 'tfc_server' next-generation Adaptive City Platform
 //
-// Receives data via http POST to 'module_name/module_id/address'
+// Receives data via http POST to 'module_name/module_id/eventbus_address/to_module_name/to_module_id'
 // Sends data on EventBus <address> (from the URL)
 // The POST data must be valid json, and will be ignored otherwise.
 //
@@ -180,7 +180,7 @@ public class HttpMsg extends AbstractVerticle {
 
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                                        ": setting up POST listener on "+"/"+BASE_URI+"/"+ADDRESS);
-        router.route(HttpMethod.POST,"/"+BASE_URI+"/"+ADDRESS).handler( ctx -> {
+        router.route(HttpMethod.POST,"/"+BASE_URI+"/"+ADDRESS+"/:to_module_name/:to_module_id").handler( ctx -> {
                 ctx.request().bodyHandler( buffer -> {
                         try {
                             // read the head value "X-Auth-Token" from the POST
@@ -191,7 +191,9 @@ public class HttpMsg extends AbstractVerticle {
                             // then process this particular post
                             if (HTTP_TOKEN==null || HTTP_TOKEN.equals(post_token))
                             {
-                                process_post(buffer, config);
+                                String to_module_name = ctx.request().getParam("to_module_name");
+                                String to_module_id = ctx.request().getParam("to_module_id");
+                                process_post(buffer, to_module_name, to_module_id, config);
                             }
                             else
                             {
@@ -213,7 +215,7 @@ public class HttpMsg extends AbstractVerticle {
 
   // *****************************************************************
   // process the received POST, and send as EventBus message
-  private void process_post(Buffer buf, JsonObject config) throws Exception 
+  private void process_post(Buffer buf, String to_module_name, String to_module_id, JsonObject config) throws Exception 
   {
     // Copy the received data into a suitable EventBus JsonObject message
     JsonObject msg;
@@ -228,6 +230,10 @@ public class HttpMsg extends AbstractVerticle {
         // Embed module_name and module_id for THIS module into the EventBus message
         msg.put("module_name", MODULE_NAME);
         msg.put("module_id", MODULE_ID);
+
+        // Embed module_name and module_id for DESTINATION  module into the EventBus message
+        msg.put("to_module_name", to_module_name);
+        msg.put("to_module_id", to_module_id);
 
         // debug print out the JsonObject message
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+

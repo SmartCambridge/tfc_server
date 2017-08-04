@@ -1,6 +1,4 @@
 {
-   "to_module_name": "msgrouter",
-   "to_module_id":   "test",      
    "msg_type":    "test_msg_type",
    "feed_id":     "httpmsg.test",
    "ts":          1498318746,
