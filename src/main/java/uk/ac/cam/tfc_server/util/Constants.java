@@ -38,10 +38,10 @@ public class Constants {
     public static final String EVERYNET_ADEUNIS_TEST = "everynet_adeunis_test";
 
     // module methods
-    public static final String METHOD_ADD_DEVICE = "add_device"; // MsgRouter
-    public static final String METHOD_REMOVE_DEVICE = "remove_device"; // MsgRouter
-    public static final String METHOD_ADD_APPLICATION = "add_application"; // MsgRouter
-    public static final String METHOD_REMOVE_APPLICATION = "remove_application"; // MsgRouter
+    public static final String METHOD_ADD_SENSOR = "add_sensor"; // MsgRouter
+    public static final String METHOD_REMOVE_SENSOR = "remove_sensor"; // MsgRouter
+    public static final String METHOD_ADD_DESTINATION = "add_destination"; // MsgRouter
+    public static final String METHOD_REMOVE_DESTINATION = "remove_destination"; // MsgRouter
 
     // MsgFiler constants - also used in MsgFiler config()
     public static final String FILE_WRITE = "write"; // will overwrite the file
