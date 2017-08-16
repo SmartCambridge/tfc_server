@@ -715,8 +715,8 @@ public class MsgRouter extends AbstractVerticle {
         {
             sensor_id = sensor_info.getString("sensor_id");
             sensor_type = sensor_info.getString("sensor_type");
-            String destination_id = sensor_info.getString("sensor_id");
-            String destination_type = sensor_info.getString("sensor_type");
+            String destination_id = sensor_info.getString("destination_id");
+            String destination_type = sensor_info.getString("destination_type");
             if (sensor_id == null || sensor_type == null || destination_id == null || destination_type == null)
             {
                 throw new MsgRouterException("missing key on sensor create");
@@ -737,12 +737,15 @@ public class MsgRouter extends AbstractVerticle {
     // This class holds the LoraWAN destination (i.e. http destination) data
     // received in the 'params' property of the 'add_destination' eventbus method message
     private class Destination {
-        public String destination_id;
-        public String destination_type;
-        public JsonObject info;
-        public HttpClient http_client;
+        public String destination_type;  // Type of destination, e.g. "everynet_jsonrpc"
+        public String destination_id;    // Id.  (destination_type,destination_id) is unique
+        public JsonObject info;          // Data packet defining Destination as received from eventbus add_destination 
+                                         // or PostgreSQL csn_destination table
 
-        private class UrlParts {
+        public HttpClient http_client;   // We pre-define an HttpClient for each Destination. Hopefully this is more efficient.
+        UrlParts u;                      // To hold the results of the parse_url()
+
+        private class UrlParts {         // The results from using Java URL parsing in parse_url (for vertx.createHttpClient)
             public boolean http_ssl;
             public int     http_port;
             public String  http_host;
@@ -756,11 +759,10 @@ public class MsgRouter extends AbstractVerticle {
 
         // Constructor
         // Here is where we create a new Destination on receipt of a "add_destination" message or
-        // loading rows from database table csn_destinations
+        // loading rows from database table csn_destination
         //
         Destination(JsonObject destination_info) throws MsgRouterException
         {
-            UrlParts u;
             // destination_id is the definitive key
             // Will be used as lookup in "destinations" HashMap
             destination_id = destination_info.getString("destination_id");
@@ -848,11 +850,9 @@ public class MsgRouter extends AbstractVerticle {
             logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                        ": sending to "+destination_type+"/"+destination_id+": " + msg);
 
-            String http_uri = info.getString("http.uri");
-
             try
             {
-                HttpClientRequest request = http_client.post(http_uri, response -> {
+                HttpClientRequest request = http_client.post(u.http_path, response -> {
                         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                                    ": msg posted to " + this.toString());
 
@@ -864,13 +864,14 @@ public class MsgRouter extends AbstractVerticle {
                 request.exceptionHandler( e -> {
                         logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
                                    ": Destination HttpClientRequest error for "+destination_id);
+                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+e.getMessage());
                         });
 
                 // Now do stuff with the request
                 request.putHeader("content-type", "application/json");
                 request.setTimeout(15000);
 
-                String auth_token = info.getString("http.token");
+                String auth_token = info.getString("http_token");
                 if (auth_token != null)
                     {
                         request.putHeader("X-Auth-Token", auth_token);
@@ -882,6 +883,7 @@ public class MsgRouter extends AbstractVerticle {
             {
                 logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
                            ": Destination send error for "+destination_type+"/"+destination_id);
+                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": "+e.getMessage());
             }
         }
             

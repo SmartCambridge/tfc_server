@@ -37,6 +37,9 @@ public class Constants {
     public static final String EVERYNET_ASCII_HEX = "everynet_ascii_hex";
     public static final String EVERYNET_ADEUNIS_TEST = "everynet_adeunis_test";
 
+    // Sensor types
+    public static final String SENSOR_TYPE_LORAWAN = "lorawan"; // EverynetFeed
+
     // module methods
     public static final String METHOD_ADD_SENSOR = "add_sensor"; // MsgRouter
     public static final String METHOD_REMOVE_SENSOR = "remove_sensor"; // MsgRouter

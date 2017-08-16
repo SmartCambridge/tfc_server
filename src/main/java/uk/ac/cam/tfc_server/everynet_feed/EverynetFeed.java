@@ -60,7 +60,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class EverynetFeed extends AbstractVerticle {
 
-    private final String VERSION = "0.05";
+    private final String VERSION = "0.06";
     
     // from config()
     private String MODULE_NAME;       // config module.name - normally "feedscraper"
@@ -292,7 +292,8 @@ public class EverynetFeed extends AbstractVerticle {
     msg.put("filename", filename);
     msg.put("filepath", filepath);
     msg.put("ts", Integer.parseInt(utc_ts));
-    msg.put("dev_eui", dev_eui);
+    msg.put("sensor_id", dev_eui);
+    msg.put("sensor_type", Constants.SENSOR_TYPE_LORAWAN);
 
 
     try {            

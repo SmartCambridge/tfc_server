@@ -14,7 +14,7 @@
               
             "everynet_feed.log_level":   1,
 
-            "everynet_feed.http.port":   8098,
+            "everynet_feed.http.port":   8097,
 
             "everynet_feed.feeds":     [
                                        { 
