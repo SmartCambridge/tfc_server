@@ -25,7 +25,11 @@
             [
                 { 
                     "source_address": "tfc.everynet_feed.test",
-                    "source_type": "everynet_jsonrpc"
+                    "source_filter": { 
+                                         "field": "sensor_type",
+                                         "compare": "=",
+                                         "value": "lorawan"
+                                     }
                 }
             ]
           }

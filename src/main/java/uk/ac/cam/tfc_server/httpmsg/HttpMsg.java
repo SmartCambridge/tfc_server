@@ -53,7 +53,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class HttpMsg extends AbstractVerticle {
 
-    private final String VERSION = "0.04";
+    private final String VERSION = "0.05";
     
     // from config()
     private String MODULE_NAME;       // config module.name - normally "httpmsg"
@@ -165,12 +165,12 @@ public class HttpMsg extends AbstractVerticle {
                  "}" );
     }
 
-    // ************************************************
-    // ************************************************
-    // Here is where the essential feed POST is handled
+    // *************************************************
+    // *************************************************
+    // Here is where we set up handlers for the messages
     // create handler for POST from BASE_URI/FEED_ID
-    // ************************************************
-    // ************************************************
+    // *************************************************
+    // *************************************************
     private void add_feed_handler(Router router, 
                                   String BASE_URI,
                                   JsonObject config)
@@ -180,42 +180,53 @@ public class HttpMsg extends AbstractVerticle {
 
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                                        ": setting up POST listener on "+"/"+BASE_URI+"/"+ADDRESS);
-        router.route(HttpMethod.POST,"/"+BASE_URI+"/"+ADDRESS+"/:to_module_name/:to_module_id").handler( ctx -> {
-                ctx.request().bodyHandler( buffer -> {
-                        try {
-                            // read the head value "X-Auth-Token" from the POST
-                            String post_token = ctx.request().getHeader("X-Auth-Token");
-                            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                                       ": "+ADDRESS+ " POST X-Auth-Token="+post_token);
-                            // if the token matches the config(), or config() http.token is null
-                            // then process this particular post
-                            if (HTTP_TOKEN==null || HTTP_TOKEN.equals(post_token))
-                            {
-                                String to_module_name = ctx.request().getParam("to_module_name");
-                                String to_module_id = ctx.request().getParam("to_module_id");
-                                process_post(buffer, to_module_name, to_module_id, config);
-                            }
-                            else
-                            {
-                                logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
-                                       ": "+ADDRESS+" X-Auth-Token mis-match");
-                            }
-                        } catch (Exception e) {
-                            logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
-                                       ": "+ADDRESS+" proceed_feed error");
-                            logger.log(Constants.LOG_WARN, e.getMessage());
-                        }
-
-                        ctx.request().response().end("");
-                    });
-
-            });
+        router
+            .route(HttpMethod.POST,"/"+BASE_URI+"/"+ADDRESS+"/:to_module_name/:to_module_id")
+            .handler(ctx -> handle_httpmsg(ctx, ADDRESS, HTTP_TOKEN, config));
+        router
+            .route(HttpMethod.POST,"/"+BASE_URI+"/"+ADDRESS)
+            .handler(ctx -> handle_httpmsg(ctx, ADDRESS, HTTP_TOKEN, config));
     }
 
+    // ************************************************
+    // ************************************************
+    // And here is the actual HttpMsg handler
+    // ************************************************
+    // ************************************************
+    private void handle_httpmsg(RoutingContext ctx, String ADDRESS, String HTTP_TOKEN, JsonObject config)
+    {
+        ctx.request().bodyHandler( buffer -> {
+                try {
+                    // read the head value "X-Auth-Token" from the POST
+                    String post_token = ctx.request().getHeader("X-Auth-Token");
+                    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                               ": "+ADDRESS+ " POST X-Auth-Token="+post_token);
+                    // if the token matches the config(), or config() http.token is null
+                    // then process this particular post
+                    if (HTTP_TOKEN==null || HTTP_TOKEN.equals(post_token))
+                    {
+                        String to_module_name = ctx.request().getParam("to_module_name");
+                        String to_module_id = ctx.request().getParam("to_module_id");
+                        process_httpmsg(buffer, to_module_name, to_module_id, config);
+                    }
+                    else
+                    {
+                        logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                               ": "+ADDRESS+" X-Auth-Token mis-match");
+                    }
+                } catch (Exception e) {
+                    logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                               ": "+ADDRESS+" proceed_feed error");
+                    logger.log(Constants.LOG_WARN, e.getMessage());
+                }
 
+                ctx.request().response().end("");
+            });
+    }
+    
   // *****************************************************************
   // process the received POST, and send as EventBus message
-  private void process_post(Buffer buf, String to_module_name, String to_module_id, JsonObject config) throws Exception 
+  private void process_httpmsg(Buffer buf, String to_module_name, String to_module_id, JsonObject config) throws Exception 
   {
     // Copy the received data into a suitable EventBus JsonObject message
     JsonObject msg;
@@ -232,9 +243,15 @@ public class HttpMsg extends AbstractVerticle {
         msg.put("module_id", MODULE_ID);
 
         // Embed module_name and module_id for DESTINATION  module into the EventBus message
-        msg.put("to_module_name", to_module_name);
-        msg.put("to_module_id", to_module_id);
-
+        if (to_module_name != null)
+        {
+            msg.put("to_module_name", to_module_name);
+        }
+        if (to_module_id != null)
+        {
+            msg.put("to_module_id", to_module_id);
+        }
+        
         // debug print out the JsonObject message
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                    ": prepared EventBus msg for "+address+":");
@@ -251,7 +268,7 @@ public class HttpMsg extends AbstractVerticle {
                    ": exception raised during processing of http post "+config.getString("address")+":");
         logger.log(Constants.LOG_WARN, e.getMessage());
     }
-  } // end process_post()
+  } // end process_httpmsg()
 
     // Load initialization global constants defining this HttpMsg from config()
     private boolean get_config()

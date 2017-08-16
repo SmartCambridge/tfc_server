@@ -33,7 +33,6 @@ defined destination addresses.
             [
                 { 
                     "source_address": "tfc.everynet_feed.test",
-                    "source_type":    "lorawan",
                     "source_field":   "request_data",
                     "source_index":   0,
                     "source_filter": { 
@@ -48,7 +47,11 @@ defined destination addresses.
                 },
                 { 
                     "source_address": "tfc.everynet_feed.A",
-                    "source_type": "everynet_jsonrpc"
+                    "source_filter": { 
+                                         "field": "sensor_type",
+                                         "compare": "=",
+                                         "value": "lorawan"
+                                     },
                 }
             ]
               
