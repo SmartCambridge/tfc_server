@@ -90,21 +90,8 @@ public class MsgRouter extends AbstractVerticle {
         sensors = new Sensors();
         destinations = new Destinations();
 
-        vertx.executeBlocking(load_fut -> {
-                    load_data(load_fut);
-                },
-                res -> { 
-                    if (res.succeeded())
-                    {
-                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                                  " load_data() complete, status "+res.result());
-                    }
-                    else
-                    {
-                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                                  " load_data() failed, status "+res.cause());
-                    }
-                       });
+        // Asynchronous load of sensor and destination data from PostgreSQL
+        load_data();
 
         // iterate through all the routers to be started
         for (int i=0; i<START_ROUTERS.size(); i++)
@@ -144,7 +131,29 @@ public class MsgRouter extends AbstractVerticle {
 
     } // end start()
 
-    private boolean load_data(Future<Object> fut)
+    // This procedure loads data from the PostgreSQL database asynchronously via vertx.executeBlocking
+    // Note the procedure will return *immediately* due to it's asynchronous call
+    private void load_data()
+    {
+        vertx.executeBlocking(load_fut -> {
+                    load_data_sql(load_fut);
+                },
+                res -> { 
+                    if (res.succeeded())
+                    {
+                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                                  " load_data() complete, status "+res.result());
+                    }
+                    else
+                    {
+                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                                  " load_data() failed, status "+res.cause());
+                    }
+                       });
+
+    }
+
+    private boolean load_data_sql(Future<Object> fut)
     {
         JsonObject sql_client_config = new JsonObject()
               .put("url", config().getString(MODULE_NAME+".db.url"))
@@ -342,6 +351,11 @@ public class MsgRouter extends AbstractVerticle {
             //debug
             case "print_sensors":
                 sensors.print();
+                break;
+            
+            //debug
+            case "load_data":
+                load_data();
                 break;
             
             default:

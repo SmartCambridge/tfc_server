@@ -18,6 +18,17 @@
 
             "everynet_feed.feeds":     [
                                        { 
+                                         "feed_id" :   "adeunis_test",
+                                         "area_id" :   "cam",
+
+                                         "file_suffix":   ".json",
+                                         "data_bin" :     "/home/ijl20/everynet_data/adeunis_test/data_bin",
+                                         "data_monitor" : "/home/ijl20/everynet_data/adeunis_test/data_monitor",
+
+                                         "msg_type" :  "everynet_adeunis_test",
+                                         "address" :   "tfc.everynet_feed.A"
+                                       },
+                                       { 
                                          "feed_id" :   "ascii_decimal",
                                          "area_id" :   "cam",
 
