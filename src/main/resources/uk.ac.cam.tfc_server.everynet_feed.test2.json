@@ -1,4 +1,4 @@
-                                                                                
+2                                                                                
 {
     "main":    "uk.ac.cam.tfc_server.everynet_feed.EverynetFeed",
     "options":
@@ -27,7 +27,30 @@
 
                                          "msg_type" :  "everynet_adeunis_test",
                                          "address" :   "tfc.everynet_feed.test2"
+                                       },
+                                       { 
+                                         "feed_id" :   "ascii_decimal",
+                                         "area_id" :   "cam",
+
+                                         "file_suffix":   ".json",
+                                         "data_bin" :     "/home/ijl20/everynet_data/test2/data_bin",
+                                         "data_monitor" : "/home/ijl20/everynet_data/test2/data_monitor",
+
+                                         "msg_type" :  "everynet_ascii_decimal",
+                                         "address" :   "tfc.everynet_feed.test2"
+                                       },
+                                       { 
+                                         "feed_id" :   "ascii_hex",
+                                         "area_id" :   "cam",
+
+                                         "file_suffix":   ".json",
+                                         "data_bin" :     "/home/ijl20/everynet_data/test2/data_bin",
+                                         "data_monitor" : "/home/ijl20/everynet_data/test2/data_monitor",
+
+                                         "msg_type" :  "everynet_ascii_hex",
+                                         "address" :   "tfc.everynet_feed.test2"
                                        }
+
                                      ]
           }
         }
