@@ -27,6 +27,10 @@
                                        { 
                                          "http.token": "httpmsg-test",
                                          "address" :   "tfc.everynet_feed.test"
+                                       },
+                                       { 
+                                         "http.token": "httpmsg-test",
+                                         "address" :   "tfc.everynet_feed.A"
                                        }
                                  ]
           }

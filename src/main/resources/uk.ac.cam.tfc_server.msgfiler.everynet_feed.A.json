@@ -6,7 +6,7 @@
           {
 
             "module.name":           "msgfiler",
-            "module.id":             "everynet_feed_A",
+            "module.id":             "everynet_feed.A",
 
             "eb.system_status":      "tfc.system_status",
             "eb.console_out":        "tfc.console_out",
@@ -14,13 +14,13 @@
 
             "msgfiler.loglevel":     1,
 
-            "msgfiler.address": "tfc.msgfiler.everynet_feed_A",
+            "msgfiler.address": "tfc.msgfiler.everynet_feed.A",
 
             "msgfiler.filers":
             [
                 { "source_address": "tfc.everynet_feed.A",
-                  "store_path": "/media/tfc/csn/test/{{dev_eui}}",
-                  "store_name": "{{dev_eui}}_{{ts|yyyy}}-{{ts|MM}}-{{ts|dd}}.txt",
+                  "store_path": "/media/tfc/csn/A/{{sensor_id}}",
+                  "store_name": "{{sensor_id}}_{{ts|yyyy}}-{{ts|MM}}-{{ts|dd}}.txt",
                   "store_mode": "append"
                 }
             ]

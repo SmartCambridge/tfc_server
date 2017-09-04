@@ -22,8 +22,8 @@
                                          "area_id" :   "cam",
 
                                          "file_suffix":   ".json",
-                                         "data_bin" :     "/home/ijl20/everynet_data/adeunis_test/data_bin",
-                                         "data_monitor" : "/home/ijl20/everynet_data/adeunis_test/data_monitor",
+                                         "data_bin" :     "/media/tfc/csn/everynet_feed/data_bin",
+                                         "data_monitor" : "/media/tfc/csn/everynet_feed/data_monitor",
 
                                          "msg_type" :  "everynet_adeunis_test",
                                          "address" :   "tfc.everynet_feed.A"
@@ -33,8 +33,8 @@
                                          "area_id" :   "cam",
 
                                          "file_suffix":   ".json",
-                                         "data_bin" :     "/home/ijl20/everynet_data/data_bin",
-                                         "data_monitor" : "/home/ijl20/everynet_data/data_monitor",
+                                         "data_bin" :     "/media/tfc/csn/everynet_feed/data_bin",
+                                         "data_monitor" : "/media/tfc/csn/everynet_feed/data_monitor",
 
                                          "msg_type" :  "everynet_ascii_decimal",
                                          "address" :   "tfc.everynet_feed.A"
@@ -44,8 +44,8 @@
                                          "area_id" :   "cam",
 
                                          "file_suffix":   ".json",
-                                         "data_bin" :     "/home/ijl20/everynet_data/data_bin",
-                                         "data_monitor" : "/home/ijl20/everynet_data/data_monitor",
+                                         "data_bin" :     "/media/tfc/csn/everynet_feed/data_bin",
+                                         "data_monitor" : "/media/tfc/csn/everynet_feed/data_monitor",
 
                                          "msg_type" :  "everynet_ascii_hex",
                                          "address" :   "tfc.everynet_feed.A"
