@@ -41,7 +41,7 @@ import uk.ac.cam.tfc_server.util.Log;
 
 public class MsgRouter extends AbstractVerticle {
 
-    private final String VERSION = "0.08";
+    private final String VERSION = "0.09";
     
     // from config()
     public int LOG_LEVEL;             // optional in config(), defaults to Constants.LOG_INFO
@@ -155,9 +155,11 @@ public class MsgRouter extends AbstractVerticle {
 
     private boolean load_data_sql(Future<Object> fut)
     {
+        String db_user = config().getString(MODULE_NAME+".db.user");
+
         JsonObject sql_client_config = new JsonObject()
               .put("url", config().getString(MODULE_NAME+".db.url"))
-              .put("user", config().getString(MODULE_NAME+".db.user"))
+              .put("user", db_user)
               .put("password", config().getString(MODULE_NAME+".db.password"))
               .put("driver_class", "org.postgresql.Driver");
         
@@ -165,7 +167,7 @@ public class MsgRouter extends AbstractVerticle {
         JDBCClient jdbc_client = JDBCClient.createShared(vertx, sql_client_config);
 
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                   ": load_data jdbc_client created for "+sql_client_config.getString("url"));
+                   ": load_data jdbc_client created for user "+db_user+" connecting to "+sql_client_config.getString("url"));
 
         jdbc_client.getConnection(res -> {
             if (res.failed()) 
