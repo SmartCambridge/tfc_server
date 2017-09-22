@@ -17,8 +17,8 @@
             "msgrouter.address": "tfc.msgrouter.test",
 
             "msgrouter.db.url":      "jdbc:postgresql:tfcserver",
-            "msgrouter.db.user":     "ijl20",
-            "msgrouter.db.password": "foo!1",
+            "msgrouter.db.user":     "tfcserver_r",
+            "msgrouter.db.password": "foo!x",
             "comment": "That password above is temporary...",
 
             "msgrouter.routers":
