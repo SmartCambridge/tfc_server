@@ -18,48 +18,26 @@
 
             "feedmaker.feeds":     [
                                        { 
-                                         "feed_id" :   "cam_park_local",
-                                         "feed_type":  "cam_park_local",
+                                         "feed_id" :   "cam_park_carpark",
+                                         "feed_type":  "cam_park_carpark",
                                          "area_id" :   "cam",
 
                                          "http.get":   true,
-                                         "period" :    1000,
-                                         "http.host":  "www.cambridge.gov.uk",              
-                                         "http.uri" :  "/jdi_parking_ajax/complete",
-                                         "http.ssl":   true,
-                                         "http.port":  443,
-
-                                         "http.post":  true,
-                                         "http.token": "cam-auth-test",
-
-                                         "file_suffix":   ".html",
-                                         "data_bin" :     "/media/tfc/test/cam_park_local/data_bin",
-                                         "data_monitor" : "/media/tfc/test/cam_park_local/data_monitor",
-
-                                         "msg_type" :  "feed_car_parks",
-                                         "address" :   "tfc.feedmaker.test_local"
-                                       },
-                                       { 
-                                         "feed_id" :   "cam_park_rss",
-                                         "feed_type":  "cam_park_rss",
-                                         "area_id" :   "cam",
-
-                                         "http.get":   true,
-                                         "period" :    1000,
+                                         "period" :    10,
                                          "http.host":  "traffic.cambsvoyager.com",              
-                                         "http.uri" :  "/rssfeed.aspx?obj=64&filtertype=1",
+                                         "http.uri" :  "carpark.aspx",
                                          "http.ssl":   false,
                                          "http.port":  80,
 
-                                         "http.post":  true,
+                                         "http.post":  false,
                                          "http.token": "cam-auth-test",
 
-                                         "file_suffix":   ".xml",
-                                         "data_bin" :     "/media/tfc/test/cam_park_rss/data_bin",
-                                         "data_monitor" : "/media/tfc/test/cam_park_rss/data_monitor",
+                                         "file_suffix":   ".html",
+                                         "data_bin" :     "/media/tfc/test/cam_park_carpark/data_bin",
+                                         "data_monitor" : "/media/tfc/test/cam_park_carpark/data_monitor",
 
                                          "msg_type" :  "feed_car_parks",
-                                         "address" :   "tfc.feedmaker.test_rss"
+                                         "address" :   "tfc.feedmaker.test"
                                        }
                                      ]
           }

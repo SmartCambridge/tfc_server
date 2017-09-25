@@ -420,10 +420,10 @@ public class ParseFeed {
        // Pre-populate the template with fields common to all car parks (i.e. 'fields' arraylist above)
        ft = new RecordTemplate(common_fields);
        // Define the text strings (tags) that define the start and end of the text block in the field.
-       // The section of text containing Grand Arcade occupancy has the string "Grand Arcade" before the required values.
+       // The section of text containing Grand Arcade occupancy has the string "Grand Arcade" before the required values, in a block ending '<tr>'
        ft.tag_start = "Grand Arcade";
        // The required section of text (i.e. 'record') ends with the first '</item>' after the start string.
-       ft.tag_end = "</item>";
+       ft.tag_end = "</tr>";
        // parking_id and spaces_capacity initialized with value in template
        // This 'fixed_string' value for parking_id ensures that JSON value in the result is always what is required
        ft.fields.add(new FieldTemplate("parking_id","fixed_string","grand-arcade-car-park",0,null,null,true));
@@ -537,7 +537,58 @@ public class ParseFeed {
 
        record_templates.put("cam_park_rss", cam_park_rss);
 
+       // ********************************************************************************
+       // **************  cam_park_carpark feed template   *******************************
+       // ********************************************************************************
+       /*
+         <tr class="">
+         <td style="text-align:center;width=35%;">
+         <img title="Car parks UK" alt="" src="icons/car_park_light.gif" />
+         </td>
+         <td style="width:35%;">
+         <a title="Carpark" href="/carparkdetail.aspx?t=carpark&amp;r=CAMB-CP001&amp;X=545041&amp;Y=258285&amp;format=xhtml">Grand Arcade</a>
+         </td>
+         <td style="text-align:center;">
+         <a class="LocationLink" title="View on Map" href="/map.aspx?maplayers=car_park&amp;X=545041&amp;Y=258285&amp;ZoomLevel=6">View on Map</a>
+         </td>
+         <td class="sortable-numeric" ts_type="number" style="width:20%">812</td>
+         <td class="sortable-numeric" ts_type="number" style="width:15%;">890</td>
+         <td align="center" class="cargraphiccell sortable-numeric" ts_type="number" style="width:15%">8%<div class="carpark-occupancy-percent"><div class="carpark-occupancy-percentdiv" style="width:8%;"><span class="carpark-occupancy-percentspan">8</span></div></div></td>
+         <td class="sortable-text" style="width:25%;">Filling</td>
+         <td class="sortable-text">OPEN</td>
+         </tr>
+       */
+       ArrayList<RecordTemplate> cam_park_carpark = new ArrayList<RecordTemplate>();
+
+       // Define common fields for this feed (i.e. fields the same for every RecordTemplate)
+
+       common_fields = new ArrayList<FieldTemplate>();
+       // 'spaces_free' is a <td> entry with the number between 'width:20%">' and '</td>'
+       common_fields.add(new FieldTemplate("spaces_free","int",null,0,"width:20%\">","</td>", false));
+
+       // Grand Arcade Car Park
+       // RecordTemplate for Grand Arcade Car Park from cam_park_carpark (similar for each Car Park in feed as below)
+       // Pre-populate the template with fields common to all car parks (i.e. 'common_fields' arraylist above)
+       ft = new RecordTemplate(common_fields);
+       // Define the text strings (tags) that define the start and end of the text block in the field.
+       // The section of text containing Grand Arcade occupancy has the string "Grand Arcade" before the required values.
+       ft.tag_start = "Grand Arcade";
+       // The required section of text (i.e. 'record') ends with the first '</item>' after the start string.
+       ft.tag_end = "</tr>";
+       // parking_id and spaces_capacity initialized with value in template
+       // This 'fixed_string' value for parking_id ensures that JSON value in the result is always what is required
+       ft.fields.add(new FieldTemplate("parking_id","fixed_string","grand-arcade-car-park",0,null,null,true));
+       ft.fields.add(new FieldTemplate("spaces_capacity","fixed_int",null,890,null,null,true));
+       ft.fields.add(new FieldTemplate("spaces_occupied","calc_minus",null,0,"spaces_capacity","spaces_free", true));
+       // This RecordTemplate is completed, so add to the "cam_park_carpark" ArrayList
+       cam_park_carpark.add(ft);
+
+
+
+       record_templates.put("cam_park_carpark", cam_park_carpark);
 
        return record_templates;
-    }       
+    }
+
+
 }
