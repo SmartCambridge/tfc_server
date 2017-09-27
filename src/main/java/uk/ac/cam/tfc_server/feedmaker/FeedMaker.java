@@ -62,7 +62,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class FeedMaker extends AbstractVerticle {
 
-    private final String VERSION = "0.44";
+    private final String VERSION = "0.45";
     
     // from config()
     private String MODULE_NAME;       // config module.name - normally "feedscraper"

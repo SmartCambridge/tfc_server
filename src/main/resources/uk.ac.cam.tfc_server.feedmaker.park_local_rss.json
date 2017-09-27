@@ -60,6 +60,28 @@
 
                                          "msg_type" :  "feed_car_parks",
                                          "address" :   "tfc.feedmaker.cam"
+                                       },
+                                       { 
+                                         "feed_id" :   "cam_park_carpark",
+                                         "feed_type":  "cam_park_carpark",
+                                         "area_id" :   "cam",
+
+                                         "http.get":   true,
+                                         "period" :    300,
+                                         "http.host":  "traffic.cambsvoyager.com",              
+                                         "http.uri" :  "/carpark.aspx",
+                                         "http.ssl":   false,
+                                         "http.port":  80,
+
+                                         "http.post":  false,
+                                         "http.token": "cam-auth-test",
+
+                                         "file_suffix":   ".html",
+                                         "data_bin" :     "/media/tfc/cam_park_carpark/data_bin",
+                                         "data_monitor" : "/media/tfc/cam_park_carpark/data_monitor",
+
+                                         "msg_type" :  "feed_car_parks",
+                                         "address" :   "tfc.feedmaker.cam"
                                        }
                                      ]
           }
