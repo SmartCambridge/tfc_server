@@ -9,6 +9,7 @@ public class Constants {
     public static final String FEED_BUS_POSITION = "feed_bus_position"; // e.g. as derived from GTFS bus
     public static final String FEED_CAR_PARKS  = "feed_car_parks"; // occupancy of multiple car parks
     public static final String FEED_PLAIN  = "feed_plain"; // feed accepted without parsing
+    public static final String FEED_XML_FLAT  = "feed_xml_flat"; // XML feed to be flattened
     public static final int    FEEDHANDLER_MAX_POST = 1000000; // max feed post in bytes
     
     // Zone msg_type values which flow on zone.address

@@ -62,7 +62,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class FeedMaker extends AbstractVerticle {
 
-    private final String VERSION = "0.45";
+    private final String VERSION = "0.46";
     
     // from config()
     private String MODULE_NAME;       // config module.name - normally "feedscraper"
@@ -163,7 +163,7 @@ public class FeedMaker extends AbstractVerticle {
     // start a feed maker with a given config
     private void start_maker(JsonObject config, Router router, String BASE_URI)
     {
-          ParseFeed parser = new ParseFeed(config.getString("feed_type"), config.getString("area_id"), logger);
+          ParseFeed parser = new ParseFeed(config, logger);
 
           // create monitor directory if necessary
           FileSystem fs = vertx.fileSystem();          

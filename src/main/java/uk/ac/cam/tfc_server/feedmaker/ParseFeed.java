@@ -75,17 +75,21 @@ public class ParseFeed {
 
     private String area_id;
 
+    private JsonObject config;
+
     private Log logger;
 
     // structure holding templates for each feed type
     // i.e. record_templates["cam_park_local"] gives templates for that feed type
     HashMap<String, ArrayList<RecordTemplate>> record_templates;
     
-    ParseFeed(String feed_type, String area_id, Log logger)
+    ParseFeed(JsonObject config, Log logger)
         {
-           this.feed_type = feed_type;
+           this.config = config;
 
-           this.area_id = area_id;
+           this.feed_type = config.getString("feed_type");
+
+           this.area_id = config.getString("area_id","");
 
            this.logger = logger;
 
@@ -98,12 +102,12 @@ public class ParseFeed {
     public JsonArray parse_array(String page)
         {
 
-            logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array called with page");
+            logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array called for feed type "+feed_type);
 
             JsonArray records = new JsonArray();
 
-            // if feed_type is "plain", just return a simple JsonArray of a single JsonObject {"feed_data": page }
-            if (feed_type==Constants.FEED_PLAIN)
+            // if feed_type is "feed_plain", just return a simple JsonArray of a single JsonObject {"feed_data": page }
+            if (feed_type.equals(Constants.FEED_PLAIN))
             {
                 logger.log(Constants.LOG_DEBUG, "ParseFeed plain record");
                 JsonObject json_record = new JsonObject();
@@ -111,6 +115,19 @@ public class ParseFeed {
                 records.add(json_record);
                 return records;
             }
+
+            logger.log(Constants.LOG_DEBUG, "ParseFeed ..>"+feed_type+"<.");
+
+            // if feed_type is "feed_xml_flat", return flattened content of XML elements given in config 'record_tag'
+            if (feed_type.equals(Constants.FEED_XML_FLAT))
+            {
+                logger.log(Constants.LOG_DEBUG, "ParseFeed xml_flat record for "+config.getString("record_tag"));
+                JsonObject json_record = new JsonObject();
+                json_record.put("feed_data", page);
+                records.add(json_record);
+                return records;
+            }
+            logger.log(Constants.LOG_DEBUG, "ParseFeed .....");
 
             // otherwise try and match each known car park to the data
             for (int i=0; i<record_templates.get(feed_type).size(); i++)
