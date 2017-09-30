@@ -1,6 +1,6 @@
-## [RITA](https://github.com/ijl20/tfc_server) &gt; FeedMaker
+## [Adaptive City Platform](https://github.com/ijl20/tfc_server) &gt; FeedMaker
 
-FeedMaker is part of the RITA Realtime Intelligent Traffic Analysis platform,
+FeedMaker is part of the Adaptive City Platform
 supported by the Smart Cambridge programme.
 
 ## Overview
@@ -60,7 +60,74 @@ congestion tends to correlate with local time, not UTC).
 FeedMaker then parses the raw received data (depending on a local parsing
 module typically unique to the source) and 'publishes' the data to the eventbus as Json.
 
-## FeedMaker eventbus message format
+## Parser Structure
+
+FeedMaker interprets the ```feed_type``` in the verticle config, and uses the appropriate
+parser for that feed type.
+
+Each parser conforms to the Java interface 'FeedParser' which requires a ```parse_array```
+method that accepts the received data from the actual feed as a ```String``` and returns the
+extracted (multiple) data records as a ```JsonArray```.
+
+### Current parsers
+#### ParseFeedText
+This will consume a typically human-readable text file and extract fields and
+values embedded within the page. The actual parsing parameters are defined in a separate class
+file (such as ```ParseParkRss.java```) which will provide the search strings that delimit the
+required data. ParseFeedText allows the specification of optional fields in the data, and for some
+required data fields to be calculated from other data that may be contained within the source (e.g. for 
+a car park, ```spaces_free``` may be calculated from ```spaces_capacity``` minus ```spaces_full```.)
+
+Given this parser is used in the process generally referred to as 'screen-scraping', there is no escaping the
+likely maintenance headache each time the source format changes.
+
+#### ParseFeedXMLFlat
+This parser will be given a ```record_tag``` in the verticle config (e.g. ```VehicleActivity``` for
+Siri-VM data) that tells the parser the parent tag of the (possibly repeating) data records of
+interest in the source.
+
+ParseXMLFlat will generate records (JsonObjects) with properties for each of the tags found within the
+```record_tag``` records.
+
+E.g. if the ```record_tag``` is ```bah``` and the source string is
+```
+<foo>
+  <bah>
+    <hoo>Ha</hoo>
+    <rofl>
+      <goo>Ga</goo>
+    </rofl>
+  </bah>
+  <joo>J</joo>
+  <bah>
+    <hoo>Hi</hoo>
+    <rofl>
+      <goo>Gi</goo>
+      <moo>Mi</moo>
+    </rofl>
+  </bah>
+</foo>
+```
+Then the output JsonArray will be:
+```
+[
+  { "hoo": "Ha",
+    "goo": "Ga"
+  },
+  { "hoo": "Hi",
+    "goo": "Gi",
+    "moo": "Mi"
+  }
+]
+```
+You can see
+1. The flattening process absolutely discards any hierarchical structure in the XML.
+2. The parser assumes XML tags do NOT repeat anywhere within the ```record_tag``` data record.
+3. The parser is discarding self-closing XML fields like <foo/>.
+4. Attributes in the tags, such as ```route``` in ```<foo route=66>abc</foo>``` are discarded.
+5. Tags and values NOT within the chosen ```record_tag``` will be ignored.
+
+## Sample FeedMaker eventbus message format
 
 
 ```
