@@ -163,7 +163,16 @@ public class FeedMaker extends AbstractVerticle {
     // start a feed maker with a given config
     private void start_maker(JsonObject config, Router router, String BASE_URI)
     {
-          ParseFeed parser = new ParseFeed(config, logger);
+          FeedParser parser;
+
+          if (config.getString("feed_type").equals(Constants.FEED_XML_FLAT))
+          {
+              parser = new ParseFeedXMLFlat(config, logger);
+          }
+          else
+          {
+              parser = new ParseFeedText(config, logger);
+          }
 
           // create monitor directory if necessary
           FileSystem fs = vertx.fileSystem();          
@@ -228,7 +237,7 @@ public class FeedMaker extends AbstractVerticle {
     private void add_feed_handler(Router router, 
                                   String BASE_URI,
                                   JsonObject config,
-                                  ParseFeed parser)
+                                  FeedParser parser)
     {
         final String HTTP_TOKEN = config.getString("http.token");
         final String FEED_ID = config.getString("feed_id");
@@ -267,7 +276,7 @@ public class FeedMaker extends AbstractVerticle {
     // This is the routine called periodically to GET the feed from the defined web address.
     // it will pass the data to 'parser' to convert to a JsonObject to send on the EventBus
     //
-    private void get_feed(JsonObject config, ParseFeed parser)
+    private void get_feed(JsonObject config, FeedParser parser)
     {
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                                ": get_feed "+config.getString("http.host")+config.getString("http.uri"));
@@ -317,7 +326,7 @@ public class FeedMaker extends AbstractVerticle {
 
   // *****************************************************************
   // process the received raw data
-  private void process_feed(Buffer buf, JsonObject config, ParseFeed parser) throws Exception 
+  private void process_feed(Buffer buf, JsonObject config, FeedParser parser) throws Exception 
   {
 
     LocalDateTime local_time = LocalDateTime.now();

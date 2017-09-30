@@ -32,8 +32,8 @@
                                          "http.token": "cam-auth-test",
 
                                          "file_suffix":   ".xml",
-                                         "data_bin" :     "test/cloudamber_siri_vm/data_bin",
-                                         "data_monitor" : "test/cloudamber_siri_vm/data_monitor",
+                                         "data_bin" :     "/home/ijl20/test/cloudamber_siri_vm/data_bin",
+                                         "data_monitor" : "/home/ijl20/test/cloudamber_siri_vm/data_monitor",
 
                                          "msg_type" :  "siri_vm_flat",
                                          "address" :   "tfc.feedmaker.siri_vm"
