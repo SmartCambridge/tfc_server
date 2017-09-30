@@ -24,7 +24,7 @@
                                          "http.get":   true,
                                          "period" :    300,
                                          "http.host":  "people.ds.cam.ac.uk",
-                                         "http.uri" :  "/ijl20/siri_vm.xml",
+                                         "http.uri" :  "/ijl20/test_siri_vm_2.xml",
                                          "http.ssl":   false,
                                          "http.port":  80,
 
