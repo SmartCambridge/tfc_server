@@ -334,7 +334,10 @@ public class FeedMaker extends AbstractVerticle {
     String day = local_time.format(DateTimeFormatter.ofPattern("dd"));
     String month = local_time.format(DateTimeFormatter.ofPattern("MM"));
     String year = local_time.format(DateTimeFormatter.ofPattern("yyyy"));
-    String utc_ts = String.valueOf(System.currentTimeMillis() / 1000);
+    // Built utc_ts as "<UTC Seconds>.<UTC Milliseconds>"
+    String utc_millis = String.valueOf(System.currentTimeMillis());  // ~UTC time in milliseconds
+    int utc_len = utc_millis.length();
+    String utc_ts = utc_millis.substring(0,utc_len-3)+"."+utc_millis.substring(utc_len-3,utc_len); 
 
     // filename without the suffix
     String filename = utc_ts+"_"+local_time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss"));
@@ -361,7 +364,7 @@ public class FeedMaker extends AbstractVerticle {
     msg.put("feed_id", config.getString("feed_id"));
     msg.put("filename", filename);
     msg.put("filepath", filepath);
-    msg.put("ts", Integer.parseInt(utc_ts));
+    msg.put("ts", utc_ts);
 
     try {            
         JsonArray request_data = parser.parse_array(buf.toString());

@@ -14,8 +14,6 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class ParseFeedXMLFlat implements FeedParser {
 
-    static final int MAX_TAG_SIZE = 40; // maximum number of chars in a 'tag' used to match text in template
-    
     private String feed_type; // e.g. Constants.FEED_XML_FLAT
 
     private String area_id;
@@ -38,7 +36,7 @@ public class ParseFeedXMLFlat implements FeedParser {
 
        this.logger = logger;
 
-       logger.log(Constants.LOG_DEBUG, "ParseFeed started for "+feed_type);
+       logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat started for feed_type "+feed_type);
     }
 
     // Here is where we try and parse the page and return a JsonArray
@@ -151,8 +149,8 @@ public class ParseFeedXMLFlat implements FeedParser {
                         logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat.parse_array "+
                                    "found atomic tag "+current_tag+".."+tag_close);
                         // Create new Json property here...
-
-                        json_record.put(current_tag,"foo");
+                        String tag_value = page.substring(record_cursor+1, next_cursor-1);
+                        json_record.put(current_tag, tag_value);
                     }
 
                     current_tag = next_tag;
