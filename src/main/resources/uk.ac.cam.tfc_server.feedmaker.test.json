@@ -18,8 +18,21 @@
                                        { 
                                          "feed_id" :   "cloudamber_siri_vm",
                                          "feed_type":  "feed_xml_flat",
-                                         "record_tag": "VehicleActivity",
                                          "area_id" :   "cam",
+                                         "tag_record": "VehicleActivity",
+                                         "tag_map":    [ { "original_tag": "RecordedAtTime",
+                                                           "new_tag": "acp_ts",
+                                                           "format": "datetime_utc_millis"},
+                                                         { "original_tag": "Latitude",
+                                                           "new_tag": "acp_lat",
+                                                           "format": "float"},
+                                                         { "original_tag": "Longitude",
+                                                           "new_tag": "acp_lng",
+                                                           "format": "float"},
+                                                         { "original_tag": "VehicleMonitoringRef",
+                                                           "new_tag": "acp_id",
+                                                           "format": "string"}
+                                                       ],
 
                                          "http.get":   true,
                                          "period" :    300,

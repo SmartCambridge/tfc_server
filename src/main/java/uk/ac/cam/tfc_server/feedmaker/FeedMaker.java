@@ -62,7 +62,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class FeedMaker extends AbstractVerticle {
 
-    private final String VERSION = "0.46";
+    private final String VERSION = "0.47";
     
     // from config()
     private String MODULE_NAME;       // config module.name - normally "feedscraper"
@@ -335,9 +335,11 @@ public class FeedMaker extends AbstractVerticle {
     String month = local_time.format(DateTimeFormatter.ofPattern("MM"));
     String year = local_time.format(DateTimeFormatter.ofPattern("yyyy"));
     // Built utc_ts as "<UTC Seconds>.<UTC Milliseconds>"
-    String utc_millis = String.valueOf(System.currentTimeMillis());  // ~UTC time in milliseconds
+    Instant now = Instant.now();
+    String utc_millis = String.valueOf(now.toEpochMilli());  // ~UTC time in milliseconds
     int utc_len = utc_millis.length();
-    String utc_ts = utc_millis.substring(0,utc_len-3)+"."+utc_millis.substring(utc_len-3,utc_len); 
+    String utc_ts = utc_millis.substring(0,utc_len-3)+"."+utc_millis.substring(utc_len-3,utc_len);
+    String utc_datetime = now.toString();
 
     // filename without the suffix
     String filename = utc_ts+"_"+local_time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss"));
@@ -364,7 +366,7 @@ public class FeedMaker extends AbstractVerticle {
     msg.put("feed_id", config.getString("feed_id"));
     msg.put("filename", filename);
     msg.put("filepath", filepath);
-    msg.put("ts", utc_ts);
+    msg.put("ts", utc_datetime); // e.g. "ts": "2016-06-27T19:15:25.864Z"
 
     try {            
         JsonArray request_data = parser.parse_array(buf.toString());

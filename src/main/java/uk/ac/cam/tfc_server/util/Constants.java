@@ -5,6 +5,9 @@ package uk.ac.cam.tfc_server.util;
 public class Constants {
 // module message types
 //
+    // System-wide definition values
+    public static final String PLATFORM_PREFIX = "acp_"; // will be used as global prefix to shared data e.g. "acp_lat"
+
     // FeedPlayer/FeedMaker msg_type values
     public static final String FEED_BUS_POSITION = "feed_bus_position"; // e.g. as derived from GTFS bus
     public static final String FEED_CAR_PARKS  = "feed_car_parks"; // occupancy of multiple car parks
