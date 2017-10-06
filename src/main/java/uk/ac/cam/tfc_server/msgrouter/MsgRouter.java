@@ -41,7 +41,7 @@ import uk.ac.cam.tfc_server.util.Log;
 
 public class MsgRouter extends AbstractVerticle {
 
-    private final String VERSION = "0.09";
+    private final String VERSION = "0.10";
     
     // from config()
     public int LOG_LEVEL;             // optional in config(), defaults to Constants.LOG_INFO
@@ -156,6 +156,15 @@ public class MsgRouter extends AbstractVerticle {
     private boolean load_data_sql(Future<Object> fut)
     {
         String db_user = config().getString(MODULE_NAME+".db.user");
+
+        // MsgRouter may have ONLY destinations hard-coded into the config, in which case
+        // we may not be using a Postgresql mapping table for sensor->destination
+        if (db_user==null)
+        {
+            return false;
+        }
+
+        // Ok we have a 'db_user' so assume we need to connect to Postgresql and initialise sensor->destination tables
 
         JsonObject sql_client_config = new JsonObject()
               .put("url", config().getString(MODULE_NAME+".db.url"))
@@ -466,11 +475,26 @@ public class MsgRouter extends AbstractVerticle {
                                ": sending message to "+destination_type+"/"+destination_id);
                     try 
                     {
-                        // Careful here!! Although FeedHandler(etc) can send an Array of data points in
-                        // the "request_data" parameter, for LoraWAN purposes we are currently assuming
-                        // only a single data value is going to be present, hence we are forwarding
-                        // msg.getJsonArray("request_data").getJsonObject(0), not the whole array.
-                        destinations.get(destination_type,destination_id).send(msg.getJsonArray("request_data").getJsonObject(0).toString());
+                        switch (destination_type)
+                        {
+                            case Constants.FEED_EVENTBUS_MSG:
+                                destinations.get(destination_type,destination_id).send(msg.toString());
+                                break;
+
+                            case Constants.FEED_EVENTBUS_0:
+                                // Careful here!! Although FeedHandler(etc) can send an Array of data points in
+                                // the "request_data" parameter, for LoraWAN purposes we are currently assuming
+                                // only a single data value is going to be present, hence we are forwarding
+                                // msg.getJsonArray("request_data").getJsonObject(0), not the whole array.
+                                destinations.get(destination_type,destination_id).send(msg.getJsonArray("request_data").getJsonObject(0).toString());
+                                break;
+
+                            default:
+                                logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                                           ": start_router unrecognized destination_type in message "+destination_type+"/"+destination_id);
+                                break;
+                        }
+                                
                     }
                     catch (Exception e)
                     {
