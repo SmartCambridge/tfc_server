@@ -14,8 +14,6 @@
               
             "feedmaker.log_level":   2,
 
-            "feedmaker.http.port":   8086,
-
             "feedmaker.feeds":     [
                                        { 
                                          "feed_id" :   "cam_park_local",
@@ -28,9 +26,6 @@
                                          "http.uri" :  "/jdi_parking_ajax/complete",
                                          "http.ssl":   true,
                                          "http.port":  443,
-
-                                         "http.post":  true,
-                                         "http.token": "cam-auth-test",
 
                                          "file_suffix":   ".html",
                                          "data_bin" :     "/media/tfc/cam_park_local/data_bin",
@@ -51,9 +46,6 @@
                                          "http.ssl":   false,
                                          "http.port":  80,
 
-                                         "http.post":  true,
-                                         "http.token": "cam-auth-test",
-
                                          "file_suffix":   ".xml",
                                          "data_bin" :     "/media/tfc/cam_park_rss/data_bin",
                                          "data_monitor" : "/media/tfc/cam_park_rss/data_monitor",
@@ -72,9 +64,6 @@
                                          "http.uri" :  "/carpark.aspx",
                                          "http.ssl":   false,
                                          "http.port":  80,
-
-                                         "http.post":  false,
-                                         "http.token": "cam-auth-test",
 
                                          "file_suffix":   ".html",
                                          "data_bin" :     "/media/tfc/cam_park_carpark/data_bin",

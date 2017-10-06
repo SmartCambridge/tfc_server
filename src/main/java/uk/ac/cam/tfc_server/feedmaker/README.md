@@ -136,7 +136,7 @@ You can see
    "module_id":   "cam_parking_local",          // from config, but platform unique value within module_name
    "msg_type":    "car_parking",                // unique id for this message format
    "feed_id":     "cam_parking_local",          // identifies http source, matches config
-   "filename":    "1459762951_2016-04-04-10-42-31",
+   "filename":    "1459762951_2016-04-04-10-42-31.123",
    "filepath":    "2016/04/04",
    "request_data":[                             // parsed data from source, in this case car park occupancy
                     { "area_id":         "cam",
@@ -150,11 +150,13 @@ You can see
 }
 ```
 In the example above, the parking occupancy record batch was written to a file called
-"2016/04/04/1459762951_2016-04-04-10-42-31.bin" by FeedMaker. The Unix timestamp is
+"2016/04/04/1459762951.123_2016-04-04-10-42-31.bin" by FeedMaker. The Unix timestamp is
 in UTC, while the 2016/04/04 and 10-42-31 is local time. That path is beneath a 'data_bin' root
 specified in the FeedMaker config.
 
 ## Feedmaker app config format
+
+To poll for car park data, using the built-in parser FeedParseParkLocal:
 ```
 {
     "main":    "uk.ac.cam.tfc_server.feedmaker.FeedMaker",
@@ -195,6 +197,70 @@ specified in the FeedMaker config.
                                          "msg_type" :  "feed_car_parks",
                                          "address" :   "tfc.feedmaker.cam"
                                         }
+                                     ]
+          }
+        }
+}
+
+```
+
+To GET SiriVM XML data, and publish flattened eventbus messages.
+
+Note, the actual 'GET' is for testing. This feedmaker would be configured to receive POST data in production.
+
+```
+{
+    "main":    "uk.ac.cam.tfc_server.feedmaker.FeedMaker",
+    "options":
+        { "config":
+          {
+
+            "module.name":           "feedmaker",
+            "module.id":             "test",
+
+            "eb.system_status":      "tfc.system_status",
+            "eb.console_out":        "tfc.console_out",
+            "eb.manager":            "tfc.manager",
+              
+            "feedmaker.log_level":   1,
+
+            "feedmaker.feeds":     [
+                                       { 
+                                         "feed_id" :   "cloudamber_siri_vm",
+                                         "feed_type":  "feed_xml_flat",
+                                         "area_id" :   "cam",
+                                         "tag_record": "VehicleActivity",
+                                         "tag_map":    [ { "original_tag": "RecordedAtTime",
+                                                           "new_tag": "acp_ts",
+                                                           "format": "datetime_iso_to_int_utc_seconds"},
+                                                         { "original_tag": "Latitude",
+                                                           "new_tag": "acp_lat",
+                                                           "format": "float"},
+                                                         { "original_tag": "Longitude",
+                                                           "new_tag": "acp_lng",
+                                                           "format": "float"},
+                                                         { "original_tag": "VehicleMonitoringRef",
+                                                           "new_tag": "acp_id",
+                                                           "format": "string"}
+                                                       ],
+
+                                         "http.get":   true,
+                                         "period" :    300,
+                                         "http.host":  "people.ds.cam.ac.uk",
+                                         "http.uri" :  "/ijl20/siri_vm.xml",
+                                         "http.ssl":   false,
+                                         "http.port":  80,
+
+                                         "http.post":  false,
+                                         "http.token": "cam-auth-test",
+
+                                         "file_suffix":   ".xml",
+                                         "data_bin" :     "/home/ijl20/test/cloudamber_siri_vm/data_bin",
+                                         "data_monitor" : "/home/ijl20/test/cloudamber_siri_vm/data_monitor",
+
+                                         "msg_type" :  "siri_vm_flat",
+                                         "address" :   "tfc.feedmaker.siri_vm"
+                                       }
                                      ]
           }
         }

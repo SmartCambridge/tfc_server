@@ -62,7 +62,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class FeedMaker extends AbstractVerticle {
 
-    private final String VERSION = "0.47";
+    private final String VERSION = "0.48";
     
     // from config()
     private String MODULE_NAME;       // config module.name - normally "feedscraper"
@@ -160,7 +160,7 @@ public class FeedMaker extends AbstractVerticle {
     }
 
     // *************************************
-    // start a feed maker with a given config
+    // start a GET polling feed_maker with a given config
     private void start_maker(JsonObject config, Router router, String BASE_URI)
     {
           FeedParser parser;
@@ -194,8 +194,8 @@ public class FeedMaker extends AbstractVerticle {
           // create a HTTP POST 'listener' for this feed at BASE_URI/FEED_ID
           if (HTTP_PORT != 0 && config.getBoolean("http.post", false))
               {
-                  logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+"."+
-                             config.getString("feed_id")+": starting POST listener");
+                  //logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+"."+
+                  //           config.getString("feed_id")+": starting POST listener");
                   add_feed_handler(router, BASE_URI, config, parser);
               }
 
@@ -243,7 +243,7 @@ public class FeedMaker extends AbstractVerticle {
         final String FEED_ID = config.getString("feed_id");
 
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
-                                       ": setting up POST listener on "+"/"+BASE_URI+"/"+FEED_ID);
+                                       ": setting up POST listener on localhost:"+HTTP_PORT+"/"+BASE_URI+"/"+FEED_ID);
         router.route(HttpMethod.POST,"/"+BASE_URI+"/"+FEED_ID).handler( ctx -> {
                 ctx.request().bodyHandler( buffer -> {
                         try {
@@ -334,12 +334,20 @@ public class FeedMaker extends AbstractVerticle {
     String day = local_time.format(DateTimeFormatter.ofPattern("dd"));
     String month = local_time.format(DateTimeFormatter.ofPattern("MM"));
     String year = local_time.format(DateTimeFormatter.ofPattern("yyyy"));
-    // Built utc_ts as "<UTC Seconds>.<UTC Milliseconds>"
+
     Instant now = Instant.now();
-    String utc_millis = String.valueOf(now.toEpochMilli());  // ~UTC time in milliseconds
-    int utc_len = utc_millis.length();
-    String utc_ts = utc_millis.substring(0,utc_len-3)+"."+utc_millis.substring(utc_len-3,utc_len);
-    String utc_datetime = now.toString();
+    long utc_milliseconds = now.toEpochMilli();
+
+    // The object sent i the messagebus will include "ts": utc_seconds
+    long utc_seconds = utc_milliseconds / 1000;
+
+    // Built utc_ts as "<UTC Seconds>.<UTC Milliseconds>" for use in the filename
+    String utc_milli_string = String.valueOf(utc_milliseconds);  // ~UTC time in milliseconds
+    int utc_len = utc_milli_string.length();
+    String utc_ts = utc_milli_string.substring(0,utc_len-3)+"."+utc_milli_string.substring(utc_len-3,utc_len);
+
+    // A possible alternative will be to use an ISO 8601 UTC string for the timestamp
+    //String utc_datetime = now.toString();
 
     // filename without the suffix
     String filename = utc_ts+"_"+local_time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss"));
@@ -366,7 +374,7 @@ public class FeedMaker extends AbstractVerticle {
     msg.put("feed_id", config.getString("feed_id"));
     msg.put("filename", filename);
     msg.put("filepath", filepath);
-    msg.put("ts", utc_datetime); // e.g. "ts": "2016-06-27T19:15:25.864Z"
+    msg.put("ts", utc_seconds);
 
     try {            
         JsonArray request_data = parser.parse_array(buf.toString());
@@ -586,6 +594,7 @@ public class FeedMaker extends AbstractVerticle {
                                                        .setTrustAll(true)
                                                        .setDefaultPort(config.getInteger("http.port"))
                                                        .setDefaultHost(config.getString("http.host"))
+                                                       .setKeepAlive(false)
                             ));
                     }
             }

@@ -15,43 +15,26 @@
             "feedmaker.log_level":   1,
 
             "feedmaker.feeds":     [
-                                       { 
-                                         "feed_id" :   "cloudamber_siri_vm",
-                                         "feed_type":  "feed_xml_flat",
+                                        { 
+                                         "feed_id" :   "cam_park_local",
+                                         "feed_type":  "cam_park_local",
                                          "area_id" :   "cam",
-                                         "tag_record": "VehicleActivity",
-                                         "tag_map":    [ { "original_tag": "RecordedAtTime",
-                                                           "new_tag": "acp_ts",
-                                                           "format": "datetime_utc_millis"},
-                                                         { "original_tag": "Latitude",
-                                                           "new_tag": "acp_lat",
-                                                           "format": "float"},
-                                                         { "original_tag": "Longitude",
-                                                           "new_tag": "acp_lng",
-                                                           "format": "float"},
-                                                         { "original_tag": "VehicleMonitoringRef",
-                                                           "new_tag": "acp_id",
-                                                           "format": "string"}
-                                                       ],
 
                                          "http.get":   true,
-                                         "period" :    300,
-                                         "http.host":  "people.ds.cam.ac.uk",
-                                         "http.uri" :  "/ijl20/siri_vm.xml",
-                                         "http.ssl":   false,
-                                         "http.port":  80,
+                                         "period" :    30,
+                                         "http.host":  "www.cambridge.gov.uk",              
+                                         "http.uri" :  "/jdi_parking_ajax/complete",
+                                         "http.ssl":   true,
+                                         "http.port":  443,
 
-                                         "http.post":  false,
-                                         "http.token": "cam-auth-test",
+                                         "file_suffix":   ".html",
+                                         "data_bin" :     "/home/ijl20/test/cam_park_local/data_bin",
+                                         "data_monitor" : "/home/ijl20/test/cam_park_local/data_monitor",
 
-                                         "file_suffix":   ".xml",
-                                         "data_bin" :     "/home/ijl20/test/cloudamber_siri_vm/data_bin",
-                                         "data_monitor" : "/home/ijl20/test/cloudamber_siri_vm/data_monitor",
-
-                                         "msg_type" :  "siri_vm_flat",
-                                         "address" :   "tfc.feedmaker.siri_vm"
+                                         "msg_type" :  "feed_car_parks",
+                                         "address" :   "tfc.feedmaker.test"
                                        }
-                                     ]
+                                    ]
           }
         }
 }

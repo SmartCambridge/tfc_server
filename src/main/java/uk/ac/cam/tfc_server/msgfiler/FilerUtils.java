@@ -257,61 +257,71 @@ public class FilerUtils {
         // see if the pattern includes a function seperator, like "ts|yyyy"
         int fun_pos = pattern.indexOf(PATTERN_FUN);
         if (fun_pos < 0)
-            {
-                // simple case, no function separator, so just return msg field value
-                return msg.getString(pattern);
-            }
+        {
+            // simple case, no function separator, so just return msg field value
+            return msg.getString(pattern);
+        }
         else
-            {
-                field_name = pattern.substring(0, fun_pos);
-            }
+        {
+            field_name = pattern.substring(0, fun_pos);
+        }
 
         // ok, we have a function to apply, so test each case
 
         if (pattern.endsWith(PATTERN_FUN+"int"))
-            {
-                Long field_value =  msg.getLong(field_name, 0L);
-                return field_value.toString();
-            }
-        
+        {
+            Long field_value =  msg.getLong(field_name, 0L);
+            return field_value.toString();
+        }
+
+        Instant ts;
+
         if (pattern.endsWith(PATTERN_FUN+"yyyy"))
-            {
-                Long field_value =  msg.getLong(field_name, 0L);
+        {
+            ts = field_to_instant(msg, field_name);
 
-                Instant instant = Instant.ofEpochSecond(field_value);
-                
-                LocalDateTime local_time = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+            LocalDateTime local_time = LocalDateTime.ofInstant(ts, ZoneId.systemDefault());
 
-                String year = local_time.format(DateTimeFormatter.ofPattern("yyyy"));
-                
-                return year;
-            }
-        
+            String year = local_time.format(DateTimeFormatter.ofPattern("yyyy"));
+
+            return year;
+        }
+
         if (pattern.endsWith(PATTERN_FUN+"MM"))
-            {
-                Long field_value =  msg.getLong(field_name, 0L);
-                Instant instant = Instant.ofEpochSecond(field_value);
-                
-                LocalDateTime local_time = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+        {
+            ts = field_to_instant(msg, field_name);
 
-                String month = local_time.format(DateTimeFormatter.ofPattern("MM"));
-                
-                return month;
-            }
-        
+            LocalDateTime local_time = LocalDateTime.ofInstant(ts, ZoneId.systemDefault());
+
+            String month = local_time.format(DateTimeFormatter.ofPattern("MM"));
+
+            return month;
+        }
+
         if (pattern.endsWith(PATTERN_FUN+"dd"))
-            {
-                Long field_value =  msg.getLong(field_name, 0L);
-                Instant instant = Instant.ofEpochSecond(field_value);
-                
-                LocalDateTime local_time = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+        {
+            ts = field_to_instant(msg, field_name);
 
-                String day = local_time.format(DateTimeFormatter.ofPattern("dd"));
-                
-                return day;
-            }
+            LocalDateTime local_time = LocalDateTime.ofInstant(ts, ZoneId.systemDefault());
 
+            String day = local_time.format(DateTimeFormatter.ofPattern("dd"));
+
+            return day;
+        }
         return pattern;
+    }
+
+    // Convert EITHER unix timestamp or ISO 8601 string to an Instant
+    private Instant field_to_instant(JsonObject msg, String field_name)
+    {
+        try
+        {
+            return  Instant.ofEpochSecond(msg.getLong(field_name, 0L));
+        }
+        catch (java.lang.ClassCastException e)
+        {
+            return Instant.parse(msg.getString(field_name));
+        }
     }
 
     // *****************************************************************
@@ -367,8 +377,8 @@ public class FilerUtils {
         catch (FileSystemException e)
         {
              // we tried to remove previous 'prev' file and failed, but it doesn't matter.
-             Log.log_err("MsgFiler."+filer_config.module_id+
-                           ": overwrite_file did not find existing previous file for "+file_path);
+             //Log.log_err("MsgFiler."+filer_config.module_id+
+             //              ": overwrite_file did not find existing previous file for "+file_path);
         }
         try
         {
@@ -376,8 +386,8 @@ public class FilerUtils {
         }
         catch (FileSystemException e)
         {
-             Log.log_err("MsgFiler."+filer_config.module_id+
-                          ": overwrite_file did not find existing "+file_path);
+             //Log.log_err("MsgFiler."+filer_config.module_id+
+             //             ": overwrite_file did not find existing "+file_path);
         }
 
         Buffer buf = Buffer.buffer(msg);
@@ -385,7 +395,7 @@ public class FilerUtils {
                      buf, 
                      result -> {
           if (result.succeeded()) {
-              //System.out.println("MsgFiler: File "+file_path+" written");
+              System.out.println("MsgFiler: File "+file_path+" written");
           } else {
             Log.log_err("MsgFiler."+filer_config.module_id+": overwrite_file error ..." + result.cause());
           }
@@ -413,7 +423,7 @@ public class FilerUtils {
     // BLOCKING code that will open and append 'msg'+'\n' to file 'filepath'
     public void append_file(String msg, String file_path)
     {
-        //System.out.println("MsgFiler."+filer_config.module_id+": append_file "+ file_path);
+        System.out.println("MsgFiler."+filer_config.module_id+": append_file "+ file_path);
 
         BufferedWriter bw = null;
 

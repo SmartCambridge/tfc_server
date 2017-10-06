@@ -277,13 +277,17 @@ public class ParseFeedXMLFlat implements FeedParser {
                     case "float":
                         jo.put(output_tag, Double.parseDouble(input_value));
                         break;
-                    case "datetime_utc_millis":
+                    case "datetime_iso_to_utc":
                         // input  "2017-09-29T09:45:38+01:00"
                         // output "2017-09-29T09:45:38.000Z"
-                        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
-                        TemporalAccessor accessor = formatter.parse(input_value);
-                        Instant ts = Instant.from(accessor);
-                        jo.put(output_tag, ts.toString());
+                        String iso_ts = Instant.from(DateTimeFormatter.ISO_DATE_TIME.parse(input_value)).toString();
+                        jo.put(output_tag, iso_ts);
+                        break;
+                    case "datetime_iso_to_int_utc_seconds":
+                        // input  "2017-09-29T09:45:38+01:00"
+                        // output "1507125081"
+                        long ts_seconds = Instant.from(DateTimeFormatter.ISO_DATE_TIME.parse(input_value)).getEpochSecond();
+                        jo.put(output_tag, ts_seconds);
                         break;
                     default:
                         jo.put(output_tag, input_value);
