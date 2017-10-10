@@ -19,7 +19,7 @@
             "feedmaker.feeds":     [
                                        { 
                                          "feed_id" :   "sirivm_json",
-                                         "feed_type":  "feed_eventbus_msg",
+                                         "feed_type":  "feed_plain",
                                          "area_id" :   "cam",
 
                                          "http.post":  true,

@@ -58,6 +58,9 @@ public class Constants {
     public static final String FILE_APPEND = "append"; // will append to the file
     public static final String PREV_FILE_SUFFIX = ".prev"; // will be appended to the filename for previous data feed
 
+    // FeedMaker hop count limit
+    public static final int    HOP_COUNT_LIMIT = 10; // limit for <PLATFORM_PREFIX>hop_count property in FeedMaker
+
     // Log levels used by util/Log.java, may replace with log4j at some point...
     public static final int    LOG_DEBUG = 1;
     public static final int    LOG_INFO = 2;

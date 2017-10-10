@@ -84,253 +84,202 @@ public class ParseFeedText implements FeedParser {
     HashMap<String, ArrayList<RecordTemplate>> record_templates;
     
     ParseFeedText(JsonObject config, Log logger)
-        {
-           this.config = config;
+    {
+       this.config = config;
 
-           this.feed_type = config.getString("feed_type");
+       this.feed_type = config.getString("feed_type");
 
-           this.area_id = config.getString("area_id","");
+       this.area_id = config.getString("area_id","");
 
-           this.logger = logger;
+       this.logger = logger;
 
-           record_templates = init_templates();
-           
-           logger.log(Constants.LOG_DEBUG, "ParseFeed started for "+feed_type);
-        }
+       record_templates = init_templates();
 
-    // Here is where we try and parse the page and return a JsonArray
-    public JsonArray parse_array(String page)
-        {
+       logger.log(Constants.LOG_DEBUG, "ParseFeed started for "+feed_type);
+    }
 
-            logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array called for feed type "+feed_type);
+    // Here is where we try and parse the page and return a JsonObject
+    public JsonObject parse(String page)
+    {
 
-            JsonArray records = new JsonArray();
+        logger.log(Constants.LOG_DEBUG, "ParseFeed.parse() called for feed type "+feed_type);
 
-            // if feed_type is "feed_plain", just return a simple JsonArray of a single JsonObject {"feed_data": page }
-            if (feed_type.equals(Constants.FEED_PLAIN))
+        JsonArray records = new JsonArray();
+
+        // otherwise try and match each known car park to the data
+        for (int i=0; i<record_templates.get(feed_type).size(); i++)
             {
-                logger.log(Constants.LOG_DEBUG, "ParseFeed plain record");
+                RecordTemplate record_template = record_templates.get(feed_type).get(i);
+
+                logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array trying template "+record_template.tag_start);
+
+                // ...grafton-east-car-park...<strong>384 spaces...
+                int rec_start = page.indexOf(record_template.tag_start); // find start of record 
+                if (rec_start < 0) continue;  // if not found then skip current record_template
+
+                int rec_end = page.indexOf(record_template.tag_end, rec_start); // find end of record 
+                if (rec_end < 0) continue;  // if not found then skip current record_template
+
+                String record = page.substring(rec_start, rec_end);
+
+                logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array matched template "+
+                           record_template.tag_start+
+                           " (length "+record.length()+")"+
+                           "["+record_template.fields.size()+"]");
+
+                logger.log(Constants.LOG_DEBUG, "record=\""+record+"\"");
+
                 JsonObject json_record = new JsonObject();
-                json_record.put("feed_data", page);
-                records.add(json_record);
-                return records;
-            }
 
-            logger.log(Constants.LOG_DEBUG, "ParseFeed ..>"+feed_type+"<.");
+                boolean record_ok = true;  // this flag will be set to false if a 'required' field is missing
 
-            // if feed_type is "feed_xml_flat", return flattened content of XML elements given in config 'record_tag'
-            if (feed_type.equals(Constants.FEED_XML_FLAT))
-            {
-                logger.log(Constants.LOG_DEBUG, "ParseFeed xml_flat record for "+config.getString("record_tag"));
-                // <record_tag>..</record_tag> is the flattenable XML object that possibly repeats in the page 
-                String record_tag = config.getString("record_tag");
-                // cursor is our current position on the page as we step through parsing records
-                int cursor = 0;
-                // While we have some page left, continue parsing records
-                while (cursor >= 0) // this could be 'while (true)' as a 'break' should always occur anyway
+                for (int j=0; j<record_template.fields.size(); j++)
                 {
-                    // We will accumulate the flat Json from the XML into json_record
-                    // I.e. each XML <Foo>xyz</Foo>
-                    // becomes "Foo": "xyz"
-                    // and any nesting of XML objects is ignored.
-                    // This assumes the flattenable XML does NOT contain duplicate XML tags WITHIN records
-                    // although the records themselves can be repeated. This works for e.g. Siri-VM.
-                    JsonObject json_record = new JsonObject();
-                    cursor = page.indexOf("<"+record_tag+">", cursor);
-                    if (cursor < 0)
+                    FieldTemplate field_template = record_template.fields.get(j);
+
+                    logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array trying field "+field_template.field_name);
+
+                    // if field value already in field template, just use that
+                    if (field_template.field_type == "fixed_int")
                     {
-                        break;
+                      json_record.put(field_template.field_name, field_template.fixed_int);
+                      //logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array "+
+                      //                                field_template.field_name+" fixed_int = "+
+                      //                                field_template.fixed_int
+                      //          );
+                      continue;
                     }
-                    int record_end = page.indexOf("</"+record_tag+">", cursor);
-                    if (record_end < 0)
+                    else if (field_template.field_type == "conditional_fixed_int")
                     {
-                        break;
+                      int field_start = record.indexOf(field_template.s1);
+                      if (field_start >= 0)
+                      {
+                        json_record.put(field_template.field_name, field_template.fixed_int);
+                        logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array using conditional_fixed_int "+
+                                   field_template.field_name+" "+field_template.s1);
+                      }
+                      continue;
                     }
-                    // Ok, we think we have a record between 'cursor' and 'record_end'
-                    logger.log(Constants.LOG_DEBUG, "ParseFeed xml_flat record at "+cursor);
-
-                    // shift cursor to the end of the current record
-                    //json_record.put("feed_data", page);
-                    // Add the current record to the 'records' result list
-                    records.add(json_record);
-                    // shift cursor to the end of the current record before we loop to look for the next record
-                    cursor = record_end;
-                }
-                return records;
-            }
-            logger.log(Constants.LOG_DEBUG, "ParseFeed .....");
-
-            // otherwise try and match each known car park to the data
-            for (int i=0; i<record_templates.get(feed_type).size(); i++)
-                {
-                    RecordTemplate record_template = record_templates.get(feed_type).get(i);
-                      
-                    logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array trying template "+record_template.tag_start);
-
-                    // ...grafton-east-car-park...<strong>384 spaces...
-                    int rec_start = page.indexOf(record_template.tag_start); // find start of record 
-                    if (rec_start < 0) continue;  // if not found then skip current record_template
-                    
-                    int rec_end = page.indexOf(record_template.tag_end, rec_start); // find end of record 
-                    if (rec_end < 0) continue;  // if not found then skip current record_template
-
-                    String record = page.substring(rec_start, rec_end);
-                    
-                    logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array matched template "+
-                               record_template.tag_start+
-                               " (length "+record.length()+")"+
-                               "["+record_template.fields.size()+"]");
-
-                    logger.log(Constants.LOG_DEBUG, "record=\""+record+"\"");
-
-                    JsonObject json_record = new JsonObject();
-
-                    boolean record_ok = true;  // this flag will be set to false if a 'required' field is missing
-                    
-                    for (int j=0; j<record_template.fields.size(); j++)
+                    else if (field_template.field_type == "fixed_string")
                     {
-                        FieldTemplate field_template = record_template.fields.get(j);
-                           
-                        logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array trying field "+field_template.field_name);
-
-                        // if field value already in field template, just use that
-                        if (field_template.field_type == "fixed_int")
-                        {
-                          json_record.put(field_template.field_name, field_template.fixed_int);
-                          //logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array "+
-                          //                                field_template.field_name+" fixed_int = "+
-                          //                                field_template.fixed_int
-                          //          );
-                          continue;
-                        }
-                        else if (field_template.field_type == "conditional_fixed_int")
-                        {
-                          int field_start = record.indexOf(field_template.s1);
-                          if (field_start >= 0)
-                          {
-                            json_record.put(field_template.field_name, field_template.fixed_int);
-                            logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array using conditional_fixed_int "+
-                                       field_template.field_name+" "+field_template.s1);
-                          }
-                          continue;
-                        }
-                        else if (field_template.field_type == "fixed_string")
-                        {
-                          json_record.put(field_template.field_name, field_template.fixed_string);
-                          //logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array "+
-                          //                                field_template.field_name+" fixed_string = "+
-                          //                                field_template.fixed_string
-                          //          );
-                          continue;
-                        }
-
-                        else if (field_template.field_type == "calc_minus")
-                        {
-                            try {
-                            int v1 = json_record.getInteger(field_template.s1);
-                            int v2 = json_record.getInteger(field_template.s2);
-                            json_record.put(field_template.field_name, v1-v2);
-                            } catch (Exception e) {
-                                if (field_template.required)
-                                    {
-                                        logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array skipping due to "+
-                                                   field_template.field_name);
-                                        record_ok = false;
-                                        break;
-                                    }
-                            }
-                            continue;
-                        }
-                        else if (field_template.field_type == "calc_plus")
-                        {
-                            try {
-                            int v1 = json_record.getInteger(field_template.s1);
-                            int v2 = json_record.getInteger(field_template.s2);
-                            json_record.put(field_template.field_name, v1+v2);
-                            } catch (Exception e) {
-                                if (field_template.required)
-                                    {
-                                        logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array skipping due to "+
-                                                   field_template.field_name);
-                                        record_ok = false;
-                                        break;
-                                    }
-                            }
-                            continue;
-                        }
-                        // field value was not in template, so parse from record
-
-                        // find index of start of field, or skip this record_template
-                        int field_start = record.indexOf(field_template.s1);
-                        if (field_start < 0)
-                            { 
-                                if (field_template.required)
-                                    {
-                                        logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array skipping due to "+
-                                        field_template.field_name);
-                                        record_ok = false;
-                                        break;
-                                    }
-                                continue;
-                            }
-                        field_start = field_start + field_template.s1.length();
-
-                        // find index of end of field, or skip this record_template
-                        int field_end = record.indexOf(field_template.s2, field_start);
-                        if (field_end < 0)
-                            { 
-                                if (field_template.required)
-                                    {
-                                        logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array skipping due to "+
-                                        field_template.field_name);
-                                        record_ok = false;
-                                        break;
-                                    }
-                                continue;
-                            }
-                        if (field_end - field_start > MAX_TAG_SIZE) continue;
-
-                        // pick out the field value, or skip if not recognized
-                        String field_string = record.substring(field_start, field_end);
-                        if (field_template.field_type == "int")
-                        {
-                            try {
-                                int int_value = Integer.parseInt(field_string);
-                                json_record.put(field_template.field_name, int_value);
-                            } catch (NumberFormatException e) {
-                                if (field_template.required)
-                                    {
-                                        logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array skipping due to "+
-                                                   field_template.field_name);
-                                        record_ok = false;
-                                        break;
-                                    }
-                                continue;
-                            }
-                            continue;
-                        }
-                        else if (field_template.field_type == "string")
-                        {
-                            json_record.put(field_template.field_name, field_string);
-                            continue;
-                        }
+                      json_record.put(field_template.field_name, field_template.fixed_string);
+                      //logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array "+
+                      //                                field_template.field_name+" fixed_string = "+
+                      //                                field_template.fixed_string
+                      //          );
+                      continue;
                     }
 
-                    if (record_ok)
-                        {
-                            logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array found "+json_record);
+                    else if (field_template.field_type == "calc_minus")
+                    {
+                        try {
+                        int v1 = json_record.getInteger(field_template.s1);
+                        int v2 = json_record.getInteger(field_template.s2);
+                        json_record.put(field_template.field_name, v1-v2);
+                        } catch (Exception e) {
+                            if (field_template.required)
+                                {
+                                    logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array skipping due to "+
+                                               field_template.field_name);
+                                    record_ok = false;
+                                    break;
+                                }
+                        }
+                        continue;
+                    }
+                    else if (field_template.field_type == "calc_plus")
+                    {
+                        try {
+                        int v1 = json_record.getInteger(field_template.s1);
+                        int v2 = json_record.getInteger(field_template.s2);
+                        json_record.put(field_template.field_name, v1+v2);
+                        } catch (Exception e) {
+                            if (field_template.required)
+                                {
+                                    logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array skipping due to "+
+                                               field_template.field_name);
+                                    record_ok = false;
+                                    break;
+                                }
+                        }
+                        continue;
+                    }
+                    // field value was not in template, so parse from record
 
-                            records.add(json_record);
+                    // find index of start of field, or skip this record_template
+                    int field_start = record.indexOf(field_template.s1);
+                    if (field_start < 0)
+                        { 
+                            if (field_template.required)
+                                {
+                                    logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array skipping due to "+
+                                    field_template.field_name);
+                                    record_ok = false;
+                                    break;
+                                }
+                            continue;
                         }
-                    else
-                        {
-                            logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array skipping matched template "+
-                                       record_template.tag_start);
+                    field_start = field_start + field_template.s1.length();
+
+                    // find index of end of field, or skip this record_template
+                    int field_end = record.indexOf(field_template.s2, field_start);
+                    if (field_end < 0)
+                        { 
+                            if (field_template.required)
+                                {
+                                    logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array skipping due to "+
+                                    field_template.field_name);
+                                    record_ok = false;
+                                    break;
+                                }
+                            continue;
                         }
+                    if (field_end - field_start > MAX_TAG_SIZE) continue;
+
+                    // pick out the field value, or skip if not recognized
+                    String field_string = record.substring(field_start, field_end);
+                    if (field_template.field_type == "int")
+                    {
+                        try {
+                            int int_value = Integer.parseInt(field_string);
+                            json_record.put(field_template.field_name, int_value);
+                        } catch (NumberFormatException e) {
+                            if (field_template.required)
+                                {
+                                    logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array skipping due to "+
+                                               field_template.field_name);
+                                    record_ok = false;
+                                    break;
+                                }
+                            continue;
+                        }
+                        continue;
+                    }
+                    else if (field_template.field_type == "string")
+                    {
+                        json_record.put(field_template.field_name, field_string);
+                        continue;
+                    }
                 }
 
-            return records;
-        }
+                if (record_ok)
+                    {
+                        logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array found "+json_record);
+
+                        records.add(json_record);
+                    }
+                else
+                    {
+                        logger.log(Constants.LOG_DEBUG, "ParseFeed.parse_array skipping matched template "+
+                                   record_template.tag_start);
+                    }
+            }
+
+        JsonObject msg = new JsonObject();
+        msg.put("request_data", records);
+        return msg;
+
+    }
     
     // get current local time as "YYYY-MM-DD hh:mm:ss"
     public static String local_datetime_string()

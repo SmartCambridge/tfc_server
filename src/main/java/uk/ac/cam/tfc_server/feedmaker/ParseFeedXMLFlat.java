@@ -88,20 +88,13 @@ public class ParseFeedXMLFlat implements FeedParser {
                   tag_map.size()+" tags to transform");
     }
 
-    // Here is where we try and parse the page and return a JsonArray
-    public JsonArray parse_array(String page)
+    // Here is where we try and parse the page and return a JsonObject
+    public JsonObject parse(String page)
     {
 
-        logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat.parse_array called for feed type "+feed_type);
+        logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat.parse() called for feed type "+feed_type);
 
         JsonArray records = new JsonArray();
-
-        // if feed_type is "feed_xml_flat", return flattened content of XML elements given in config 'tag_record'
-        if (!(feed_type.equals(Constants.FEED_XML_FLAT)))
-        {
-            logger.log(Constants.LOG_WARN, "ParseFeedXMLFlat called with incompatible feed_type "+feed_type);
-            return records;
-        }
 
         //logger.log(Constants.LOG_DEBUG, "ParseFeed xml_flat searching for "+tag_record);
         // <tag_record>..</tag_record> is the flattenable XML object that possibly repeats in the page 
@@ -123,7 +116,7 @@ public class ParseFeedXMLFlat implements FeedParser {
             //logger.log(Constants.LOG_DEBUG, "ParseFeed xml_flat "+tag_record+" search result "+record_cursor);
             if (record_cursor < 0)
             {
-                //logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat.parse_array no more "+tag_record+" records");
+                //logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat.parse() no more "+tag_record+" records");
                 // no more tag_record objects so finish
                 break; // quit outermost records loop
             }
@@ -131,7 +124,7 @@ public class ParseFeedXMLFlat implements FeedParser {
             if (record_end < 0)
             {
                 // wtf, we got an opening tag_record but not a closing one, finish anyway
-                logger.log(Constants.LOG_WARN, "ParseFeedXMLFlat.parse_array incomplete "+tag_record+" XML object");
+                logger.log(Constants.LOG_WARN, "ParseFeedXMLFlat.parse incomplete "+tag_record+" XML object");
                 break; // quit outermost records loop
             }
             // Ok, we think we have a record between 'record_cursor' and 'record_end'
@@ -150,22 +143,22 @@ public class ParseFeedXMLFlat implements FeedParser {
                 // We will find the next <..> or </..> tag
                 // Note we are moving the cursor forward each time at the earliest opportunity
                 int next_cursor = page.indexOf("<", record_cursor);
-                //logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat.parse_array next_cursor at "+next_cursor);
+                //logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat.parse() next_cursor at "+next_cursor);
                 // This could be the tag_record closing tag
                 if (next_cursor >= record_end)
                 {
-                    //logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat.parse_array no more properties in this "+tag_record);
+                    //logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat.parse() no more properties in this "+tag_record);
                     record_cursor = record_end;
                     break;
                 }
                 // tag could be <foo> or <foo route=66>, either way we want the "foo"
                 // tag_close is index of the closing '>'
                 int tag_close = page.indexOf(">", next_cursor);
-                //logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat.parse_array tag_close at "+tag_close);
+                //logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat.parse() tag_close at "+tag_close);
                 if (tag_close < 0)
                 {
                     // wtf, we got a '<' but no '>'
-                    logger.log(Constants.LOG_WARN, "ParseFeedXMLFlat.parse_array incomplete tag in "+tag_record+" XML object");
+                    logger.log(Constants.LOG_WARN, "ParseFeedXMLFlat.parse() incomplete tag in "+tag_record+" XML object");
                     record_cursor = page.length(); // force completion of this page
                     break;
                 }
@@ -173,7 +166,7 @@ public class ParseFeedXMLFlat implements FeedParser {
                 // We found '<'...'>' but if that's actually '<'...'/>' then skip this self-closed object
                 if (page.substring(tag_close - 1, tag_close).equals("/"))
                 {
-                    logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat.parse_array "+
+                    logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat.parse() "+
                                "skipping self-closed "+page.substring(record_cursor, tag_close+1));
                     record_cursor = tag_close;
                     break;
@@ -183,19 +176,19 @@ public class ParseFeedXMLFlat implements FeedParser {
                 int tag_space = page.indexOf(" ", next_cursor);
                 
                 int tag_end = (tag_space > 0) && (tag_space < tag_close) ? tag_space : tag_close;
-                //logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat.parse_array tag_end at "+tag_end);
+                //logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat.parse() tag_end at "+tag_end);
                 // Note we KNOW we at least have a '>' at the end of the tag_record object from the code above
                 // So check the tag we found is still within the current tag_record object
                 if (tag_end < record_end)
                 {
                     // Given a '<'..'>' (but not '<'..'/>')
                     String next_tag = page.substring(++next_cursor, tag_end);
-                    //logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat.parse_array "+
+                    //logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat.parse() "+
                     //           "found tag "+next_tag);
                     // Process tag here...
                     if (next_tag.equals("/"+current_tag))
                     {
-                        //logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat.parse_array "+
+                        //logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat.parse() "+
                         //           "found atomic tag "+current_tag+".."+tag_close);
                         // *************************************************************************
                         // ************* OK HERE WE FOUND A TAG WITH A VALUE ***********************
@@ -214,7 +207,7 @@ public class ParseFeedXMLFlat implements FeedParser {
                         {
                             // Yup, this is a 'tag' of interest, so transform to a new Json property
                             JsonObject new_property = tag_map.get(current_tag).transform(current_value);
-                            logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat.parse_array transformed "+
+                            logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat.parse() transformed "+
                                        current_tag+"/"+current_value+" to "+new_property);
 
                             // Now we add this new property to the json_record we're building
@@ -230,7 +223,7 @@ public class ParseFeedXMLFlat implements FeedParser {
                 }
                 else
                 {
-                    logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat.parse_array "+
+                    logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat.parse() "+
                                "at record end");
                     record_cursor = record_end;
                 } // end if
@@ -242,9 +235,13 @@ public class ParseFeedXMLFlat implements FeedParser {
             // shift cursor to the end of the current record before we loop to look for the next record
             record_cursor = record_end;
         }
-        logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat parse_array completed for "+records.size()+" records");
-        return records;
-    } // end parse_array
+        logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat parse() completed for "+records.size()+" records");
+
+        JsonObject msg = new JsonObject();
+        msg.put("request_data", records);
+        return msg;
+
+    } // end parse
 
     // This class is used to hold the mapping of an XML tag (e.g. "RecordedAtTime") to
     // a 'standard' property for this platform (i.e. "acp_ts")

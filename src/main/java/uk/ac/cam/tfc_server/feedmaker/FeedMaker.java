@@ -62,7 +62,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class FeedMaker extends AbstractVerticle {
 
-    private final String VERSION = "0.48";
+    private final String VERSION = "0.49";
     
     // from config()
     private String MODULE_NAME;       // config module.name - normally "feedscraper"
@@ -163,18 +163,32 @@ public class FeedMaker extends AbstractVerticle {
     // start a GET polling feed_maker with a given config
     private void start_maker(JsonObject config, Router router, String BASE_URI)
     {
+        // ********************************************************************
+        // Create a FeedParser for the desired feed
+        // ********************************************************************
+
           FeedParser parser;
 
           if (config.getString("feed_type").equals(Constants.FEED_XML_FLAT))
           {
               parser = new ParseFeedXMLFlat(config, logger);
           }
+          else if (config.getString("feed_type").equals(Constants.FEED_PLAIN))
+          {
+              parser = new ParseFeedPlain(config, logger);
+          }
+          else if (config.getString("feed_type").equals(Constants.FEED_EVENTBUS_MSG))
+          {
+              parser = new ParseFeedEventbusMsg(config, logger);
+          }
           else
           {
               parser = new ParseFeedText(config, logger);
           }
 
-          // create monitor directory if necessary
+        // ********************************************************************
+        // create monitor directory if necessary
+        // ********************************************************************
           FileSystem fs = vertx.fileSystem();          
           String monitor_path = config.getString("data_monitor");
           if (!fs.existsBlocking(monitor_path))
@@ -191,7 +205,9 @@ public class FeedMaker extends AbstractVerticle {
           }
           // monitor_path now exists
 
-          // create a HTTP POST 'listener' for this feed at BASE_URI/FEED_ID
+        // ************************************************************************************
+        // if 'POST' feedmaker create a HTTP POST 'listener' for this feed at BASE_URI/FEED_ID
+        // ************************************************************************************
           if (HTTP_PORT != 0 && config.getBoolean("http.post", false))
               {
                   //logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+"."+
@@ -199,7 +215,9 @@ public class FeedMaker extends AbstractVerticle {
                   add_feed_handler(router, BASE_URI, config, parser);
               }
 
-          // Now start GET polling the defined web address with GET requests
+        // *********************************************************************************
+        // If 'GET' feedmaker, then start polling the defined web address with GET requests
+        // *********************************************************************************
           if (config.getBoolean("http.get", false))
               {
                   logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+"."+
@@ -365,21 +383,36 @@ public class FeedMaker extends AbstractVerticle {
     final String monitor_path = config.getString("data_monitor");
     write_monitor_file(buf, monitor_path, filename, file_suffix);
 
-    // Parse the received data into a suitable EventBus JsonObject message
-    JsonObject msg = new JsonObject();
-
-    msg.put("module_name", MODULE_NAME);
-    msg.put("module_id", MODULE_ID);
-    msg.put("msg_type", config.getString("msg_type"));
-    msg.put("feed_id", config.getString("feed_id"));
-    msg.put("filename", filename);
-    msg.put("filepath", filepath);
-    msg.put("ts", utc_seconds);
+    // ********************************************************************************************
+    // Finally, here is where we PARSE the incoming data and put it in the 'request_data' property
+    // ********************************************************************************************
 
     try {            
-        JsonArray request_data = parser.parse_array(buf.toString());
+        // Parse the received data into a suitable EventBus JsonObject message
+        JsonObject msg = parser.parse(buf.toString());
 
-        msg.put("request_data", request_data);
+        msg.put("module_name", MODULE_NAME);
+        msg.put("module_id", MODULE_ID);
+        msg.put("feed_id", config.getString("feed_id"));
+        msg.put("filename", filename);
+        msg.put("filepath", filepath);
+        msg.put("ts", utc_seconds);
+
+        // if a FEED_EVENTBUS_MSG then increment hop_count
+        if (config.getString("feed_type").equals(Constants.FEED_EVENTBUS_MSG))
+        {
+            String hops_name = Constants.PLATFORM_PREFIX+"hop_count";
+            int hops = msg.getInteger(hops_name,0);
+            msg.put(hops_name, hops+1);
+        }
+        else // else if NOT a FEED_EVENTBUS_MSG then overwrite msg_type
+        {
+            msg.put("msg_type", config.getString("msg_type"));
+        }
+
+        // prev version - 
+        //JsonArray request_data = parser.parse_array(buf.toString());
+        //msg.put("request_data", request_data);
     
         // debug print out the JsonObject message
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": prepared EventBus msg:");
