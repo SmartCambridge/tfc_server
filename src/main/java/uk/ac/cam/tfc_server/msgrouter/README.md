@@ -8,59 +8,97 @@ supported by the Smart Cambridge programme.
 MsgRouter subscribes to an eventbus address, filters the messages received, and forwards messages to
 defined destination addresses.
 
-## Sample MsgRouter service config file
+MsgRouter contains within it a 'destinations' structure that contains the reference information for
+each destination, e.g. the URL and an identifier.
+
+## Sample MsgRouter service config files
+
+### MsgRouter user to forward all messages from an eventbus address to multiple URLs
+```
+{
+"main":    "uk.ac.cam.tfc_server.msgrouter.MsgRouter",
+"options":
+    { "config":
+        {
+
+        "module.name":           "msgrouter",
+        "module.id":             "cloudamber.sirivm",
+
+        "eb.system_status":      "tfc.system_status",
+        "eb.console_out":        "tfc.console_out",
+        "eb.manager":            "tfc.manager",
+
+        "msgrouter.log_level":     2,
+
+        "msgrouter.address": "tfc.msgrouter.cloudamber.sirivm",
+
+        "msgrouter.routers":
+            [
+                {
+                "source_address": "tfc.feedmaker.cloudamber.sirivm",
+                "destination_id": "tfc-app3.feedmaker.eventbus",
+                "destination_type": "feed_eventbus_msg",
+                "url": "http://tfc-app3.cl.cam.ac.uk/feedmaker/eventbus/sirivm_json",
+                "http_token": "cam-test-siri"
+                },
+                {
+                "source_address": "tfc.feedmaker.cloudamber.sirivm",
+                "destination_id": "tfc-app4.feedmaker.eventbus",
+                "destination_type": "feed_eventbus_msg",
+                "url": "http://tfc-app4.cl.cam.ac.uk/feedmaker/eventbus/sirivm_json",
+                "http_token": "cam-test-siri"
+                }
+            ]
+        }
+    }
+}
 
 ```
-                                                                                
+### MsgRouter used for 'lorawan' sensors using database pre-load and dynamic sensor->destination lookup
+
+```
 {
     "main":    "uk.ac.cam.tfc_server.msgrouter.MsgRouter",
     "options":
         { "config":
-          {
+            {
 
-            "module.name":           "msgrouter",
-            "module.id":             "everynet_feed_test",
+                "module.name":           "msgrouter",
+                "module.id":             "A",
 
-            "eb.system_status":      "tfc.system_status",
-            "eb.console_out":        "tfc.console_out",
-            "eb.manager":            "tfc.manager",
+                "eb.system_status":      "tfc.system_status",
+                "eb.console_out":        "tfc.console_out",
+                "eb.manager":            "tfc.manager",
 
-            "msgrouter.log_level":     1,
+                "msgrouter.log_level":     1,
 
-            "msgrouter.address": "tfc.msgrouter.everynet_feed_test",
+                "msgrouter.address": "tfc.msgrouter.A",
 
-            "msgrouter.routers":
-            [
-                { 
-                    "source_address": "tfc.everynet_feed.test",
-                    "source_field":   "request_data",
-                    "source_index":   0,
-                    "source_filter": { 
-                                         "field": "dev_eui",
-                                         "compare": "=",
-                                         "value": "0018b2000000113e"
-                                     },
-                    "destination_id": "test_0018b2000000113e",
-                    "destination_type": "everynet_jsonrpc",
-                    "http_token": "test-msgrouter-post",
-                    "url":         "http://localhost:8098/everynet_feed/test/adeunis_test2"
-                },
-                { 
-                    "source_address": "tfc.everynet_feed.A",
-                    "source_filter": { 
-                                         "field": "sensor_type",
-                                         "compare": "=",
-                                         "value": "lorawan"
-                                     },
-                }
-            ]
-              
-          }
+                "msgrouter.db.url":      "jdbc:postgresql:tfcserver",
+                "msgrouter.db.user":     "tfcserver_r",
+                "msgrouter.db.password": "bajoozle",
+                "comment": "That password above is temporary...",
+
+                "msgrouter.routers":
+                    [
+                        {
+                        "source_address": "tfc.everynet_feed.A",
+                        "source_filter": {
+                                             "field": "sensor_type",
+                                             "compare": "=",
+                                             "value": "lorawan"
+                                         }
+                        }
+                    ]
+            }
         }
 }
+             
 ```
 
-## API via 'tfc.manager' eventbus messages
+## sensor -> destinations update API via 'tfc.manager' eventbus messages
+
+MsgRouter can receive messages from the eventbus to update its list of 'sensors' and 'destinations'.
 
 Note in general these messages are generated by HttpMsg, which adds the "module_name", "module_id",
 "to_module_name", "to_module_id" fields.  The actual POST to HttpMsg will contain the "method" and
