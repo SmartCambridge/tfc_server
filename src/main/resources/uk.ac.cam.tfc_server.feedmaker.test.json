@@ -18,17 +18,17 @@
 
             "feedmaker.feeds":     [
                                        { 
-                                         "feed_id" :   "sirivm_json",
-                                         "feed_type":  "feed_eventbus_msg",
+                                         "feed_id" :   "vix",
+                                         "feed_type":  "feed_gtfs",
                                          "area_id" :   "cam",
 
                                          "http.post":  true,
 
-                                         "file_suffix":   ".json",
-                                         "data_bin" :     "/media/tfc/test/siri_vm/data_bin",
-                                         "data_monitor" : "/media/tfc/test/siri_vm/data_monitor",
+                                         "file_suffix":   ".bin",
+                                         "data_bin" :     "/media/tfc/test/vix/data_bin",
+                                         "data_monitor" : "/media/tfc/test/vix/data_monitor",
 
-                                         "msg_type" :  "feed_sirivm",
+                                         "msg_type" :  "feed_bus_position",
                                          "address" :   "tfc.feedmaker.test"
                                        }
                                      ]

@@ -9,6 +9,7 @@ public interface FeedParser {
 
     // parse() reads a Buffer that may contain multiple data records of interest
     // and returns that data as a eventbus message format JsonObject
-    JsonObject parse(Buffer buf);
+    JsonObject parse(Buffer buf) throws Exception;
+
 }
 
