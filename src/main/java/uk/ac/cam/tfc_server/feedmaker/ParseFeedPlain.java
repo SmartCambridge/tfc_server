@@ -22,6 +22,7 @@ package uk.ac.cam.tfc_server.feedmaker;
 
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
+import io.vertx.core.buffer.Buffer;
 
 // other tfc_server classes
 import uk.ac.cam.tfc_server.util.Log;
@@ -47,7 +48,7 @@ public class ParseFeedPlain implements FeedParser {
     }
 
     // Here is where we try and parse the page and return a JsonArray
-    public JsonObject parse(String page)
+    public JsonObject parse(Buffer buf)
     {
 
         logger.log(Constants.LOG_DEBUG, "ParseFeedPlain.parse() called");
@@ -56,7 +57,7 @@ public class ParseFeedPlain implements FeedParser {
 
         logger.log(Constants.LOG_DEBUG, "ParseFeed plain record");
         JsonObject json_record = new JsonObject();
-        json_record.put("feed_data", page);
+        json_record.put("feed_data", buf.getBytes());
         records.add(json_record);
         JsonObject msg = new JsonObject();
         msg.put("request_data", records);

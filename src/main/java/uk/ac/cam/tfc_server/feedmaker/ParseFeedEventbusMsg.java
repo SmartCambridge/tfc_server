@@ -20,6 +20,7 @@ package uk.ac.cam.tfc_server.feedmaker;
 
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
+import io.vertx.core.buffer.Buffer;
 
 // other tfc_server classes
 import uk.ac.cam.tfc_server.util.Log;
@@ -45,11 +46,11 @@ public class ParseFeedEventbusMsg implements FeedParser {
     }
 
     // Here is where we try and parse the page into a JsonObject
-    public JsonObject parse(String page)
+    public JsonObject parse(Buffer buf)
     {
         logger.log(Constants.LOG_DEBUG, "ParseFeedEventbusMsg.parse() called");
 
-        return new JsonObject(page); // EventBus message from feed is returned as a JsonObject
+        return new JsonObject(buf.toString()); // EventBus message from feed is returned as a JsonObject
     }
 
 } // end ParseFeedEventbusMsg

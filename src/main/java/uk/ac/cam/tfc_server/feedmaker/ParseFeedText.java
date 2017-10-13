@@ -61,6 +61,7 @@ import java.util.HashMap;
 
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
+import io.vertx.core.buffer.Buffer;
 
 // other tfc_server classes
 import uk.ac.cam.tfc_server.util.Log;
@@ -99,10 +100,12 @@ public class ParseFeedText implements FeedParser {
     }
 
     // Here is where we try and parse the page and return a JsonObject
-    public JsonObject parse(String page)
+    public JsonObject parse(Buffer buf)
     {
 
         logger.log(Constants.LOG_DEBUG, "ParseFeed.parse() called for feed type "+feed_type);
+
+        String page = buf.toString();
 
         JsonArray records = new JsonArray();
 

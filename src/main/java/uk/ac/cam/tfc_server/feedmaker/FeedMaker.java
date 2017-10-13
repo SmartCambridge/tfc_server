@@ -394,7 +394,7 @@ public class FeedMaker extends AbstractVerticle {
 
     try {            
         // Parse the received data into a suitable EventBus JsonObject message
-        JsonObject msg = parser.parse(buf.toString());
+        JsonObject msg = parser.parse(buf);
 
         msg.put("module_name", MODULE_NAME);
         msg.put("module_id", MODULE_ID);

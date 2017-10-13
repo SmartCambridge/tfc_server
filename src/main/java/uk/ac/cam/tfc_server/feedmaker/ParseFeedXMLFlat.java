@@ -37,8 +37,10 @@ import java.util.HashMap;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
+
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
+import io.vertx.core.buffer.Buffer;
 
 // other tfc_server classes
 import uk.ac.cam.tfc_server.util.Log;
@@ -89,8 +91,10 @@ public class ParseFeedXMLFlat implements FeedParser {
     }
 
     // Here is where we try and parse the page and return a JsonObject
-    public JsonObject parse(String page)
+    public JsonObject parse(Buffer buf)
     {
+
+        String page = buf.toString();
 
         logger.log(Constants.LOG_DEBUG, "ParseFeedXMLFlat.parse() called for feed type "+feed_type);
 
