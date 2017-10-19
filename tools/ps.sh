@@ -3,6 +3,6 @@
 #
 # List running TFC processes
 #
-echo USER PID RSS COMMANDARGS
-ps -eo user,pid,rss,args | grep vertx | grep -v grep | awk '{print $1,$2,$3,$6,$9,$NF}'
+ps aux | awk '/vertx/ && !/awk/ {print $1,$2,$13,$16}' | sort -k 4,4 | column -t
+
 

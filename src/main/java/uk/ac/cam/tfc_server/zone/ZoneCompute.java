@@ -60,14 +60,25 @@ public class ZoneCompute {
 
     public void handle_feed(JsonObject feed_message)
     {
-        JsonArray entities = feed_message.getJsonArray("entities");
+        JsonArray position_records;
 
-        String filename = feed_message.getString("filename");
-        String filepath = feed_message.getString("filepath");
+        // if data comes from GTFS FeedHandler then position records are in property "entities"
+        if (feed_message.containsKey("entities"))
+        {
+            position_records = feed_message.getJsonArray("entities");
+        }
+        else
+        // otherwise the position records will be in property "request_data"
+        {
+            position_records = feed_message.getJsonArray("request_data");
+        }
 
-        for (int i = 0; i < entities.size(); i++)
+        logger.log(Constants.LOG_DEBUG, zone_config.MODULE_NAME+"."+zone_config.MODULE_ID+
+                   ": handle_feed for "+zone_config.ZONE_NAME+" with "+position_records.size()+" position records");
+
+        for (int i = 0; i < position_records.size(); i++)
             {
-              JsonObject position_record = entities.getJsonObject(i);
+              JsonObject position_record = position_records.getJsonObject(i);
               update_vehicle(position_record);
             }
     }
@@ -76,13 +87,27 @@ public class ZoneCompute {
     private void update_vehicle(JsonObject position_record)
     {
 
+        // { "vehicle_id":"17147",
+        //   "latitude":52.062675,
+        //   "longitude":-1.331641,
+        //   "bearing":12.0,
+        //   "timestamp":1508322520,
+        //   "acp_ts":1508322520,
+        //   "acp_id":"17147",
+        //   "acp_lat":52.062675,
+        //   "acp_lng":-1.331641
+        // }
         // update Vehicle object for this vehicle_id
         // shifting earlier location info to prev_position and prev_within
-      String vehicle_id = position_record.getString("vehicle_id");
+      String vehicle_id = Vehicle.vehicle_id(position_record);
       Vehicle v = vehicles.get(vehicle_id);
       if (v == null)
           {
-              v = new Vehicle(position_record);
+              v = new Vehicle(vehicle_id, position_record);
+
+              logger.log(Constants.LOG_DEBUG, zone_config.MODULE_NAME+"."+zone_config.MODULE_ID+
+                   ": "+zone_config.ZONE_NAME+" new vehicle "+vehicle_id+" at "+v.position.toString());
+
               v.within = inside(v.position);
               vehicles.put(vehicle_id, v);
               return; // This is first position record for this vehicle, so just initialize entry
@@ -303,7 +328,7 @@ public class ZoneCompute {
       msg.put("module_id", zone_config.MODULE_ID);     // e.g. "madingley_road_in"
       msg.put("msg_type", Constants.ZONE_START);
       msg.put("vehicle_id", v.vehicle_id);
-      msg.put("route_id", v.route_id);
+      msg.put("position_record", v.current_position_record);
       msg.put("ts", v.start_ts);
       msg.put("ts_delta", v.start_ts_delta);
 
@@ -326,7 +351,7 @@ public class ZoneCompute {
       msg.put("module_id", zone_config.MODULE_ID);     // e.g. "madingley_road_in"
       msg.put("msg_type", Constants.ZONE_ENTRY);
       msg.put("vehicle_id", v.vehicle_id);
-      msg.put("route_id", v.route_id);
+      msg.put("position_record", v.current_position_record);
       msg.put("ts", v.position.ts);
       msg.put("ts_delta", v.position.ts - v.prev_position.ts);
 
@@ -347,8 +372,8 @@ public class ZoneCompute {
       // e.g. 2016-03-16 15:19:08,Cam Test,315,no_route,00:00:29,0.58,COMPLETED,15:11:41,15:18:55,00:07:14
       String completed_log = "Zone: ,"+zone_config.MODULE_ID+",";
       completed_log += "COMPLETED,";
-      completed_log += v.vehicle_id+",";
-      completed_log += v.route_id + ",";
+      completed_log += v.vehicle_id;
+      completed_log += v.current_position_record.toString()+",";
       completed_log += finish_ts+",";
       completed_log += duration+",";
       completed_log += ts_to_datetime_str(v.position.ts) + ",";
@@ -369,7 +394,7 @@ public class ZoneCompute {
       msg.put("module_id", zone_config.MODULE_ID);     // e.g. "madingley_road_in"
       msg.put("msg_type", Constants.ZONE_COMPLETION);
       msg.put("vehicle_id", v.vehicle_id);
-      msg.put("route_id", v.route_id);
+      msg.put("position_record", v.current_position_record);
       msg.put("ts", finish_ts);
       msg.put("duration", duration);
       // note we send start_ts_delta + finish_ts_delta as the 'confidence' factor
@@ -395,7 +420,7 @@ public class ZoneCompute {
       msg.put("module_id", zone_config.MODULE_ID);     // e.g. "madingley_road_in"
       msg.put("msg_type", Constants.ZONE_EXIT);
       msg.put("vehicle_id", v.vehicle_id);
-      msg.put("route_id", v.route_id);
+      msg.put("position_record", v.current_position_record);
       msg.put("ts", finish_ts);
       msg.put("ts_delta", v.position.ts - v.prev_position.ts);
 
@@ -418,7 +443,7 @@ public class ZoneCompute {
       msg.put("module_id", zone_config.MODULE_ID);     // e.g. "madingley_road_in"
       msg.put("msg_type", Constants.ZONE_EXIT);
       msg.put("vehicle_id", v.vehicle_id);
-      msg.put("route_id", v.route_id);
+      msg.put("position_record", v.current_position_record);
       msg.put("ts", v.position.ts);
       msg.put("ts_delta", v.position.ts - v.prev_position.ts);
 

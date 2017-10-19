@@ -9,20 +9,29 @@ package uk.ac.cam.tfc_server.zone;
 // in the context of the current zone, e.g. is it currently within bounds
 
 import io.vertx.core.json.JsonObject;
+
+import uk.ac.cam.tfc_server.util.Constants;
 import uk.ac.cam.tfc_server.util.Position;
 
 public class Vehicle {
+
+    // STATIC method to get vehicle_id from position_record, used by ZoneCompute
+    // We pick up the vehicle_id EITHER from "acp_id" (preferred) or a "vehicle_id" property
+    public static String vehicle_id(JsonObject position_record)
+    {
+        return position_record.getString(Constants.PLATFORM_PREFIX+"id",position_record.getString("vehicle_id"));
+    }
+
     // These are attributes that come from the position record
     public String vehicle_id;
-    public String label;
-    public String route_id;
-    public String trip_id;
+
+    // latest and previous position records
+    public JsonObject current_position_record;
+    public JsonObject prev_position_record;
+
+    public Position position;
     public Position prev_position;
     public boolean prev_within; // true if was within bounds at previous timestamp
-    public Position position;
-    public Float bearing;
-    public String stop_id;
-    public Long current_stop_sequence;
 
     // additional attributes used within this Zone
     public boolean init; // only true if this position has been initialized but not updated
@@ -31,21 +40,15 @@ public class Vehicle {
     public Long start_ts_delta; // reliability indicator: (position.ts - prev_position.ts) at time of start
 
     // Initialize a new Vehicle object from a JSON position record
-    Vehicle(JsonObject position_record)
+    Vehicle(String vehicle_id, JsonObject position_record)
     {
-        vehicle_id = position_record.getString("vehicle_id");
+        // initialize the position record 2-record stack
+        prev_position_record = new JsonObject();
+        current_position_record = position_record.copy();
 
-        label = position_record.getString("label","");
-        route_id = position_record.getString("route_id","");
-        trip_id = position_record.getString("trip_id","");
-        bearing = position_record.getFloat("bearing",0.0f);
-        stop_id = position_record.getString("stop_id","");
-        current_stop_sequence = position_record.getLong("current_stop_sequence",0L);
+        this.vehicle_id = vehicle_id;
 
-        position = new Position();
-        position.ts = position_record.getLong("timestamp");
-        position.lat = position_record.getDouble("latitude");
-        position.lng = position_record.getDouble("longitude");
+        position = get_position();
 
         init = true; // will be reset to false when this entry is updated
         within = false;
@@ -57,20 +60,27 @@ public class Vehicle {
     // update this existing Vehicle when a subsequent position_record has arrived
     public void update(JsonObject position_record)
     {
+        // push this position record onto our 2-record stack
+        prev_position_record = current_position_record.copy();
+        current_position_record = position_record.copy();
+
         prev_position = position;
         prev_within = within;
 
-        Vehicle v = new Vehicle(position_record);
-        label = v.label;
-        route_id = v.route_id;
-        trip_id = v.trip_id;
-        position = v.position;
-        bearing = v.bearing;
-        stop_id = v.stop_id;
-        current_stop_sequence = v.current_stop_sequence;
+        position = get_position();
 
         init = false;
     }
+
+    Position get_position()
+    {
+        // for ts, lat, lng we will use EITHER "acp_ts", "acp_lat", "acp_lng" (preferred) or the GTFS values
+        Position position = new Position();
+        position.ts = current_position_record.getLong(Constants.PLATFORM_PREFIX+"ts",current_position_record.getLong("timestamp"));
+        position.lat = current_position_record.getDouble(Constants.PLATFORM_PREFIX+"lat", current_position_record.getDouble("latitude"));
+        position.lng = current_position_record.getDouble(Constants.PLATFORM_PREFIX+"lng", current_position_record.getDouble("longitude"));
+        return position;
+    }    
 
 } // end class Vehicle
     

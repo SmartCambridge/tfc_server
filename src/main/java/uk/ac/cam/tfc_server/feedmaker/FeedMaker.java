@@ -428,7 +428,7 @@ public class FeedMaker extends AbstractVerticle {
         eb.publish(feedmaker_address, msg);
     
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                   ": published latest GET data to "+feedmaker_address);
+                   ": published latest feed data to "+feedmaker_address);
     }
     catch (Exception e) {
         logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+

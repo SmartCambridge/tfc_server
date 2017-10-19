@@ -132,7 +132,7 @@ public class Zone extends AbstractVerticle {
       
     logger = new Log(zone_config.LOG_LEVEL);
     
-    logger.log(Constants.LOG_INFO, zone_config.MODULE_NAME+"."+zone_config.MODULE_ID+": started");
+    logger.log(Constants.LOG_INFO, zone_config.MODULE_NAME+"."+zone_config.MODULE_ID+": started (LOG_LEVEL "+zone_config.LOG_LEVEL+")");
 
     // Initialization from config() complete
     
@@ -371,6 +371,9 @@ public class Zone extends AbstractVerticle {
                   // accumulate this Completion message in the ring buffer
                   msg_buffer.add(msg);
                 }
+            logger.log(Constants.LOG_DEBUG,zone_config.MODULE_NAME+"."+zone_config.MODULE_ID+
+                 ": sending msg to "+ ZONE_ADDRESS);
+            logger.log(Constants.LOG_DEBUG, msg.toString());
             //System.out.println("Zone handle_msg called with " + address);
             vertx.eventBus().publish(ZONE_ADDRESS, msg);
         }

@@ -14,7 +14,50 @@ package uk.ac.cam.tfc_server.feedmaker;
 //
 // Note that a FeedParser (like this one) ALWAYS returns a Json Array, even for a single record
 //
+/*
+{
+    "feed_id": "vix",
+    "filename": "1508063941.992_2017-10-15-11-39-01",
+    "filepath": "2017/10/15",
+    "module_id": "test",
+    "module_name": "feedmaker",
+    "msg_type": "feed_bus_position",
+    "timestamp": 1449056712,
+    "ts": 1508063941
+    "entities": [
+        {
+            "acp_lat": 51.882347,
+            "acp_lng": -0.41706276,
+            "acp_ts": 1449056671,
+            "acp_id": "25",
+            "bearing": 282.0,
+            "label": "CBL-709",
+            "latitude": 51.882347,
+            "longitude": -0.41706276,
+            "timestamp": 1449056671,
+            "vehicle_id": "25"
+        },
+        {
+            "acp_lat": 51.9181,
+            "acp_lng": -0.4516892,
+            "acp_ts": 1449056701,
+            "acp_id": "30",
+            "bearing": 330.0,
+            "current_stop_sequence": 21,
+            "label": "CBL-569",
+            "latitude": 51.9181,
+            "longitude": -0.4516892,
+            "route_id": "CBL-10",
+            "stop_id": "4290",
+            "timestamp": 1449056701,
+            "trip_id": "1165604-20151102-20151231",
+            "vehicle_id": "30"
+        },
+    ],
+}
 
+
+*/
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.buffer.Buffer;
@@ -85,6 +128,7 @@ public class ParseFeedGTFS implements FeedParser {
                                         if (vehicle_desc.hasId())
                                             {
                                                 jo.put("vehicle_id",vehicle_desc.getId());
+                                                jo.put(Constants.PLATFORM_PREFIX+"id",vehicle_desc.getId());
                                             }
                                         if (vehicle_desc.hasLabel())
                                             {
@@ -96,10 +140,10 @@ public class ParseFeedGTFS implements FeedParser {
                                         Position vpos = vehicle_pos.getPosition();
                                         // Latitude
                                         jo.put("latitude", vpos.getLatitude());
-                                        jo.put(Constants.PLATFORM_PREFIX+"_lat",vpos.getLatitude());
+                                        jo.put(Constants.PLATFORM_PREFIX+"lat",vpos.getLatitude());
                                         // Longitude
                                         jo.put("longitude", vpos.getLongitude());
-                                        jo.put(Constants.PLATFORM_PREFIX+"_lng",vpos.getLongitude());
+                                        jo.put(Constants.PLATFORM_PREFIX+"lng",vpos.getLongitude());
 
                                         if (vpos.hasBearing())
                                             {
@@ -130,7 +174,7 @@ public class ParseFeedGTFS implements FeedParser {
                                     {
                                         // Timestamp
                                         jo.put("timestamp", vehicle_pos.getTimestamp());
-                                        jo.put(Constants.PLATFORM_PREFIX+"_ts", vehicle_pos.getTimestamp());
+                                        jo.put(Constants.PLATFORM_PREFIX+"ts", vehicle_pos.getTimestamp());
                                     }
 
                                 ja.add(jo);
