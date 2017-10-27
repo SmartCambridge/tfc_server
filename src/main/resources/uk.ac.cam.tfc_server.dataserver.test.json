@@ -11,7 +11,7 @@
             "eb.manager":       "tfc.manager",
 
             "dataserver.log_level": 1,
-            "dataserver.http.port":  8099,
+            "dataserver.http.port":  8098,
             "dataserver.webroot":   "webroot",
             "dataserver.data_path": "/media/tfc",
             "dataserver.google_map_api_key": "AIzaSyAn3n2YQ2wBSnQtITOzsEPhVLaa6n79Qyg"

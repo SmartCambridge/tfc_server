@@ -49,6 +49,7 @@ public class ZoneAPI {
 
         // ZONE TRANSITS API e.g. /api/dataserver/zone/transits/madingley_road_in/2016/10/01
         
+        /*
         router.route(HttpMethod.GET, "/api/"+parent.MODULE_NAME+
                                      "/zone/transits/:zoneid/:yyyy/:MM/:dd").handler( ctx -> {
                 String zone_id =  ctx.request().getParam("zoneid");
@@ -59,18 +60,24 @@ public class ZoneAPI {
                            ": API zone/transits/"+zone_id+"/"+yyyy+"/"+MM+"/"+dd);
                 serve_transits(vertx, ctx, zone_id, yyyy, MM, dd);
             });
+        */
 
-        // alternate format /api/dataserver/zone/transits/madingley_road_in?date=2016-10-01
+        // Format /api/dataserver/zone/transits/madingley_road_in?date=2016-10-01
         router.route(HttpMethod.GET, "/api/"+parent.MODULE_NAME+
                                      "/zone/transits/:zoneid").handler( ctx -> {
                 String zone_id =  ctx.request().getParam("zoneid");
                 String date =  ctx.request().getParam("date");
+                String feed_id = ctx.request().getParam("feed_id");
+                if (feed_id == null)
+                {
+                    feed_id = parent.FEED_ID;
+                }
                 String yyyy = date.substring(0,4);
                 String MM =  date.substring(5,7);
                 String dd =  date.substring(8,10);
                 parent.logger.log(Constants.LOG_DEBUG, parent.MODULE_NAME+"."+parent.MODULE_ID+
                            ": API zone/transits/"+zone_id+"?date="+yyyy+"-"+MM+"-"+dd);
-                serve_transits(vertx, ctx, zone_id, yyyy, MM, dd);
+                serve_transits(vertx, ctx, feed_id, zone_id, yyyy, MM, dd);
             });
         
         // ZONE CONFIG API e.g. /api/dataserver/zone/config/madingley_road_in
@@ -93,7 +100,7 @@ public class ZoneAPI {
 
     // Serve the zone/transits json data
     void serve_transits(Vertx vertx, RoutingContext ctx,
-                                 String zone_id, String yyyy, String MM, String dd)
+                                 String feed_id, String zone_id, String yyyy, String MM, String dd)
     {
         parent.logger.log(Constants.LOG_DEBUG, parent.MODULE_NAME+"."+parent.MODULE_ID+
                    ": serving /api/"+parent.MODULE_NAME+"/zone/transits for "+zone_id+" "+yyyy+"/"+MM+"/"+dd);
@@ -106,7 +113,7 @@ public class ZoneAPI {
         {
 
             // build full filepath for data to be retrieved
-            String filename = parent.DATA_PATH+"/"+parent.FEED_ID+ZONE_TRANSITS+"/"+
+            String filename = parent.DATA_PATH+"/"+feed_id+ZONE_TRANSITS+"/"+
                                 yyyy+"/"+MM+"/"+dd+"/"+zone_id+"_"+yyyy+"-"+MM+"-"+dd+".txt";
 
             // read file which is actually a line-per-JsonObject, convert to JsonArray, and serve it

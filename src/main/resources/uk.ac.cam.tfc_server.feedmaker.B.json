@@ -1,0 +1,37 @@
+                                                                                
+{
+    "main":    "uk.ac.cam.tfc_server.feedmaker.FeedMaker",
+    "options":
+        { "config":
+          {
+
+            "module.name":           "feedmaker",
+            "module.id":             "B",
+
+            "eb.system_status":      "tfc.system_status",
+            "eb.console_out":        "tfc.console_out",
+            "eb.manager":            "tfc.manager",
+              
+            "feedmaker.log_level":   2,
+
+            "feedmaker.http.port":   8080,
+
+            "feedmaker.feeds":     [
+                                       { 
+                                         "feed_id" :   "vix",
+                                         "feed_type":  "feed_gtfs",
+                                         "area_id" :   "cam",
+
+                                         "http.post":  true,
+
+                                         "file_suffix":   ".bin",
+                                         "data_bin" :     "/media/tfc/vix/data_bin",
+                                         "data_monitor" : "/media/tfc/vix/data_monitor",
+
+                                         "msg_type" :  "feed_bus_position",
+                                         "address" :   "tfc.feedmaker.vix"
+                                       }
+                                     ]
+          }
+        }
+}
