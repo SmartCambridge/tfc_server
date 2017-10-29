@@ -6,23 +6,24 @@ package uk.ac.cam.tfc_server.feedmaker;
 // FeedMaker.java
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
-// Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
+// Forms part of the 'tfc_server' Adaptive City Platform
 //
-// Polls external websites with http GET and creates new feeds based on that data.
+// Receives data from an external source by:
+// 1) Polling external websites with http GET and creating new feeds based on that data.
 //
-// Can also receive same data via POST on 'module_name/module_id/feed_id'
+// 2) Receive same data via POST on feed config 'http.port:http.uri' or 'http.port:/module_name/module_id/feed_id'
 //
 //
 // FeedMaker will WRITE the raw binary post data into:
-//   TFC_DATA_MONITOR/<filename>
-//   TFC_DATA_BIN/YYYY/MM/DD/<filename>
+//   {{feed_config.data_bin}}/<filename>
+//   {{feed_config.data_bin}}//YYYY/MM/DD/<filename>
 //
-// where <filename> = <UTC TIMESTAMP>_YYYY-MM-DD-hh-mm-ss.bin
+// where <filename> = <UTC MILLISECOND TIMESTAMP>_YYYY-MM-DD-hh-mm-ss.bin
 // and any prior '.bin' files in TFC_DATA_MONITOR will be deleted
 //
 // Config values are read from provided vertx config() json file, e.g. see README.md
 //
-// FeedMaker will publish the feed data as a JSON string on eventbus.
+// FeedMaker will publish the feed data as a JSON string on eventbus (feed_config.address).
 //
 // *************************************************************************************************
 // *************************************************************************************************
@@ -63,7 +64,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class FeedMaker extends AbstractVerticle {
 
-    private final String VERSION = "0.50";
+    private final String VERSION = "0.51";
     
     // from config()
     private String MODULE_NAME;       // config module.name - normally "feedscraper"
@@ -120,7 +121,7 @@ public class FeedMaker extends AbstractVerticle {
     // create webserver
     HttpServer http_server = vertx.createHttpServer();
 
-    // create request router for webserver
+    // create general http GET request router for webserver, for general web page provision.
     if (HTTP_PORT != 0)
         {
              router = Router.router(vertx);
@@ -146,9 +147,9 @@ public class FeedMaker extends AbstractVerticle {
     
   } // end start()
 
-    // ************************************
-    // create handler for GET from uri
-    // ************************************
+    // **************************************************************************************
+    // create handler for GET from uri - for general web access (diagnostics?) not feed data
+    // **************************************************************************************
     private void add_get_handler(Router router, String uri)
     {
         router.route(HttpMethod.GET,uri).handler( ctx -> {
@@ -265,9 +266,11 @@ public class FeedMaker extends AbstractVerticle {
         final String HTTP_TOKEN = config.getString("http.token");
         final String FEED_ID = config.getString("feed_id");
 
+        final String URI = config.getString("http.uri", "/"+BASE_URI+"/"+FEED_ID);
+        
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
-                                       ": setting up POST listener on localhost:"+HTTP_PORT+"/"+BASE_URI+"/"+FEED_ID);
-        router.route(HttpMethod.POST,"/"+BASE_URI+"/"+FEED_ID).handler( ctx -> {
+                   ": setting up POST listener on localhost:"+HTTP_PORT+URI);
+        router.route(HttpMethod.POST,URI).handler( ctx -> {
                 ctx.request().bodyHandler( buffer -> {
                         try {
                             // read the head value "X-Auth-Token" from the POST

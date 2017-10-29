@@ -12,7 +12,7 @@
             "eb.console_out":        "tfc.console_out",
             "eb.manager":            "tfc.manager",
               
-            "feedmaker.log_level":   2,
+            "feedmaker.log_level":   1,
 
             "feedmaker.http.port":   8080,
 
@@ -23,6 +23,7 @@
                                          "area_id" :   "cam",
 
                                          "http.post":  true,
+                                         "http.uri":   "/feedmaker/B/vix",    
 
                                          "file_suffix":   ".bin",
                                          "data_bin" :     "/media/tfc/vix/data_bin",
