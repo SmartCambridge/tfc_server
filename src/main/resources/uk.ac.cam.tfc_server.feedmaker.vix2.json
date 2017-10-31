@@ -6,7 +6,7 @@
           {
 
             "module.name":           "feedmaker",
-            "module.id":             "B",
+            "module.id":             "vix2",
 
             "eb.system_status":      "tfc.system_status",
             "eb.console_out":        "tfc.console_out",
@@ -23,14 +23,14 @@
                                          "area_id" :   "cam",
 
                                          "http.post":  true,
-                                         "http.uri":   "/feedmaker/B/vix",    
+                                         "http.uri":   "/feedmaker/vix2",    
 
                                          "file_suffix":   ".bin",
-                                         "data_bin" :     "/media/tfc/vix/data_bin",
-                                         "data_monitor" : "/media/tfc/vix/data_monitor",
+                                         "data_bin" :     "/media/tfc/vix2/data_bin",
+                                         "data_monitor" : "/media/tfc/vix2/data_monitor",
 
                                          "msg_type" :  "feed_bus_position",
-                                         "address" :   "tfc.feedmaker.vix"
+                                         "address" :   "tfc.feedmaker.vix2"
                                        }
                                      ]
           }

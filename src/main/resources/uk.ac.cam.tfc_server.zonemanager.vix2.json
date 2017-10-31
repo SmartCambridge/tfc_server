@@ -6,7 +6,7 @@
           {
 
             "module.name":      "zonemanager",
-            "module.id":        "feedmaker.vix",
+            "module.id":        "vix2",
 
             "eb.system_status": "tfc.system_status",
             "eb.console_out":   "tfc.console_out",
@@ -14,11 +14,11 @@
 
             "zonemanager.log_level": 1,
 
-            "zonemanager.address":   "tfc.zonemanager.feedmaker.vix",
+            "zonemanager.address":   "tfc.zonemanager.vix2",
 
-            "zonemanager.zone.address": "tfc.zone.feedmaker.vix",
-            "zonemanager.zone.feed":    "tfc.feedmaker.vix",
-            "zonemanager.name": "ZoneManager-FeedMaker-Vix",
+            "zonemanager.zone.address": "tfc.zone.vix2",
+            "zonemanager.zone.feed":    "tfc.feedmaker.vix2",
+            "zonemanager.name": "ZoneManager-FeedMaker-Vix2",
             "zonemanager.start": [ 
                   "east_road_in",
                   "east_road_out",
