@@ -12,7 +12,7 @@
             "eb.console_out":   "tfc.console_out",
             "eb.manager":       "tfc.manager",
 
-            "zonemanager.log_level": 1,
+            "zonemanager.log_level": 2,
 
             "zonemanager.address":   "tfc.zonemanager.vix2",
 
