@@ -36,6 +36,9 @@ public class Constants {
     public static final int    ZONE_BUFFER_SIZE = 1000; // max number of Zone Completion messages to be stored in buffer
 
     // browser socket msg_type values
+    // RTMonitor
+    public static final String SOCKET_RT_CONNECT = "rt_connect"; // msg_type realtime monitor initial connect
+    // Rita
     public static final String SOCKET_ZONE_CONNECT = "zone_connect"; // msg_type zone_plot.hbs initial connect
     public static final String SOCKET_ZONE_MAP_CONNECT = "zone_map_connect"; // msg_type zone_map.hbs initial connect
     public static final String SOCKET_FEED_CONNECT = "feed_connect"; // msg_type feed.hbs initial connect
