@@ -51,7 +51,7 @@ import uk.ac.cam.tfc_server.util.Log;
 
 public class RTMonitor extends AbstractVerticle {
 
-    private final String VERSION = "0.06";
+    private final String VERSION = "0.07";
     
     // from config()
     public int LOG_LEVEL;             // optional in config(), defaults to Constants.LOG_INFO
@@ -320,16 +320,19 @@ public class RTMonitor extends AbstractVerticle {
         // Create a new Monitor, typically via MonitorTable.add(...)
         Monitor(String address, String records_array, String record_index) {
             this.address = address;
+            //DEBUG TODO should make record_index Json path like records_array in case index is nested within record
+            this.record_index = record_index;
             if (records_array == null)
             {
                 this.records_array = new ArrayList<String>();
-                logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": created Monitor for flat single messages from "+address);
+                logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
+                           ": created Monitor, single messages (index '"+record_index+") from "+address);
             }
             else
             {
                 this.records_array = new ArrayList<String>(Arrays.asList(records_array.split(">")));
                 logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
-                           ": created Monitor for record array in '"+records_array_string()+"' from "+address);
+                           ": created Monitor, record array '"+records_array_string()+"' (index '"+record_index+"') from "+address);
             }
             clients = new ClientTable();
         }
@@ -350,6 +353,11 @@ public class RTMonitor extends AbstractVerticle {
             {
                 JsonArray records = get_records(msg);
                 logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": update_state processing "+records.size()+" records");
+                for (int i=0; i<records.size(); i++)
+                {
+                    update_record(records.getJsonObject(i));
+                }
+                update_clients(msg);
             }
         }        
 
@@ -357,7 +365,7 @@ public class RTMonitor extends AbstractVerticle {
         // on this record.
         private void update_record(JsonObject record)
         {
-            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": update_record");
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": update_record "+record.getString(record_index));
         }
 
         // update_state has updated the state, so now inform the websocket clients

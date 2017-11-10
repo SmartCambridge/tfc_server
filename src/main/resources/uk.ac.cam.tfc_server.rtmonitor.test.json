@@ -20,7 +20,7 @@
                                       "http.uri":   "/test/rtmonitor/sirivm",
                                       "address":    "tfc.feedmaker.cloudamber.sirivm",
                                       "records_array": "request_data",
-                                      "record_index": "acp_id"
+                                      "record_index": "VehicleMonitoringRef"
                                     }
                                   ]
               
