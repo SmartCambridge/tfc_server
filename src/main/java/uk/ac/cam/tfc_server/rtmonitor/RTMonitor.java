@@ -51,7 +51,7 @@ import uk.ac.cam.tfc_server.util.Log;
 
 public class RTMonitor extends AbstractVerticle {
 
-    private final String VERSION = "0.05";
+    private final String VERSION = "0.06";
     
     // from config()
     public int LOG_LEVEL;             // optional in config(), defaults to Constants.LOG_INFO
@@ -75,7 +75,7 @@ public class RTMonitor extends AbstractVerticle {
     private JsonArray START_MONITORS; // config module_name.monitors parameters
     
     // data structure to hold eventbus and subscriber data for each monitor
-    private MonitorTable monitor_table;
+    private MonitorTable monitors;
     
     @Override
     public void start(Future<Void> fut) throws Exception
@@ -99,7 +99,7 @@ public class RTMonitor extends AbstractVerticle {
         init_system_status();
         
         // initialize object to hold MonitorInfo for each monitor
-        monitor_table = new MonitorTable();
+        monitors = new MonitorTable();
     
         // *************************************************************************************
         // *************************************************************************************
@@ -133,19 +133,19 @@ public class RTMonitor extends AbstractVerticle {
 
     } // end start()
 
-
+    // ***************************************************************************************
     // Set periodic timer to broadcast "system UP" status messages to EB_SYSTEM_STATUS address
     private void init_system_status()
     {
-    vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> {
-      eb.publish(EB_SYSTEM_STATUS,
-                 "{ \"module_name\": \""+MODULE_NAME+"\"," +
-                   "\"module_id\": \""+MODULE_ID+"\"," +
-                   "\"status\": \"UP\"," +
-                   "\"status_amber_seconds\": "+String.valueOf( SYSTEM_STATUS_AMBER_SECONDS ) + "," +
-                   "\"status_red_seconds\": "+String.valueOf( SYSTEM_STATUS_RED_SECONDS ) +
-                 "}" );
-      });
+        vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> {
+                eb.publish(EB_SYSTEM_STATUS,
+                           "{ \"module_name\": \""+MODULE_NAME+"\"," +
+                           "\"module_id\": \""+MODULE_ID+"\"," +
+                           "\"status\": \"UP\"," +
+                           "\"status_amber_seconds\": "+String.valueOf( SYSTEM_STATUS_AMBER_SECONDS ) + "," +
+                           "\"status_red_seconds\": "+String.valueOf( SYSTEM_STATUS_RED_SECONDS ) +
+                           "}" );
+            });
     }
 
     // ************************************************
@@ -167,7 +167,7 @@ public class RTMonitor extends AbstractVerticle {
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                    ": setting up monitor for "+ADDRESS+" at "+HTTP_PORT+":"+URI);
 
-        monitor_table.add(URI, ADDRESS, RECORDS_ARRAY, RECORD_INDEX);
+        monitors.add(URI, ADDRESS, RECORDS_ARRAY, RECORD_INDEX);
 
         eb.consumer(ADDRESS, message -> {
                         handle_message(URI, message.body().toString());
@@ -219,7 +219,8 @@ public class RTMonitor extends AbstractVerticle {
     // ***************************************************************************************************
     private void handle_message(String uri, String msg)
     {
-        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": eventbus message for "+uri);
+        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": eventbus message for "+uri);
+        monitors.update_state(uri, new JsonObject(msg));
     }
     
     // ***************************************************************************************************
@@ -230,11 +231,11 @@ public class RTMonitor extends AbstractVerticle {
     private void create_rt_subscription(String URI, SockJSSocket sock, JsonObject sock_msg)
     {
         // create entry in client table for correct monitor
-        String UUID = monitor_table.add_client(URI, sock, sock_msg);
+        String UUID = monitors.add_client(URI, sock, sock_msg);
 
         //DEBUG TODO subscribe this socket to desired updates (i.e. add this socket as a client)
         
-        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": subscribing client with "+sock_msg.toString());
+        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": subscribing client with "+sock_msg.toString());
     }
 
     private void send_client(SockJSSocket sock, String msg)
@@ -260,7 +261,7 @@ public class RTMonitor extends AbstractVerticle {
         //       if zone_id == zone_id in Zone msg
         //         then forward the message on this socket
 
-        ClientTable client_table = monitor_table.get_clients(uri);
+        ClientTable client_table = monitors.get_clients(uri);
         
         for (String UUID: client_table.keys())
             {
@@ -292,38 +293,127 @@ public class RTMonitor extends AbstractVerticle {
     // ******************  The 'Monitor' data structures  ************************************************
     // ***************************************************************************************************
     // ***************************************************************************************************
-    class MonitorInfo {
+
+    // A Monitor is instantiated for each feed for which real-time updated state is required.
+    // The procedure 'update_state' is called each time a message arrives on the EventBus address assigned.
+    // On that asynchronous event the Monitor will update the internal state and send data as appropriate to
+    // the subscribing websockets.
+    //
+    // Incoming EventBus messages may be considered single 'records', i.e. the entire message is the data
+    // recorf of interest, or each EventBus message may contain a JsonArray of multiple data 'records'.
+    // In the latter case the monitor config() will give the 'records_array' property with the path to the
+    // JsonArray in the message.
+    //
+    // The Monitor will typically be told the 'key' field for the incoming EventBus
+    // messages and that will be used to index the state. E.g. for SiriVM bus position data this is
+    // likely to be 'MonitoredVehicleRef', such that the Monitor will maintain the 'latest' position for
+    // each vehicle.
+    class Monitor {
         public String address;                   // EventBus address consumed
         public ArrayList<String> records_array;  // Json property location of the required data e.g. "request_data"
         public String record_index;              // Json property (within records_array fields) containing sensor id
         public ClientTable clients;              // Set of sockets subscribing to this data
 
-        MonitorInfo(String address, String records_array, String record_index) {
+        private Hashtable<String, JsonObject> latest_record; // Holds data from the latest EventBus message 
+        private Hashtable<String, JsonObject> previous_record; // Holds data from the previous EventBus message 
+
+        // Create a new Monitor, typically via MonitorTable.add(...)
+        Monitor(String address, String records_array, String record_index) {
             this.address = address;
             if (records_array == null)
             {
                 this.records_array = new ArrayList<String>();
+                logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": created Monitor for flat single messages from "+address);
             }
             else
             {
                 this.records_array = new ArrayList<String>(Arrays.asList(records_array.split(">")));
+                logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
+                           ": created Monitor for record array in '"+records_array_string()+"' from "+address);
             }
             clients = new ClientTable();
         }
 
-    } // end class MonitorInfo
+        // A relevant message has appeared on the EventBus, so update this monitor state
+        public void update_state(JsonObject msg)
+        {
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": update_state "+address);
+            // This monitor may be for single records (i.e. msg = record)
+            // or multiple records may be contained within nested 'records_array' object
+            if (records_array.size() == 0)
+            {
+                // The whole message is considered the 'record'
+                update_record(msg);
+                update_clients(msg);
+            }
+            else
+            {
+                JsonArray records = get_records(msg);
+                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": update_state processing "+records.size()+" records");
+            }
+        }        
+
+        // update_state has picked out a data record from an incoming EventBus message, so update the Monitor state based
+        // on this record.
+        private void update_record(JsonObject record)
+        {
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": update_record");
+        }
+
+        // update_state has updated the state, so now inform the websocket clients
+        private void update_clients(JsonObject msg)
+        {
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": updating clients");
+        }
+
+        // Given an EventBus message, return the JsonArray containing the data records
+        private JsonArray get_records(JsonObject msg)
+        {
+            // The message contains multiple records, so follow records_array path of JsonObjects
+            // and assume final element on path is JsonArray containing data records of interest.
+            // Start with original message
+            JsonObject records_parent = msg.copy();
+            // step through the 'records_array' properties excluding the last
+            for (int i=0; i<records_array.size()-1; i++)
+            {
+                records_parent = records_parent.getJsonObject(records_array.get(i));
+            }
+            // Now JsonObject records_parent contains the JsonArray with the property as the last value in records_array.
+            return records_parent.getJsonArray(records_array.get(records_array.size()-1));
+        }
+
+        // return 'records_array' ["A","B","C"] as "A>B>C"
+        private String records_array_string()
+        {
+            String str = "";
+            for (int i=0; i<records_array.size(); i++)
+            {
+                if (i!=0)
+                {
+                    str += '>';
+                }
+                str += records_array.get(i);
+            }
+            return str;
+        }
+
+    } // end class Monitor
         
+    // MonitorTable contains the data structure for each running Monitor
+    // This has been implemented as a Class on the possibility that some broader-based access functions
+    // may be needed (e.g. find a Monitor given a subscriber) but in the interim this Class could
+    // equally just be the simple Hashtable defined within (i.e. the variable 'monitors')
     class MonitorTable {
 
-        private Hashtable<String, MonitorInfo> monitors;
+        private Hashtable<String, Monitor> monitors;
 
         MonitorTable() {
-            monitors = new Hashtable<String,MonitorInfo>();
+            monitors = new Hashtable<String,Monitor>();
         }
 
         public void add(String uri, String address, String records_array, String record_index)
         {
-            MonitorInfo monitor = new MonitorInfo(address, records_array, record_index);
+            Monitor monitor = new Monitor(address, records_array, record_index);
             monitors.put(uri, monitor);
         }
 
@@ -336,6 +426,12 @@ public class RTMonitor extends AbstractVerticle {
         {
             return monitors.get(uri).clients;
         }
+
+        public void update_state(String uri, JsonObject msg)
+        {
+            monitors.get(uri).update_state(msg);
+        }
+
     } // end class MonitorTable
         
     // ***************************************************************************************************
