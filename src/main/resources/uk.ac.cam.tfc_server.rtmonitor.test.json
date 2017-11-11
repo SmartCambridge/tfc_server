@@ -1,5 +1,4 @@
-                                                                                
-{
+{    
     "main":    "uk.ac.cam.tfc_server.rtmonitor.RTMonitor",
     "options":
         { "config":

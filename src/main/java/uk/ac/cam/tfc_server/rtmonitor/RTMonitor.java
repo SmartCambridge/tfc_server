@@ -51,7 +51,7 @@ import uk.ac.cam.tfc_server.util.Log;
 
 public class RTMonitor extends AbstractVerticle {
 
-    private final String VERSION = "0.07";
+    private final String VERSION = "0.08";
     
     // from config()
     public int LOG_LEVEL;             // optional in config(), defaults to Constants.LOG_INFO
@@ -119,7 +119,9 @@ public class RTMonitor extends AbstractVerticle {
                 HttpServerResponse response = routingContext.response();
                 response.putHeader("content-type", "text/html");
 
-                response.end("<h1>Adaptive City Platform</h1><p>RTMonitor!</p>");
+                response.end("<h1>Adaptive City Platform</h1>"+
+                        "<p>RTMonitor version "+VERSION+"!</p>"+
+                        "<p>BASE_URI="+BASE_URI+"</p>");
             });
         logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": serving homepage at "+BASE_URI+"/home");
 
@@ -153,6 +155,9 @@ public class RTMonitor extends AbstractVerticle {
     // Here is where the eventbus monitor is created
     // ************************************************
     // ************************************************
+    //
+    // start_monitor will create an eventbus listener to receive the required messages
+    // and a websocket listener to wait for connections from clients.i
     private void start_monitor(JsonObject config, Router router)
 
     {
@@ -187,11 +192,13 @@ public class RTMonitor extends AbstractVerticle {
 
         sock_handler.socketHandler( sock -> {
                 // Rita received new socket connection
-                logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": "+URI+" sock connection received with "+sock.writeHandlerID());
+                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                        ": "+URI+" sock connection received with "+sock.writeHandlerID());
 
                 // Assign a handler funtion to receive data if send
                 sock.handler( buf -> {
-                   logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": sock received '"+buf+"'");
+                   logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                           ": sock received '"+buf+"'");
 
                    JsonObject sock_msg = new JsonObject(buf.toString());
 
@@ -204,11 +211,15 @@ public class RTMonitor extends AbstractVerticle {
                 });
 
                 sock.endHandler( (Void v) -> {
-                        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": sock closed "+sock.writeHandlerID());
+                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                                ": sock closed "+sock.writeHandlerID());
                     });
           });
 
-        router.route(URI).handler(sock_handler);
+        router.route(URI+"/*").handler(sock_handler);
+
+        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                           ": socket handler setup on '"+URI+"/*"+"'");
 
     } // end start_monitor()
 
@@ -235,7 +246,8 @@ public class RTMonitor extends AbstractVerticle {
 
         //DEBUG TODO subscribe this socket to desired updates (i.e. add this socket as a client)
         
-        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": subscribing client with "+sock_msg.toString());
+        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                ": subscribing client with "+sock_msg.toString());
     }
 
     private void send_client(SockJSSocket sock, String msg)
@@ -296,8 +308,8 @@ public class RTMonitor extends AbstractVerticle {
 
     // A Monitor is instantiated for each feed for which real-time updated state is required.
     // The procedure 'update_state' is called each time a message arrives on the EventBus address assigned.
-    // On that asynchronous event the Monitor will update the internal state and send data as appropriate to
-    // the subscribing websockets.
+    // On that asynchronous event the Monitor will update the internal state 
+    // and send data as appropriate to the subscribing websockets.
     //
     // Incoming EventBus messages may be considered single 'records', i.e. the entire message is the data
     // recorf of interest, or each EventBus message may contain a JsonArray of multiple data 'records'.
@@ -309,31 +321,44 @@ public class RTMonitor extends AbstractVerticle {
     // likely to be 'MonitoredVehicleRef', such that the Monitor will maintain the 'latest' position for
     // each vehicle.
     class Monitor {
-        public String address;                   // EventBus address consumed
+        private String address;                  // EventBus address consumed
         public ArrayList<String> records_array;  // Json property location of the required data e.g. "request_data"
-        public String record_index;              // Json property (within records_array fields) containing sensor id
+        public ArrayList<String> record_index;   // Json property (within records_array fields) containing sensor id
         public ClientTable clients;              // Set of sockets subscribing to this data
 
-        private Hashtable<String, JsonObject> latest_record; // Holds data from the latest EventBus message 
-        private Hashtable<String, JsonObject> previous_record; // Holds data from the previous EventBus message 
+        private Hashtable<String, JsonObject> latest_records; // Holds data from the latest message 
+        private Hashtable<String, JsonObject> previous_records; // Holds data from the previous message 
 
         // Create a new Monitor, typically via MonitorTable.add(...)
         Monitor(String address, String records_array, String record_index) {
             this.address = address;
-            //DEBUG TODO should make record_index Json path like records_array in case index is nested within record
-            this.record_index = record_index;
+            // parse monitor config records_index e.g. "A>B>C" pointing to index field WITHIN record
+            if (record_index == null)
+            {
+                this.record_index = new ArrayList<String>();
+            }
+            else
+            {
+                this.record_index = new ArrayList<String>(Arrays.asList(record_index.split(">")));
+            }
+            // parse monitor config records_array e.g. "D>E>F" pointing to records array
             if (records_array == null)
             {
                 this.records_array = new ArrayList<String>();
                 logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
-                           ": created Monitor, single messages (index '"+record_index+") from "+address);
+                           ": created Monitor, single messages (index '"+
+                           array_string(this.record_index)+") from "+address);
             }
             else
             {
                 this.records_array = new ArrayList<String>(Arrays.asList(records_array.split(">")));
                 logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
-                           ": created Monitor, record array '"+records_array_string()+"' (index '"+record_index+"') from "+address);
+                           ": created Monitor, record array '"+array_string(this.records_array)+
+                           "' (index '"+array_string(this.record_index)+"') from "+address);
             }
+            latest_records = new Hashtable<String, JsonObject>();
+            previous_records = new Hashtable<String, JsonObject>();
+
             clients = new ClientTable();
         }
 
@@ -352,55 +377,89 @@ public class RTMonitor extends AbstractVerticle {
             else
             {
                 JsonArray records = get_records(msg);
-                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": update_state processing "+records.size()+" records");
+                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                           ": update_state processing "+records.size()+" records");
                 for (int i=0; i<records.size(); i++)
                 {
                     update_record(records.getJsonObject(i));
                 }
+                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                           ": total "+latest_records.size()+" records");
                 update_clients(msg);
             }
         }        
 
-        // update_state has picked out a data record from an incoming EventBus message, so update the Monitor state based
+        // update_state has picked out a data record from an incoming EventBus message,
+        // so update the Monitor state based
         // on this record.
         private void update_record(JsonObject record)
         {
-            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": update_record "+record.getString(record_index));
+            String index_value = get_index(record);
+
+            // logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+            //           ": update_record "+index_value);
+
+            // if exists, shuffle latest_record to previous_record
+            if (latest_records.get(index_value) != null)
+            {
+                previous_records.put(index_value, record);
+            }
+            // and store this new record into latest_record
+            latest_records.put(index_value, record);
         }
 
         // update_state has updated the state, so now inform the websocket clients
         private void update_clients(JsonObject msg)
         {
-            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": updating clients");
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                       ": updating clients");
         }
 
         // Given an EventBus message, return the JsonArray containing the data records
         private JsonArray get_records(JsonObject msg)
         {
-            // The message contains multiple records, so follow records_array path of JsonObjects
-            // and assume final element on path is JsonArray containing data records of interest.
-            // Start with original message
+            // The message contains multiple records, so follow records_array path 
+            // of JsonObjects and assume final element on path is JsonArray
+            // containing data records of interest. Start with original message
             JsonObject records_parent = msg.copy();
             // step through the 'records_array' properties excluding the last
             for (int i=0; i<records_array.size()-1; i++)
             {
                 records_parent = records_parent.getJsonObject(records_array.get(i));
             }
-            // Now JsonObject records_parent contains the JsonArray with the property as the last value in records_array.
+            // Now JsonObject records_parent contains the JsonArray with the
+            // property as the last value in records_array.
             return records_parent.getJsonArray(records_array.get(records_array.size()-1));
         }
 
+        // Given an EventBus message, return the JsonArray containing the data records
+        private String get_index(JsonObject record)
+        {
+            // The message contains multiple records, so follow records_array path 
+            // of JsonObjects and assume final element on path is JsonArray
+            // containing data records of interest. Start with original message
+            JsonObject index_parent = record.copy();
+            // step through the 'record_index' properties excluding the last
+            for (int i=0; i<record_index.size()-1; i++)
+            {
+                index_parent = index_parent.getJsonObject(record_index.get(i));
+            }
+            // Now JsonObject records_parent contains the String with the
+            // property as the last value in record_index.
+            return index_parent.getString(record_index.get(record_index.size()-1));
+        }
+
         // return 'records_array' ["A","B","C"] as "A>B>C"
-        private String records_array_string()
+        private String array_string(ArrayList<String> array)
         {
             String str = "";
-            for (int i=0; i<records_array.size(); i++)
+            for (int i=0; i<array.size(); i++)
             {
                 if (i!=0)
                 {
                     str += '>';
                 }
-                str += records_array.get(i);
+                str += array.get(i);
             }
             return str;
         }
