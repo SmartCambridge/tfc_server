@@ -202,7 +202,7 @@ public class RTMonitor extends AbstractVerticle {
 
                    JsonObject sock_msg = new JsonObject(buf.toString());
 
-                   if (sock_msg.getString("msg_type").equals(Constants.SOCKET_RT_CONNECT))
+                   if (sock_msg.getString("msg_type","oh crap").equals(Constants.SOCKET_RT_CONNECT))
                    {
                        // Add this connection to the client table
                        // and set up consumer for eventbus messages
