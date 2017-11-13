@@ -16,10 +16,10 @@
             "rtmonitor.http.port":   8099,
 
             "rtmonitor.monitors": [ {
-                                      "http.uri":   "/test/rtmonitor/sirivm",
+                                      "http.uri":   "/rtmonitor/sirivm",
                                       "address":    "tfc.feedmaker.cloudamber.sirivm",
                                       "records_array": "request_data",
-                                      "record_index": "VehicleMonitoringRef"
+                                      "record_index": "VehicleRef"
                                     }
                                   ]
               

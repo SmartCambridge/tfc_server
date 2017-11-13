@@ -37,7 +37,9 @@ public class Constants {
 
     // browser socket msg_type values
     // RTMonitor
-    public static final String SOCKET_RT_CONNECT = "rt_connect"; // msg_type realtime monitor initial connect
+    public static final String SOCKET_RT_CONNECT = "rt_connect"; // msg_type connect client -> RTMonitor
+    public static final String SOCKET_RT_DATA = "rt_data"; // msg_type data records RTMonitor -> client
+
     // Rita
     public static final String SOCKET_ZONE_CONNECT = "zone_connect"; // msg_type zone_plot.hbs initial connect
     public static final String SOCKET_ZONE_MAP_CONNECT = "zone_map_connect"; // msg_type zone_map.hbs initial connect
