@@ -403,54 +403,10 @@ public class RTMonitor extends AbstractVerticle {
         }
 
         // update_state has updated the state, so now inform the websocket clients
-        private void update_clients(JsonObject record)
+        private void update_clients(JsonObject eventbus_msg)
         {
-            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                       ": updating clients");
-
-            // for each client socket entry in sock_info
-            //   if sock_data is not null
-            //      if client.filters is null
-            //      then send entire message to client
-            //      elif msg or records matches filters
-            //      then send relevant records to client
-
-            // iterate the clients
-            for (String UUID: clients.keySet())
-            {
-                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                       ": updating client "+UUID);
-
-                Client client = clients.get(UUID);
-                
-                if (client != null)
-                {
-                    // if this client has no subscriptions then skip
-                    if (client.subscriptions.size() == 0)
-                    {
-                        continue;
-                    }
-                    // iterate the client subscriptions
-                    for (String subscription_id: client.subscriptions.keySet())
-                    {
-                        Subscription s = client.subscriptions.get(subscription_id);
-                        if (s.msg.getJsonArray("filters") == null)
-                        {
-                            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                                 ": sending entire eventbus message to client "+client.UUID);
-                            client.sock.write(Buffer.buffer(record.toString()));
-                        }
-                        else
-                        {
-                            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                                 ": sending filtered messages to  client "+client.UUID);
-                            //DEBUG TODO
-                            // add code to send filtered messages
-
-                        }
-                    }
-                }
-            }
+            // Note this monitor contains the updated 'state' so we pass this monitor to the clients 
+            clients.update(eventbus_msg, this);
         }
 
         // Given an EventBus message, return the JsonArray containing the data records
@@ -470,7 +426,8 @@ public class RTMonitor extends AbstractVerticle {
             return records_parent.getJsonArray(records_array.get(records_array.size()-1));
         }
 
-        // Given an EventBus message, return the JsonArray containing the data records
+        // Given an EventBus message, return the string value of the record_index
+        // i.e. for a SiriVM data record this will be the value of "VehicleRef"
         private String get_index(JsonObject record)
         {
             // The message contains multiple records, so follow records_array path 
@@ -632,12 +589,12 @@ public class RTMonitor extends AbstractVerticle {
         }
 
         // update_state() will be called when a new message arrives on the monitored eventbus address
-        // update_state() will be called when a new message arrives on the monitored eventbus address
         public void update_state(String uri, JsonObject msg)
         {
             monitors.get(uri).update_state(msg);
         }
 
+        // update_clients() will be called after update_state() when new data arrives on the eventbus
         public void update_clients(String uri, JsonObject msg)
         {
             monitors.get(uri).update_clients(msg);
@@ -691,6 +648,8 @@ public class RTMonitor extends AbstractVerticle {
 
             s.msg = sock_msg;
 
+            subscriptions.put(subscription_id, s);
+
             logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                        ": Client.add_subscription "+UUID+ " " +sock_msg.toString()+" key_is_record_index="+
                        s.key_is_record_index);
@@ -711,17 +670,150 @@ public class RTMonitor extends AbstractVerticle {
             if (s==null)
             {
                 logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
-                    ": Client.remove_subscription() for "+UUID+" subscription_id "+subscription_id+
-                    " not found");
+                    ": Client.remove_subscription() for "+UUID+" subscription_id '"+subscription_id+
+                    "' not found");
                 return;
             }
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                    ": Client.remove_subscription() OK for "+UUID+" "+s.toString());
         }
+
+        // Update this client based on incoming eventbus message
+        public void update(JsonObject eventbus_msg, Monitor m)
+        {
+            // if this client has no subscriptions then skip
+            if (subscriptions.size() == 0)
+            {
+                return;
+            }
+            // iterate the client subscriptions
+            for (String subscription_id: subscriptions.keySet())
+            {
+                Subscription s = subscriptions.get(subscription_id);
+                JsonArray filters = s.msg.getJsonArray("filters");
+                if (filters == null)
+                {
+                    // no filters so send whole eventbus message
+                    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                         ": sending entire eventbus message to client "+UUID);
+                    sock.write(Buffer.buffer(eventbus_msg.toString()));
+                }
+                else
+                {
+                    // has filters, so iterate them
+                    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                         ": sending filtered messages to  client "+UUID);
+                    //DEBUG TODO
+                    // add code to send filtered messages
+                    for (int i=0; i<filters.size(); i++)
+                    {
+                        JsonObject filter = filters.getJsonObject(i);
+
+                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                             ": testing filter "+filter.toString());
+
+                        if (m.records_array.size() == 0)
+                        {
+                            // The whole message is considered the 'record'
+                            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                                       ": Client.update apply filter to whole eventbus msg");
+
+                            // test the filter on the eventbus_msg and send on websocket if it passes
+                            if (test_filter(filter, eventbus_msg))
+                            {
+                                // filter succeeded, so send whole message
+                                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                                       ": Client.update filter succeeded, sending whole eventbus msg");
+                                sock.write(Buffer.buffer(eventbus_msg.toString()));
+                            }
+                        }
+                        else
+                        {
+                            // Extract the 'data records' from the eventbus message
+                            JsonArray records = m.get_records(eventbus_msg);
+
+                            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                                       ": Client.update processing "+records.size()+" records");
+
+                            // Prepare a JsonArray to hold the filtered records
+                            JsonArray filtered_records = new JsonArray();
+
+                            // iterate the eventbus records and accumulate filtered records
+                            for (int j=0; j<records.size(); j++)
+                            {
+                                JsonObject record = records.getJsonObject(j);
+                                if (test_filter(filter, record))
+                                {
+                                    filtered_records.add(record);
+                                }
+                            }
+
+                            if (filtered_records.size() == 0)
+                            {
+                                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                                       ": Client.update 0 filtered records");
+                            }
+                            else
+                            {
+                                // Woo we have successfully found records within the filter scope
+                                //DEBUG TODO actually send the "rt_data" packet
+                                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                                       ": Client.update sending "+filtered_records.size()+" filtered records");
+
+                                // Build the data object to be sent in response to this subscription
+                                JsonObject rt_data = new JsonObject();
+                                rt_data.put("msg_type", Constants.SOCKET_RT_DATA);
+                                rt_data.put("request_data", filtered_records);
+                                sock.write(Buffer.buffer(rt_data.toString()));
+                            }
+
+                        }
+                    }
+
+                }
+            }
+        }
+
+        // Test a JsonObject filter against a JsonObject data record
+        private boolean test_filter(JsonObject filter, JsonObject record)
+        {
+            // Given a filter say { "key": "VehicleRef", "value": "SCNH-35224" }
+            String key = filter.getString("key");
+            if (key == null)
+            {
+                return false;
+            }
+
+            String value = filter.getString("value");
+            if (value == null)
+            {
+                return false;
+            }
+
+            // Try and pick out the property "key" from the data record
+            String record_value = record.getString(key);
+            if (record_value == null)
+            {
+                return false;
+            }
+
+            return record_value.equals(value);
+        }
+
     } // end class Client
 
+    // Subscription to the eventbus message data
+    // Each eventbus message may contain a JsonArray of multiple data records
+    // Each client can have multiple subscriptions
     class Subscription {
         public String subscription_id;
         public boolean key_is_record_index; // optimization flag if subscription is filtering on 'primary key'
         public JsonObject msg; // 'rt_subscribe' websocket message when subscription was requested
+
+        public String toString()
+        {
+            return msg.toString();
+        }
     } // end class Subscription
 
     // ***************************************************************
@@ -821,6 +913,36 @@ public class RTMonitor extends AbstractVerticle {
                     ": ClientTable.remove non-existent client "+UUID);
             }
         }
+
+        // An eventbus message has come in..., update all the clients
+        public void update(JsonObject eventbus_msg, Monitor m)
+        {
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                       ": "+m.address+" updating "+ client_table.size()+" clients");
+
+            // for each client socket entry in sock_info
+            //   if sock_data is not null
+            //      if client.filters is null
+            //      then send entire message to client
+            //      elif msg or records matches filters
+            //      then send relevant records to client
+
+            // iterate the clients
+            for (String UUID: client_table.keySet())
+            {
+                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                       ": updating client "+UUID);
+
+                Client client = client_table.get(UUID);
+                
+                if (client != null)
+                {
+                    client.update(eventbus_msg, m);
+                }
+            }
+        }
+
+
 
         public Set<String> keySet()
         {
