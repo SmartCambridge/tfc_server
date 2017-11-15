@@ -686,108 +686,130 @@ public class RTMonitor extends AbstractVerticle {
             {
                 return;
             }
-            // iterate the client subscriptions
+            // iterate the client subscriptions (so subscriptions are effectively OR
             for (String subscription_id: subscriptions.keySet())
             {
                 Subscription s = subscriptions.get(subscription_id);
                 JsonArray filters = s.msg.getJsonArray("filters");
-                if (filters == null)
+
+                // Multiple filters in a single subscription are an AND
+
+                // if there is NO definition of a 'records_array' in the config()
+                // then the whole eventbus message is the data record and is sent (or not) unchanged.
+                if (m.records_array.size() == 0)
                 {
-                    // no filters so send whole eventbus message
+                    // The whole message is considered the 'record'
                     logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                         ": sending entire eventbus message to client "+UUID);
-                    sock.write(Buffer.buffer(eventbus_msg.toString()));
+                               ": Client.update apply filters to whole eventbus msg");
+
+                    if (test_filters(filters, eventbus_msg))
+                    {
+                        // filter succeeded, so send whole message
+                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                                   ": Client.update filters succeeded, sending whole eventbus msg");
+                        sock.write(Buffer.buffer(eventbus_msg.toString()));
+                    }
                 }
+                // if the IS a records_array in the eventbus message, then iterate those records
                 else
                 {
-                    // has filters, so iterate them
+                    // Extract the 'data records' from the eventbus message
+                    JsonArray records = m.get_records(eventbus_msg);
+
                     logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                         ": sending filtered messages to  client "+UUID);
-                    //DEBUG TODO
-                    // add code to send filtered messages
-                    for (int i=0; i<filters.size(); i++)
+                               ": Client.update processing "+records.size()+" records");
+
+                    // Prepare a JsonArray to hold the filtered records
+                    JsonArray filtered_records = new JsonArray();
+
+                    // iterate the eventbus records and accumulate filtered records
+                    for (int record_num=0; record_num<records.size(); record_num++)
                     {
-                        JsonObject filter = filters.getJsonObject(i);
+                        JsonObject record = records.getJsonObject(record_num);
+                        if (test_filters(filters, record))
+                        {
+                            filtered_records.add(record);
+                        }
+                    }
 
+                    // If we have NO filtered records then return
+                    if (filtered_records.size() == 0)
+                    {
                         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                             ": testing filter "+filter.toString());
+                               ": Client.update 0 filtered records");
+                        return;
+                    }
+                    // else we have a set of filtered records we can send as "rt_data" on client socket
+                    else
+                    {
+                        // Woo we have successfully found records within the filter scope
+                        //DEBUG TODO actually send the "rt_data" packet
+                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                               ": Client.update sending "+filtered_records.size()+" filtered records");
 
-                        if (m.records_array.size() == 0)
-                        {
-                            // The whole message is considered the 'record'
-                            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                                       ": Client.update apply filter to whole eventbus msg");
-
-                            // test the filter on the eventbus_msg and send on websocket if it passes
-                            if (test_filter(filter, eventbus_msg))
-                            {
-                                // filter succeeded, so send whole message
-                                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                                       ": Client.update filter succeeded, sending whole eventbus msg");
-                                sock.write(Buffer.buffer(eventbus_msg.toString()));
-                            }
-                        }
-                        else
-                        {
-                            // Extract the 'data records' from the eventbus message
-                            JsonArray records = m.get_records(eventbus_msg);
-
-                            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                                       ": Client.update processing "+records.size()+" records");
-
-                            // Prepare a JsonArray to hold the filtered records
-                            JsonArray filtered_records = new JsonArray();
-
-                            // iterate the eventbus records and accumulate filtered records
-                            for (int j=0; j<records.size(); j++)
-                            {
-                                JsonObject record = records.getJsonObject(j);
-                                if (test_filter(filter, record))
-                                {
-                                    filtered_records.add(record);
-                                }
-                            }
-
-                            if (filtered_records.size() == 0)
-                            {
-                                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                                       ": Client.update 0 filtered records");
-                            }
-                            else
-                            {
-                                // Woo we have successfully found records within the filter scope
-                                //DEBUG TODO actually send the "rt_data" packet
-                                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                                       ": Client.update sending "+filtered_records.size()+" filtered records");
-
-                                // Build the data object to be sent in response to this subscription
-                                JsonObject rt_data = new JsonObject();
-                                rt_data.put("msg_type", Constants.SOCKET_RT_DATA);
-                                rt_data.put("request_data", filtered_records);
-                                sock.write(Buffer.buffer(rt_data.toString()));
-                            }
-
-                        }
+                        // Build the data object to be sent in response to this subscription
+                        JsonObject rt_data = new JsonObject();
+                        rt_data.put("msg_type", Constants.SOCKET_RT_DATA);
+                        rt_data.put("request_data", filtered_records);
+                        rt_data.put("subscription_id", subscription_id);
+                        sock.write(Buffer.buffer(rt_data.toString()));
                     }
 
                 }
             }
         }
 
-        // Test a JsonObject filter against a JsonObject data record
+        // Test (AND) a JsonArray set of filters against a JsonObject data record
+        private boolean test_filters(JsonArray filters, JsonObject record)
+        {
+            
+            // An empty filters array always succeeds
+            if (filters == null || filters.size() == 0)
+            {
+                return true;
+            }
+
+            // start with 'filter_passed = true' and set to false if any filter fails
+            boolean filters_passed = true;
+
+            // test all the filters on the eventbus_msg and send on websocket if it passes
+            for (int filter_num=0; filter_num<filters.size(); filter_num++)
+            {
+                JsonObject filter = filters.getJsonObject(filter_num);
+
+                if (!test_filter(filter, record))
+                {
+                    filters_passed = false;
+                }
+            }
+
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                     ": tested filter"+filters.toString()+(filters_passed?"passed":"failed"));
+            return filters_passed;
+        } // end test_filters()
+
+        // Test a JsonObject single filter
         private boolean test_filter(JsonObject filter, JsonObject record)
         {
-            // Given a filter say { "key": "VehicleRef", "value": "SCNH-35224" }
+            // Given a filter say { "test": "=", "key": "VehicleRef", "value": "SCNH-35224" }
             String key = filter.getString("key");
             if (key == null)
             {
                 return false;
             }
 
+            //DEBUG TODO allow numeric value
             String value = filter.getString("value");
             if (value == null)
             {
                 return false;
+            }
+
+            // test can default to "="
+            String test = filter.getString("test");
+            if (test == null)
+            {
+                test = "=";
             }
 
             // Try and pick out the property "key" from the data record
@@ -797,8 +819,9 @@ public class RTMonitor extends AbstractVerticle {
                 return false;
             }
 
+            //DEBUG TODO allow different tests than just "="
             return record_value.equals(value);
-        }
+        } // end test_filter()
 
     } // end class Client
 
