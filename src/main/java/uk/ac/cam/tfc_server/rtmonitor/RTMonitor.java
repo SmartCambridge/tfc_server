@@ -170,8 +170,10 @@ public class RTMonitor extends AbstractVerticle {
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                    ": setting up monitor for "+ADDRESS+" at "+HTTP_PORT+":"+URI);
 
+        // create Monitor entry
         monitors.add(URI, ADDRESS, RECORDS_ARRAY, RECORD_INDEX);
 
+        // and set up consumer for eventbus messages
         eb.consumer(ADDRESS, message -> {
                         handle_message(URI, message.body().toString());
                    
@@ -197,25 +199,34 @@ public class RTMonitor extends AbstractVerticle {
 
                    JsonObject sock_msg = new JsonObject(buf.toString());
 
-                   // The connecting page is expected to have { "msg_type": "rt_connect" ... }
-                   if (sock_msg.getString("msg_type","oh crap").equals(Constants.SOCKET_RT_CONNECT))
+                   // Check the "msg_type" and process accordingly
+                   // A basic ping check protocol
+                   if (sock_msg.getString("msg_type","").equals(Constants.SOCKET_RT_PING))
                    {
-                       // Add this connection to the client table
-                       // and set up consumer for eventbus messages
+                       // Send rt_pong in reply
+                       sock.write(Buffer.buffer("{ \"msg_type\": \""+Constants.SOCKET_RT_PONG+"\" }"));
+                   }
+                   // The connecting page is expected to first send { "msg_type": "rt_connect" ... }
+                   else if (sock_msg.getString("msg_type","").equals(Constants.SOCKET_RT_CONNECT))
+                   {
+                       // Add client with this connection to the client table
                        create_rt_client(URI, sock.writeHandlerID(), sock, sock_msg);
                    }
                    // A "rt_subscribe" / "rt_unsubscribe" subscription requests from this client
-                   else if (sock_msg.getString("msg_type","oh crap").equals(Constants.SOCKET_RT_SUBSCRIBE))
+                   else if (sock_msg.getString("msg_type","").equals(Constants.SOCKET_RT_SUBSCRIBE))
                    {
-                       // Add this connection to the client table
-                       // and set up consumer for eventbus messages
+                       // Add this subscription to the client
                        create_rt_subscription(URI, sock.writeHandlerID(), sock_msg);
                    }
-                   else if (sock_msg.getString("msg_type","oh crap").equals(Constants.SOCKET_RT_UNSUBSCRIBE))
+                   else if (sock_msg.getString("msg_type","").equals(Constants.SOCKET_RT_UNSUBSCRIBE))
                    {
-                       // Add this connection to the client table
-                       // and set up consumer for eventbus messages
+                       // Remove this subscription from the client
                        remove_rt_subscription(URI, sock.writeHandlerID(), sock_msg);
+                   }
+                   else if (sock_msg.getString("msg_type","").equals(Constants.SOCKET_RT_REQUEST))
+                   {
+                       // Client has requested a 'pull' of the data
+                       handle_rt_request(URI, sock.writeHandlerID(), sock_msg);
                    }
                 });
 
@@ -223,6 +234,7 @@ public class RTMonitor extends AbstractVerticle {
                 sock.endHandler( (Void v) -> {
                         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                                 ": sock closed "+sock.writeHandlerID());
+                        // remove the client
                         remove_rt_client(URI, sock.writeHandlerID());
                     });
           });
@@ -296,14 +308,25 @@ public class RTMonitor extends AbstractVerticle {
                 ": removed client "+UUID+" from monitor "+URI);
     }
 
-    // ***************************************************************************************************
-    // ***************************************************************************************************
-    // ******************  The 'Monitor' data structures  ************************************************
-    // ***************************************************************************************************
-    // ***************************************************************************************************
+    // **********************************************************************************************
+    // ******************  Client requests 'pull' of data *******************************************
+    // **********************************************************************************************
+    private void handle_rt_request(String URI, String UUID, JsonObject sock_msg)
+    {
+        monitors.handle_rt_request(URI, UUID, sock_msg);
+
+        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                ": rt_request from client "+UUID+" for monitor "+URI);
+    }
+
+    // **********************************************************************************************
+    // **********************************************************************************************
+    // *************  The 'Monitor' data structures  ************************************************
+    // **********************************************************************************************
+    // **********************************************************************************************
 
     // A Monitor is instantiated for each feed for which real-time updated state is required.
-    // The procedure 'update_state' is called each time a message arrives on the EventBus address assigned.
+    // The procedure 'update_state' is called each time a message arrives on the EventBus address.
     // On that asynchronous event the Monitor will update the internal state 
     // and send data as appropriate to the subscribing websockets.
     //
@@ -318,12 +341,15 @@ public class RTMonitor extends AbstractVerticle {
     // each vehicle.
     class Monitor {
         public String address;                  // EventBus address consumed
-        public ArrayList<String> records_array;  // Json property location of the required data e.g. "request_data"
-        public ArrayList<String> record_index;   // Json property (within records_array fields) containing sensor id
+        public ArrayList<String> records_array;  // JsonArray property of data records e.g. "request_data"
+        public ArrayList<String> record_index;   // 'primary key' Json property (within data records)
         public ClientTable clients;              // Set of sockets subscribing to this data
 
-        private Hashtable<String, JsonObject> latest_records; // Holds data from the latest message 
-        private Hashtable<String, JsonObject> previous_records; // Holds data from the previous message 
+        public Hashtable<String, JsonObject> latest_records; // Holds latest message for each key 
+        public Hashtable<String, JsonObject> previous_records; // Holds previous message for each key
+
+        public JsonObject latest_msg; // Most recent message received on the eventbus
+        public JsonObject previous_msg; // previous message received on the eventbus
 
         // Create a new Monitor, typically via MonitorTable.add(...)
         Monitor(String address, String records_array, String record_index) {
@@ -359,19 +385,28 @@ public class RTMonitor extends AbstractVerticle {
         }
 
         // A relevant message has appeared on the EventBus, so update this monitor state
-        public void update_state(JsonObject msg)
+        public void update_state(JsonObject eventbus_msg)
         {
             logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": update_state "+address);
+
+            // in any case, store 'latest_msg' and 'previous_msg'
+            if (latest_msg != null)
+            {
+                previous_msg = latest_msg;
+            }
+
+            latest_msg = eventbus_msg;
+
             // This monitor may be for single records (i.e. msg = record)
             // or multiple records may be contained within nested 'records_array' object
             if (records_array.size() == 0)
             {
                 // The whole message is considered the 'record'
-                update_record(msg);
+                update_record(eventbus_msg);
             }
             else
             {
-                JsonArray records = get_records(msg);
+                JsonArray records = get_records(eventbus_msg);
                 logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                            ": update_state processing "+records.size()+" records");
                 for (int i=0; i<records.size(); i++)
@@ -457,7 +492,8 @@ public class RTMonitor extends AbstractVerticle {
             return clients.add(UUID, sock, sock_msg);
         }
 
-        public void add_subscription(String UUID, JsonObject sock_msg)
+        // return true if the "key": "A>B>C" in the sock_msg matches the monitor 'record_index'
+        public boolean test_record_index(JsonObject sock_msg)
         {
             // for an optimization, tell the client if the filter includes the 'record_index'
             // The first check is if the filter is for 'record_index'
@@ -474,16 +510,31 @@ public class RTMonitor extends AbstractVerticle {
                         key_is_record_index = true;
                         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                            ": subscription key "+key+" matches record_index");                        
+                        break;
                     }
                 }
             }
+            return key_is_record_index;
+        }
+
+        public void add_subscription(String UUID, JsonObject sock_msg)
+        {
+            // for an optimization, tell the client if the filter includes the 'record_index'
+            // The first check is if the filter is for 'record_index'
             // now we have key_is_record_index we can add the subscription to the client
-            clients.add_subscription(UUID, sock_msg, key_is_record_index);
+            clients.add_subscription(UUID, sock_msg, test_record_index(sock_msg));
         }
 
         public void remove_subscription(String UUID, JsonObject sock_msg)
         {
             clients.remove_subscription(UUID, sock_msg);
+        }
+
+        // handle an incoming "rt_request" from client for one-off 'pull' of data
+        public void handle_rt_request(String UUID, JsonObject sock_msg)
+        {
+            // note we pass *this* Monitor because it contains the state needed
+            clients.handle_rt_request(UUID, sock_msg, this, test_record_index(sock_msg));
         }
 
         // Websocket from a client was closed so delete relevant client
@@ -526,12 +577,13 @@ public class RTMonitor extends AbstractVerticle {
         }
 
         // Return some human-readable description of this monitor as an HTML string
-        public String to_html()
+        public String toHtml()
         {
             String html = "<p><b>"+address+"</b>, records in <b>"+array_to_string(records_array)+
                     "</b>, record identifier in <b>"+array_to_string(record_index)+
                     "</b></p>";
             html += "<p>Clients: "+clients.size()+"</p>";
+            html += clients.toHtml();
             return html;
         }
 
@@ -575,6 +627,12 @@ public class RTMonitor extends AbstractVerticle {
         public void remove_subscription(String uri, String UUID, JsonObject sock_msg)
         {
             monitors.get(uri).remove_subscription(UUID, sock_msg);
+        }
+
+        // handle an incoming "rt_request" for client pull of data
+        public void handle_rt_request(String uri, String UUID, JsonObject sock_msg)
+        {
+            monitors.get(uri).handle_rt_request(UUID, sock_msg);
         }
 
         // remove_client() is called when a websocket is closed
@@ -632,45 +690,45 @@ public class RTMonitor extends AbstractVerticle {
         // RTMonitor has received a 'rt_subscribe' message, so add to relevant client
         public void add_subscription(JsonObject sock_msg, boolean key_is_record_index)
         {            
-            String subscription_id  = sock_msg.getString("subscription_id");
-            if (subscription_id == null)
+            String request_id  = sock_msg.getString("request_id");
+            if (request_id == null)
             {
                 logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
-                       ": missing subscription_id from "+UUID+" in "+sock_msg.toString());
+                       ": missing request_id from "+UUID+" in "+sock_msg.toString());
                 return;
             }
 
             Subscription s = new Subscription();
 
-            s.subscription_id = subscription_id;
+            s.request_id = request_id;
 
             s.key_is_record_index = key_is_record_index;
 
             s.msg = sock_msg;
 
-            subscriptions.put(subscription_id, s);
+            subscriptions.put(request_id, s);
 
             logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                       ": Client.add_subscription "+UUID+ " " +sock_msg.toString()+" key_is_record_index="+
-                       s.key_is_record_index);
+                       ": Client.add_subscription "+UUID+ " " +sock_msg.toString()+
+                       " key_is_record_index="+s.key_is_record_index);
             return;
         }
 
         // RTMonitor has received a 'rt_unsubscribe' message
         public void remove_subscription(JsonObject sock_msg)
         {
-            String subscription_id = sock_msg.getString("subscription_id");
-            if (subscription_id==null)
+            String request_id = sock_msg.getString("request_id");
+            if (request_id==null)
             {
                 logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
-                    ": Client.remove_subscription() for "+UUID+" called with subscription_id==null");
+                    ": Client.remove_subscription() for "+UUID+" called with request_id==null");
                 return;
             }
-            Subscription s = subscriptions.remove(subscription_id);
+            Subscription s = subscriptions.remove(request_id);
             if (s==null)
             {
                 logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
-                    ": Client.remove_subscription() for "+UUID+" subscription_id '"+subscription_id+
+                    ": Client.remove_subscription() for "+UUID+" request_id '"+request_id+
                     "' not found");
                 return;
             }
@@ -687,9 +745,9 @@ public class RTMonitor extends AbstractVerticle {
                 return;
             }
             // iterate the client subscriptions (so subscriptions are effectively OR
-            for (String subscription_id: subscriptions.keySet())
+            for (String request_id: subscriptions.keySet())
             {
-                Subscription s = subscriptions.get(subscription_id);
+                Subscription s = subscriptions.get(request_id);
                 JsonArray filters = s.msg.getJsonArray("filters");
 
                 // Multiple filters in a single subscription are an AND
@@ -743,7 +801,6 @@ public class RTMonitor extends AbstractVerticle {
                     else
                     {
                         // Woo we have successfully found records within the filter scope
-                        //DEBUG TODO actually send the "rt_data" packet
                         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                                ": Client.update sending "+filtered_records.size()+" filtered records");
 
@@ -751,12 +808,45 @@ public class RTMonitor extends AbstractVerticle {
                         JsonObject rt_data = new JsonObject();
                         rt_data.put("msg_type", Constants.SOCKET_RT_DATA);
                         rt_data.put("request_data", filtered_records);
-                        rt_data.put("subscription_id", subscription_id);
+                        rt_data.put("request_id", request_id);
                         sock.write(Buffer.buffer(rt_data.toString()));
                     }
 
                 }
             }
+        }
+
+        // Handle an incoming "rt_request" for one-off pull of data
+        // RTMonitor has received a 'rt_subscribe' message, so add to relevant client
+        public void handle_rt_request(JsonObject sock_msg, Monitor m, boolean key_is_record_index)
+        {            
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                     ": handle_rt_request");
+
+            String request_id  = sock_msg.getString("request_id");
+            if (request_id == null)
+            {
+                logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                       ": missing request_id from "+UUID+" in "+sock_msg.toString());
+                return;
+            }
+
+            JsonArray filters = sock_msg.getJsonArray("filters", new JsonArray());
+
+            JsonArray options = sock_msg.getJsonArray("options", new JsonArray());
+
+            //DEBUG TODO implement send of rt_request data
+
+            if (options.contains("latest_msg"))
+            {
+                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                        ": Client.handle_rt_request for latest_msg");
+            }
+            
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                       ": Client.handle_rt_request "+UUID+ " " +sock_msg.toString()+
+                       " key_is_record_index="+key_is_record_index);
+            return;
         }
 
         // Test (AND) a JsonArray set of filters against a JsonObject data record
@@ -783,8 +873,8 @@ public class RTMonitor extends AbstractVerticle {
                 }
             }
 
-            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                     ": tested filter"+filters.toString()+(filters_passed?"passed":"failed"));
+            //logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+            //         ": tested filter"+filters.toString()+(filters_passed?"passed":"failed"));
             return filters_passed;
         } // end test_filters()
 
@@ -823,17 +913,32 @@ public class RTMonitor extends AbstractVerticle {
             return record_value.equals(value);
         } // end test_filter()
 
+        public String toHtml()
+        {
+            String html = UUID+"<br/>";
+            for (String request_id: subscriptions.keySet())
+            {
+                html += subscriptions.get(request_id).toHtml()+"<br/>";
+            }
+            return html;
+        }
+
     } // end class Client
 
     // Subscription to the eventbus message data
     // Each eventbus message may contain a JsonArray of multiple data records
     // Each client can have multiple subscriptions
     class Subscription {
-        public String subscription_id;
+        public String request_id;
         public boolean key_is_record_index; // optimization flag if subscription is filtering on 'primary key'
         public JsonObject msg; // 'rt_subscribe' websocket message when subscription was requested
 
         public String toString()
+        {
+            return msg.toString();
+        }
+
+        public String toHtml()
         {
             return msg.toString();
         }
@@ -872,7 +977,7 @@ public class RTMonitor extends AbstractVerticle {
 
             client.sock = sock;
 
-            // Create initially empty subscription list (will be indexed on "subscription_id")
+            // Create initially empty subscription list (will be indexed on "request_id")
             client.subscriptions = new Hashtable<String,Subscription>();
 
             logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
@@ -913,6 +1018,20 @@ public class RTMonitor extends AbstractVerticle {
         }
 
 
+        // handle an incoming client "rt_request"
+        public void handle_rt_request(String UUID, JsonObject sock_msg, Monitor m, boolean key_is_record_index)
+        {
+            Client client = client_table.get(UUID);
+
+            if (client == null)
+            {
+                logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                    ": ClientTable.handle_rt_request() "+UUID+" called with client==null");
+                return;
+            }
+            client.handle_rt_request(sock_msg, m, key_is_record_index);
+        }
+        
         public Client get(String UUID)
         {
             // retrieve data for current socket, if it exists
@@ -977,6 +1096,16 @@ public class RTMonitor extends AbstractVerticle {
             return client_table.size();
         }
 
+        public String toHtml()
+        {
+            String html = "<p>";
+            for (String UUID: client_table.keySet())
+            {
+                html += client_table.get(UUID).toHtml();
+            }
+            html += "</p>";
+            return html;
+        }
 
     } // end class ClientTable
    
@@ -994,7 +1123,7 @@ public class RTMonitor extends AbstractVerticle {
         Set<String> keys = monitors.keySet();
         for (String key: keys)
         {
-            page += monitors.get(key).to_html();
+            page += monitors.get(key).toHtml();
         }
         page += "</body></html>";
         return page;

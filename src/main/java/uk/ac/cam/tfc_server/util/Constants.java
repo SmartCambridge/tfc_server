@@ -16,7 +16,7 @@ public class Constants {
     public static final String FEED_XML_FLAT  = "feed_xml_flat"; // XML feed to be flattened
     public static final String FEED_SIRIVM  = "feed_sirivm"; // XML feed of SiriVM data
     public static final String FEED_EVENTBUS_MSG  = "feed_eventbus_msg"; // A feed that receives platform eventbus messages directly
-    public static final String FEED_EVENTBUS_0  = "feed_eventbus_0"; // A feed that receives just the FIRST element of the eventbus request_data array
+    public static final String FEED_EVENTBUS_0  = "feed_eventbus_0"; // A feed that receives the FIRST element of the eventbus request_data array
     public static final int    FEEDHANDLER_MAX_POST = 1000000; // max feed post in bytes
     
     // Zone msg_type values which flow on zone.address
@@ -40,6 +40,9 @@ public class Constants {
     public static final String SOCKET_RT_CONNECT = "rt_connect"; // msg_type connect client -> RTMonitor
     public static final String SOCKET_RT_SUBSCRIBE = "rt_subscribe"; // msg_type data subscription client -> RTMonitor
     public static final String SOCKET_RT_UNSUBSCRIBE = "rt_unsubscribe"; // msg_type remove subscription client -> RTMonitor
+    public static final String SOCKET_RT_REQUEST = "rt_request"; // client request for 'pull' data
+    public static final String SOCKET_RT_PING = "rt_ping"; // basic ping-pong connection test message
+    public static final String SOCKET_RT_PONG = "rt_pong";
     public static final String SOCKET_RT_DATA = "rt_data"; // msg_type data records RTMonitor -> client
 
     // Rita
