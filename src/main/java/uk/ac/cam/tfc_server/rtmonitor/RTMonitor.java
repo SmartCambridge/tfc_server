@@ -194,40 +194,52 @@ public class RTMonitor extends AbstractVerticle {
 
                 // Assign a handler function to RECEIVE DATA
                 sock.handler( buf -> {
-                   logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                            ": sock received '"+buf+"'");
 
-                   JsonObject sock_msg = new JsonObject(buf.toString());
+                    JsonObject sock_msg;
 
-                   // Check the "msg_type" and process accordingly
-                   // A basic ping check protocol
-                   if (sock_msg.getString("msg_type","").equals(Constants.SOCKET_RT_PING))
-                   {
+                    // ignore incoming messages that fail to parse as Json
+                    try
+                    {
+                        sock_msg = new JsonObject(buf.toString());
+                    }
+                    catch (io.vertx.core.json.DecodeException e)
+                    {
+                        logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                                ": socketHandler received non-Json message "+sock.writeHandlerID());
+                        return;
+                    }
+
+                    // Check the "msg_type" and process accordingly
+                    // A basic ping check protocol
+                    if (sock_msg.getString("msg_type","").equals(Constants.SOCKET_RT_PING))
+                    {
                        // Send rt_pong in reply
                        sock.write(Buffer.buffer("{ \"msg_type\": \""+Constants.SOCKET_RT_PONG+"\" }"));
-                   }
-                   // The connecting page is expected to first send { "msg_type": "rt_connect" ... }
-                   else if (sock_msg.getString("msg_type","").equals(Constants.SOCKET_RT_CONNECT))
-                   {
+                    }
+                    // The connecting page is expected to first send { "msg_type": "rt_connect" ... }
+                    else if (sock_msg.getString("msg_type","").equals(Constants.SOCKET_RT_CONNECT))
+                    {
                        // Add client with this connection to the client table
                        create_rt_client(URI, sock.writeHandlerID(), sock, sock_msg);
-                   }
-                   // A "rt_subscribe" / "rt_unsubscribe" subscription requests from this client
-                   else if (sock_msg.getString("msg_type","").equals(Constants.SOCKET_RT_SUBSCRIBE))
-                   {
+                    }
+                    // A "rt_subscribe" / "rt_unsubscribe" subscription requests from this client
+                    else if (sock_msg.getString("msg_type","").equals(Constants.SOCKET_RT_SUBSCRIBE))
+                    {
                        // Add this subscription to the client
                        create_rt_subscription(URI, sock.writeHandlerID(), sock_msg);
-                   }
-                   else if (sock_msg.getString("msg_type","").equals(Constants.SOCKET_RT_UNSUBSCRIBE))
-                   {
+                    }
+                    else if (sock_msg.getString("msg_type","").equals(Constants.SOCKET_RT_UNSUBSCRIBE))
+                    {
                        // Remove this subscription from the client
                        remove_rt_subscription(URI, sock.writeHandlerID(), sock_msg);
-                   }
-                   else if (sock_msg.getString("msg_type","").equals(Constants.SOCKET_RT_REQUEST))
-                   {
+                    }
+                    else if (sock_msg.getString("msg_type","").equals(Constants.SOCKET_RT_REQUEST))
+                    {
                        // Client has requested a 'pull' of the data
                        handle_rt_request(URI, sock.writeHandlerID(), sock_msg);
-                   }
+                    }
                 });
 
                 // Assign handler for socket CLOSED
@@ -253,7 +265,8 @@ public class RTMonitor extends AbstractVerticle {
     // **********************************************************************************************
     private void handle_message(String URI, String msg)
     {
-        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": eventbus message for "+URI);
+        //logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": eventbus message for "+URI);
+
         // Update the state of the relevant monitor, e.g. accumulate the latest and previous records
         monitors.update_state(URI, new JsonObject(msg));
         // Update the relevant clients that have subscribed
@@ -387,7 +400,7 @@ public class RTMonitor extends AbstractVerticle {
         // A relevant message has appeared on the EventBus, so update this monitor state
         public void update_state(JsonObject eventbus_msg)
         {
-            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": update_state "+address);
+            //logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": update_state "+address);
 
             // in any case, store 'latest_msg' and 'previous_msg'
             if (latest_msg != null)
@@ -407,14 +420,12 @@ public class RTMonitor extends AbstractVerticle {
             else
             {
                 JsonArray records = get_records(eventbus_msg);
-                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                           ": update_state processing "+records.size()+" records");
                 for (int i=0; i<records.size(); i++)
                 {
                     update_record(records.getJsonObject(i));
                 }
                 logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                           ": total "+latest_records.size()+" records");
+                           ": Monitor "+address+" processed "+records.size()+" records, total "+latest_records.size());
             }
         }        
 
@@ -817,36 +828,149 @@ public class RTMonitor extends AbstractVerticle {
         }
 
         // Handle an incoming "rt_request" for one-off pull of data
-        // RTMonitor has received a 'rt_subscribe' message, so add to relevant client
         public void handle_rt_request(JsonObject sock_msg, Monitor m, boolean key_is_record_index)
         {            
             logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                     ": handle_rt_request");
+                       ": Client.handle_rt_request "+UUID+ " " +sock_msg.toString()+
+                       " key_is_record_index="+key_is_record_index);
 
             String request_id  = sock_msg.getString("request_id");
             if (request_id == null)
             {
                 logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
-                       ": missing request_id from "+UUID+" in "+sock_msg.toString());
+                       ": Client.handle_rt_request missing request_id from "+UUID+" in "+sock_msg.toString());
                 return;
             }
 
-            JsonArray filters = sock_msg.getJsonArray("filters", new JsonArray());
+            JsonArray filters;
 
-            JsonArray options = sock_msg.getJsonArray("options", new JsonArray());
+            JsonArray options;
+
+            // ignore incoming messages that fail to parse as Json
+            try
+            {
+                filters = sock_msg.getJsonArray("filters", new JsonArray());
+
+                options = sock_msg.getJsonArray("options", new JsonArray());
+            }
+            catch (ClassCastException e)
+            {
+                logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                        ": Client.handle_rt_request received non-Json message "+UUID);
+                return;
+            }
+
 
             //DEBUG TODO implement send of rt_request data
 
+            // The response to "rt_request" may be multiple messages
+            // so create a JsonArray to accumulate them
+            JsonArray reply_messages = new JsonArray();
+
+            // Requests for "latest_msg" and "previous_msg" are not filtered
+            if (options.contains("previous_msg"))
+            {
+                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                        ": Client.handle_rt_request for previous_msg");
+
+                reply_messages.add(m.previous_msg);
+            }
+           
             if (options.contains("latest_msg"))
             {
                 logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                         ": Client.handle_rt_request for latest_msg");
+
+                reply_messages.add(m.latest_msg);
             }
-            
-            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                       ": Client.handle_rt_request "+UUID+ " " +sock_msg.toString()+
-                       " key_is_record_index="+key_is_record_index);
+
+            if (options.contains("previous_records"))
+            {
+                // Build reply JsonObject { "msg_type": "rt_data",
+                //                          "request_id": request_id,
+                //                          "options" : [ "previous_records" ],
+                //                          "request_data": [ ... filtered records ... ]
+                //                        }
+                
+                JsonObject msg_previous_records = new JsonObject();
+
+                msg_previous_records.put("msg_type", Constants.SOCKET_RT_DATA);
+
+                msg_previous_records.put("request_id", request_id);
+
+                msg_previous_records.put("options", new JsonArray("[ \"previous_records\" ]"));
+
+                // Build the recordset to send filtered 'previous records' as "request_data"
+                // and add that recordset to the reply message:
+
+                JsonArray filtered_previous_records = get_filtered_records(filters, m.previous_records);
+
+                msg_previous_records.put("request_data", filtered_previous_records);
+
+                // Add the reply message to the list of messages to be sent
+                reply_messages.add(msg_previous_records);
+
+                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                        ": Client.handle_rt_request for "+filtered_previous_records.size()+" previous_records");
+
+            }
+
+            if (options.contains("latest_records"))
+            {
+                // Build reply JsonObject { "msg_type": "rt_data",
+                //                          "request_id": request_id,
+                //                          "options" : [ "latest_records" ],
+                //                          "request_data": [ ... filtered records ... ]
+                //                        }
+                
+                JsonObject msg_latest_records = new JsonObject();
+
+                msg_latest_records.put("msg_type", Constants.SOCKET_RT_DATA);
+
+                msg_latest_records.put("request_id", request_id);
+
+                msg_latest_records.put("options", new JsonArray("[ \"latest_records\" ]"));
+
+                // Build the recordset to send filtered 'latest records' as "request_data"
+                // and add that recordset to the reply message:
+
+                JsonArray filtered_latest_records = get_filtered_records(filters, m.latest_records);
+
+                msg_latest_records.put("request_data", filtered_latest_records);
+
+                // Add the reply message to the list of messages to be sent
+                reply_messages.add(msg_latest_records);
+
+                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                        ": Client.handle_rt_request for "+filtered_latest_records.size()+" latest_records");
+
+            }
+           
+           
+            // Now send accumulated messages
+            for (int i=0; i<reply_messages.size(); i++)
+            {
+                sock.write(Buffer.buffer(reply_messages.getJsonObject(i).toString()));
+            }
+
             return;
+        }
+
+        // return a JsonArray from a filtered records Hashtable (e.g. monitor latest_records)
+        private JsonArray get_filtered_records(JsonArray filters, Hashtable<String, JsonObject> records)
+        {
+            JsonArray filtered_records = new JsonArray();
+
+            for (String key: records.keySet())
+            {
+                JsonObject record = records.get(key);
+                if (test_filters(filters, record))
+                {
+                    filtered_records.add(record);
+                }
+            }
+
+            return filtered_records;
         }
 
         // Test (AND) a JsonArray set of filters against a JsonObject data record
