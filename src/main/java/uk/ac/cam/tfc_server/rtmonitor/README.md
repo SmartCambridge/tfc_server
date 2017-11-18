@@ -129,17 +129,49 @@ will arrive in a single transmission from the bus comany and hence in a single e
 message, but the complete 'map' of the positions of all buses in the city will depend on
 the arrival of multiple messages over a period of time.
 
-#### RTMonitor monitor config() property records\_data
+#### RTMonitor monitor config() properties ```records_data``` and ```record_index```
 
 Hence the *records\_data* config() parameter tells RTMonitor the name of the JsonArray property
 that can hold multiple data records in the eventbus message.  In the example SiriVM data above,
 the records are provided in a JsonArray property *request\_data*.
 
-#### RTMonitor monitor config() property record\_index
+The ```records_data``` property on the monitor config() can specify a JsonArray property
+nested within JsonObjects in the monitored eventbus messages, e.g.
+```
+  "records_data": "A>B>C"
+```
+In the above example, each eventbus messages is expected to contain a JsonObject as property
+```A``` which itself contains a JsonObject as property ```B``` which contains a JsonArray as 
+property ```C```.
 
-*Within* the data records, one property may be considered the 'primary key'.  I.e. in the 
-SiriVM bus position data the *VehicleRef* is the unique identifier of the bus, so that property
-name is passed to the RTMonitor in its vertx config() *record\_index* property as shown above. 
+The ```record_index``` property defines the position of the 'primary key' *within* the data 
+records. E.g. in SiriVM bus position data the *VehicleRef* is the unique identifier of the bus, 
+so that property name is passed to the RTMonitor in its vertx config() *record\_index* property,
+as shown in the example full vertx config() show at the top of this README.
+
+With a ```"records_array": "A>B>C"``` and ```"record_index" : "D>E"``` the incoming eventbus
+messages should look like this:
+
+```
+{
+    ...
+    "A": {
+           ...
+           "B" : { 
+                   ...
+                   "C": [ { ... "D": { "E": "X", ...  },
+                          { ... "D": { "E": "Y", ...  },
+                          ...
+                        ]
+                   ...
+                 }
+           ...
+         }
+    ...
+}
+```
+where the "C" property contains all the data records, and the two data records shown have key
+values "X" and "Y" respectively.
 
 This concept is obviously important if you want to do some types of analysis across multiple
 data records, e.g. display the path taken by an individual bus.
@@ -169,12 +201,94 @@ websocket on the defined URI:
   "request_id": "abc"
 }
 ```
+This subscription will result in *all* data records from the monitor eventbus address being
+sent to the client browser. If a subset of the data records is required (e.g. data records from
+a single sensor) then filters can be applied (see section below).
+
+The subscription can be deleted by sending an ```rt_unsubscribe``` message with the same
+```request_id```:
+```
+{ "msg_type": "rt_unsubscribe",
+  "request_id": "abc"
+}
+```
 
 ### Filters
 
+On a *subscription* or *request* (see next section), the returned data can be *filtered*
+via the ```filters``` property. This property is optional, and if missing then no filters
+are applied to the data.
+
+The behaviour of filters depends upon the ```records_array``` property of the monitor:
+* if ```records_array``` is set, then the filters are applied to the data records expected
+to be found within the JsonArray named in that property.
+* if ```records_array``` is not specified for the monitor, then the *whole eventbus message*
+is treated as the data record.
+
+The ```filters``` property is always a JsonArray, with each element being a filter
+condition. For a data record to pass through the filters, *all* the filters in the 
+```filters``` JsonArray must succeed for that record, i.e. the multiple filter
+conditions are in a boolean 'AND' relationship.
+
+Note that a boolean 'OR' relationship between filters can be acheived through the
+use of multiple subscriptions.
+
+```
+{ "msg_type": "rt_subscribe",
+  "request_id": "abc"
+  "filters": [ { "test": "=", "key": "VehicleRef", "value": "CAMB-1018" } ]
+}
+```
+In the example above, records will only be returned if the record contains a
+property ```VehicleRef``` and the value of that property is ```CAMB-1018```.
+
+As another example of use, with SiriVM bus position data the records include
+```OriginRef``` and ```DestinationRef``` properties with the identifiers of the
+starting and finishing bus stops for that particular vehicle journey. A
+web page could filter on both of those properties to display all buses on
+a particular route.
 
 ### Requests
 
+Requests can be similar to subscriptions, but receive the data immediately *once* 
+rather than as a continous stream of real-time updates.
+
+A slightly subtle point is that RTMonitor necessarily provides the data fulfilling a *request* 
+immediately from some accumulated *state* of the monitored message feed. Currently this
+includes:
+* the latest message from the monitored eventbus address
+* the previous message from teh monitored eventbus address
+* the accumulates set of latest data records indexed by the property given in ```record\_index```
+* similarly the accumulated set of 'previous' data records
+
+For example:
+```
+{ "msg_type": "rt_request",
+  "request_id": "abc"
+}
+```
+This request will, without filtering, receive the latest message received from the eventbus. This
+is actually a default value ```"latest_msg"``` for the options listed below.
+
+The ```rt_request``` message can specify filters, exactly as with the subscriptions.  In this case the
+filters will be applied to the data records found before the resultant subset is returned to the client
+via the WebSocket.
 
 ### Options
+
+The ```rt_request``` message can specify a JsonArray of ```"options"``` which determine the data actually
+returned.  Choices include:
+* ```"latest_msg"```: the latest monitored message received from the eventbus.
+* ```"previous_msg"```: the penultimate monitored message received from the eventbus. Sometimes this is useful
+where the client want to immediately produce a calculation based on the most recent *pair* of data records, e.g.
+to display the spot velocity of a vehicle from a pair of position records. A common usage will be to 
+*request*  ```"options": [ "previous_msg", "latest_msg" ]``` and *subscribe* to the realtime feed
+such that (for example) a velocity vector can be created immediately on the web page and then updated
+with each new realtime data record.
+* ```"latest_records"```: where the monitored feed has a ```"records_data"``` JsonArray and a 
+```"record_index"``` key for those data records, the RTMonitor can return the latest *data record*
+for each value of that primary key.  These records may have been accumualated over multiple
+evenbus messages.
+* ```"previous_records"```: as ```"latest_records"``` above, except it will return the penultimate
+data record for each primary key value.
 
