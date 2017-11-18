@@ -208,6 +208,7 @@ public class RTMonitor extends AbstractVerticle {
                     {
                         logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
                                 ": socketHandler received non-Json message "+sock.writeHandlerID());
+                        send_nok(sock,"","Message failed to parse as JsonObject");
                         return;
                     }
 
@@ -258,11 +259,25 @@ public class RTMonitor extends AbstractVerticle {
 
     } // end start_monitor()
 
-    // **********************************************************************************************
-    // **********************************************************************************************
-    // ******************  Handle eventbus messages that a consumer has received ********************
-    // **********************************************************************************************
-    // **********************************************************************************************
+    // Send the client a "NOT OK" message
+    private void send_nok(SockJSSocket sock, String request_id, String comment)
+    {
+        JsonObject sock_msg = new JsonObject();
+
+        sock_msg.put("msg_type", Constants.SOCKET_RT_NOK);
+
+        sock_msg.put("request_id", request_id);
+
+        sock_msg.put("comment", comment);
+
+        sock.write(Buffer.buffer(sock_msg.toString()));
+    }
+
+    // *****************************************************************************************
+    // *****************************************************************************************
+    // *************  Handle eventbus messages that a consumer has received ********************
+    // *****************************************************************************************
+    // *****************************************************************************************
     private void handle_message(String URI, String msg)
     {
         //logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": eventbus message for "+URI);
@@ -273,9 +288,9 @@ public class RTMonitor extends AbstractVerticle {
         monitors.update_clients(URI, new JsonObject(msg));
     }
     
-    // **********************************************************************************************
-    // ******************  Handle a client connection     *******************************************
-    // **********************************************************************************************
+    // *****************************************************************************************
+    // *************  Handle a client connection     *******************************************
+    // *****************************************************************************************
     private void create_rt_client(String URI, String UUID, SockJSSocket sock, JsonObject sock_msg)
     {
         // create entry in client table for correct monitor
@@ -285,9 +300,9 @@ public class RTMonitor extends AbstractVerticle {
                 ": adding client "+UUID+" with "+sock_msg.toString());
     }
 
-    // **********************************************************************************************
-    // ******************  Handle a subscription request  *******************************************
-    // **********************************************************************************************
+    // *****************************************************************************************
+    // *************  Handle a subscription request  *******************************************
+    // *****************************************************************************************
     private void create_rt_subscription(String URI, String UUID, JsonObject sock_msg)
     {
         // create entry in client table for correct monitor
@@ -297,9 +312,9 @@ public class RTMonitor extends AbstractVerticle {
                 ": subscribing client "+UUID+" with "+sock_msg.toString());
     }
 
-    // **********************************************************************************************
-    // ******************  Remove a subscription          *******************************************
-    // **********************************************************************************************
+    // *****************************************************************************************
+    // *************  Remove a subscription          *******************************************
+    // *****************************************************************************************
     private void remove_rt_subscription(String URI, String UUID, JsonObject sock_msg)
     {
         // create entry in client table for correct monitor
@@ -309,9 +324,9 @@ public class RTMonitor extends AbstractVerticle {
                 ": removing subscription from "+UUID+" with "+sock_msg.toString());
     }
 
-    // **********************************************************************************************
-    // ******************  Close a subscription request  ********************************************
-    // **********************************************************************************************
+    // *****************************************************************************************
+    // *************  Close a subscription request  ********************************************
+    // *****************************************************************************************
     private void remove_rt_client(String URI, String UUID)
     {
         // remove entry in client table for correct monitor
@@ -321,9 +336,9 @@ public class RTMonitor extends AbstractVerticle {
                 ": removed client "+UUID+" from monitor "+URI);
     }
 
-    // **********************************************************************************************
-    // ******************  Client requests 'pull' of data *******************************************
-    // **********************************************************************************************
+    // *****************************************************************************************
+    // *************  Client requests 'pull' of data *******************************************
+    // *****************************************************************************************
     private void handle_rt_request(String URI, String UUID, JsonObject sock_msg)
     {
         monitors.handle_rt_request(URI, UUID, sock_msg);
@@ -332,11 +347,11 @@ public class RTMonitor extends AbstractVerticle {
                 ": rt_request from client "+UUID+" for monitor "+URI);
     }
 
-    // **********************************************************************************************
-    // **********************************************************************************************
-    // *************  The 'Monitor' data structures  ************************************************
-    // **********************************************************************************************
-    // **********************************************************************************************
+    // *****************************************************************************************
+    // *****************************************************************************************
+    // *************  The 'Monitor' data structures  *******************************************
+    // *****************************************************************************************
+    // *****************************************************************************************
 
     // A Monitor is instantiated for each feed for which real-time updated state is required.
     // The procedure 'update_state' is called each time a message arrives on the EventBus address.
@@ -600,8 +615,8 @@ public class RTMonitor extends AbstractVerticle {
 
     } // end class Monitor
         
-    // ************************************************************************************************
-    // ************************************************************************************************
+    // ****************************************************************************************
+    // ****************************************************************************************
     // MonitorTable contains the data structure for each running Monitor
     // This has been implemented as a Class on the possibility that some broader-based access functions
     // may be needed (e.g. find a Monitor given a subscriber) but in the interim this Class could
@@ -685,11 +700,11 @@ public class RTMonitor extends AbstractVerticle {
         }
     } // end class MonitorTable
         
-    // ***************************************************************************************************
-    // ***************************************************************************************************
-    // ******************  The 'Client' data structures   ************************************************
-    // ***************************************************************************************************
-    // ***************************************************************************************************
+    // *******************************************************************************************
+    // *******************************************************************************************
+    // **********  The 'Client' data structures   ************************************************
+    // *******************************************************************************************
+    // *******************************************************************************************
     // Data for each socket connection
     // session_id is in sock.webSession().id()
     class Client {
@@ -706,6 +721,8 @@ public class RTMonitor extends AbstractVerticle {
             {
                 logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
                        ": missing request_id from "+UUID+" in "+sock_msg.toString());
+                // No request_id, so send rt_nok message and return
+                send_nok(sock, "no request_id given", "no request_id given in subscription");
                 return;
             }
 
@@ -733,6 +750,8 @@ public class RTMonitor extends AbstractVerticle {
             {
                 logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
                     ": Client.remove_subscription() for "+UUID+" called with request_id==null");
+                // No request_id, so send rt_nok message and return
+                send_nok(sock, "no request_id given", "no request_id given in unsubscribe request");
                 return;
             }
             Subscription s = subscriptions.remove(request_id);
@@ -741,6 +760,8 @@ public class RTMonitor extends AbstractVerticle {
                 logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
                     ": Client.remove_subscription() for "+UUID+" request_id '"+request_id+
                     "' not found");
+                // send rt_nok message and return
+                send_nok(sock, request_id, "request_id failed to match existing subscription");
                 return;
             }
             logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
@@ -839,6 +860,8 @@ public class RTMonitor extends AbstractVerticle {
             {
                 logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
                        ": Client.handle_rt_request missing request_id from "+UUID+" in "+sock_msg.toString());
+                // No request_id, so send rt_nok message and return
+                send_nok(sock, "no request_id given", "no request_id given in request");
                 return;
             }
 
@@ -850,18 +873,30 @@ public class RTMonitor extends AbstractVerticle {
             try
             {
                 filters = sock_msg.getJsonArray("filters", new JsonArray());
+            }
+            catch (ClassCastException e)
+            {
+                logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                        ": Client.handle_rt_request received non-JsonArray \"filters\" "+UUID);
+                // Bad "filters" JsonArray, so send rt_nok message and return
+                send_nok(sock, request_id, "request 'filters' property not valid JsonArray");
+                return;
+            }
 
+            // ignore incoming messages that fail to parse as Json
+            try
+            {
                 options = sock_msg.getJsonArray("options", new JsonArray());
             }
             catch (ClassCastException e)
             {
                 logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
-                        ": Client.handle_rt_request received non-Json message "+UUID);
+                        ": Client.handle_rt_request received non-JsonArray \"options\" "+UUID);
+                // Bad "filters" JsonArray, so send rt_nok message and return
+                send_nok(sock, request_id, "request 'options' property not valid JsonArray");
                 return;
             }
 
-
-            //DEBUG TODO implement send of rt_request data
 
             // The response to "rt_request" may be multiple messages
             // so create a JsonArray to accumulate them
@@ -876,7 +911,8 @@ public class RTMonitor extends AbstractVerticle {
                 reply_messages.add(m.previous_msg);
             }
            
-            if (options.contains("latest_msg"))
+            // "latest_msg" is the default if no "options" specified
+            if (options.size() == 0 || options.contains("latest_msg"))
             {
                 logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                         ": Client.handle_rt_request for latest_msg");

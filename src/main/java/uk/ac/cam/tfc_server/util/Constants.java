@@ -44,6 +44,8 @@ public class Constants {
     public static final String SOCKET_RT_PING = "rt_ping"; // basic ping-pong connection test message
     public static final String SOCKET_RT_PONG = "rt_pong";
     public static final String SOCKET_RT_DATA = "rt_data"; // msg_type data records RTMonitor -> client
+    public static final String SOCKET_RT_OK = "rt_ok"; // 'OK' response RTMonitor -> client
+    public static final String SOCKET_RT_NOK = "rt_nok"; // 'NOT OK' response RTMonitor -> client
 
     // Rita
     public static final String SOCKET_ZONE_CONNECT = "zone_connect"; // msg_type zone_plot.hbs initial connect
