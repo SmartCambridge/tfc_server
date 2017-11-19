@@ -48,6 +48,7 @@ import java.util.*;
 // other tfc_server classes
 import uk.ac.cam.tfc_server.util.Constants;
 import uk.ac.cam.tfc_server.util.Log;
+import uk.ac.cam.tfc_server.util.Position;
 
 public class RTMonitor extends AbstractVerticle {
 
@@ -726,13 +727,7 @@ public class RTMonitor extends AbstractVerticle {
                 return;
             }
 
-            Subscription s = new Subscription();
-
-            s.request_id = request_id;
-
-            s.key_is_record_index = key_is_record_index;
-
-            s.msg = sock_msg;
+            Subscription s = new Subscription(sock_msg, request_id, key_is_record_index);
 
             subscriptions.put(request_id, s);
 
@@ -780,7 +775,7 @@ public class RTMonitor extends AbstractVerticle {
             for (String request_id: subscriptions.keySet())
             {
                 Subscription s = subscriptions.get(request_id);
-                JsonArray filters = s.msg.getJsonArray("filters");
+                Filters filters = s.filters;
 
                 // Multiple filters in a single subscription are an AND
 
@@ -792,7 +787,7 @@ public class RTMonitor extends AbstractVerticle {
                     logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                                ": Client.update apply filters to whole eventbus msg");
 
-                    if (test_filters(filters, eventbus_msg))
+                    if (filters.test(eventbus_msg))
                     {
                         // filter succeeded, so send whole message
                         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
@@ -816,7 +811,7 @@ public class RTMonitor extends AbstractVerticle {
                     for (int record_num=0; record_num<records.size(); record_num++)
                     {
                         JsonObject record = records.getJsonObject(record_num);
-                        if (test_filters(filters, record))
+                        if (filters.test(record))
                         {
                             filtered_records.add(record);
                         }
@@ -865,14 +860,15 @@ public class RTMonitor extends AbstractVerticle {
                 return;
             }
 
-            JsonArray filters;
-
             JsonArray options;
+
+            Filters filters;
 
             // ignore incoming messages that fail to parse as Json
             try
             {
-                filters = sock_msg.getJsonArray("filters", new JsonArray());
+                JsonArray filters_property = sock_msg.getJsonArray("filters", new JsonArray());
+                filters = new Filters(filters_property);
             }
             catch (ClassCastException e)
             {
@@ -993,14 +989,14 @@ public class RTMonitor extends AbstractVerticle {
         }
 
         // return a JsonArray from a filtered records Hashtable (e.g. monitor latest_records)
-        private JsonArray get_filtered_records(JsonArray filters, Hashtable<String, JsonObject> records)
+        private JsonArray get_filtered_records(Filters filters, Hashtable<String, JsonObject> records)
         {
             JsonArray filtered_records = new JsonArray();
 
             for (String key: records.keySet())
             {
                 JsonObject record = records.get(key);
-                if (test_filters(filters, record))
+                if (filters.test(record))
                 {
                     filtered_records.add(record);
                 }
@@ -1008,70 +1004,6 @@ public class RTMonitor extends AbstractVerticle {
 
             return filtered_records;
         }
-
-        // Test (AND) a JsonArray set of filters against a JsonObject data record
-        private boolean test_filters(JsonArray filters, JsonObject record)
-        {
-            
-            // An empty filters array always succeeds
-            if (filters == null || filters.size() == 0)
-            {
-                return true;
-            }
-
-            // start with 'filter_passed = true' and set to false if any filter fails
-            boolean filters_passed = true;
-
-            // test all the filters on the eventbus_msg and send on websocket if it passes
-            for (int filter_num=0; filter_num<filters.size(); filter_num++)
-            {
-                JsonObject filter = filters.getJsonObject(filter_num);
-
-                if (!test_filter(filter, record))
-                {
-                    filters_passed = false;
-                }
-            }
-
-            //logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-            //         ": tested filter"+filters.toString()+(filters_passed?"passed":"failed"));
-            return filters_passed;
-        } // end test_filters()
-
-        // Test a JsonObject single filter
-        private boolean test_filter(JsonObject filter, JsonObject record)
-        {
-            // Given a filter say { "test": "=", "key": "VehicleRef", "value": "SCNH-35224" }
-            String key = filter.getString("key");
-            if (key == null)
-            {
-                return false;
-            }
-
-            //DEBUG TODO allow numeric value
-            String value = filter.getString("value");
-            if (value == null)
-            {
-                return false;
-            }
-
-            // test can default to "="
-            String test = filter.getString("test");
-            if (test == null)
-            {
-                test = "=";
-            }
-
-            // Try and pick out the property "key" from the data record
-            String record_value = record.getString(key);
-            if (record_value == null)
-            {
-                return false;
-            }
-
-            //DEBUG TODO allow different tests than just "="
-            return record_value.equals(value);
-        } // end test_filter()
 
         public String toHtml()
         {
@@ -1085,6 +1017,191 @@ public class RTMonitor extends AbstractVerticle {
 
     } // end class Client
 
+    // Client subscription filter e.g. { "test": "=", "key": "A>B", "value": "X" }
+    class Filter {
+        public JsonObject msg;
+
+        Filter(JsonObject msg)
+        {
+            this.msg = msg;
+        }
+
+        // Test a JsonObject records against this Filter
+        public boolean test(JsonObject record)
+        {
+            // test can default to "="
+            String test = msg.getString("test");
+            if (test == null)
+            {
+                test = "=";
+            }
+
+            switch (test)
+            {
+                case "=": 
+                    return test_equals(record);
+
+                case "inside":
+                    return test_inside(record);
+
+                default:
+                    logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                        ": Filter.test '"+test+"' not recognised");
+                    break;
+            }
+            return false;
+        } // end Filter.test()
+
+        private boolean test_equals(JsonObject record)
+        {
+            // Given a filter say { "test": "=", "key": "VehicleRef", "value": "SCNH-35224" }
+            String key = msg.getString("key");
+            if (key == null)
+            {
+                return false;
+            }
+
+            //DEBUG TODO allow numeric value
+            String value = msg.getString("value");
+            if (value == null)
+            {
+                return false;
+            }
+
+            // Try and pick out the property "key" from the data record
+            String record_value = record.getString(key);
+            if (record_value == null)
+            {
+                return false;
+            }
+
+            //DEBUG TODO allow different tests than just "="
+            return record_value.equals(value);
+        } // end Filter.test_equals()
+
+        private boolean test_inside(JsonObject record)
+        {
+            //DEBUG TODO implement this
+            // Example filter:
+            //   { "test": "inside",
+            //     "lat_key": "Latitude",
+            //     "lng_key": "Longitude",
+            //     "points": [
+            //         {  "lat": 52.21411510, "lng": 0.09916394948 },
+            //         {  "lat": 52.20885583, "lng": 0.14877408742 },
+            //         {  "lat": 52.19170630, "lng": 0.13778775930 },
+            //         {  "lat": 52.19496839, "lng": 0.10053724050 }
+            //     ]
+            //   }
+
+            //DEBUG TODO move this into the Subscription constructor for speedup
+            String lat_key = msg.getString("lat_key", "acp_lat");
+
+            String lng_key = msg.getString("lng_key", "acp_lng");
+
+            JsonArray points = msg.getJsonArray("points");
+
+            ArrayList<Position> polygon = new ArrayList<Position>();
+
+            for (int i=0; i<points.size(); i++)
+            {
+                polygon.add(new Position(points.getJsonObject(i)));
+            }
+
+            double lat;
+            double lng;
+            
+            try
+            {
+                lat = get_double(record, lat_key);
+
+                lng = get_double(record, lng_key);
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
+
+            Position pos = new Position(lat,lng);
+
+            // ah, all ready, now we can call the 'inside' test of the Position.
+            return pos.inside(polygon);
+
+        } // end Filter.test_inside()
+
+        // Get a 'double' from the data record property 'key'
+        // e.g. return the value of a "Latitude" property.
+        // Note this could be a string or a number...
+        private double get_double(JsonObject record, String key)
+        {
+            try
+            {
+                return record.getDouble(key);
+            }
+            catch (ClassCastException e)
+            {
+                return Double.parseDouble(record.getString(key));
+            }
+            //throw new Exception("get_double failed to parse number");
+        }
+
+    } // end class Filter
+
+    // List of filters in a given subscription
+    class Filters {
+        private ArrayList<Filter> filters;
+
+        public JsonArray msg;
+
+        // Construct new Filters object from "filters" JsonArray in client subscription
+        Filters(JsonArray filters)
+        {
+            msg = filters;
+
+            this.filters = new ArrayList<Filter>();
+
+            if (filters != null)
+            {
+                // initialize the filters ArrayList with JsonObject filters from msg 
+                for (int filter_num=0; filter_num<filters.size(); filter_num++)
+                {
+                    this.filters.add(new Filter(filters.getJsonObject(filter_num)));
+                }
+            }
+        }
+
+        // Test (AND) filters against a JsonObject data record
+        public boolean test(JsonObject record)
+        {
+            
+            // An empty filters array always succeeds
+            if (filters.size() == 0)
+            {
+                return true;
+            }
+
+            // start with 'filter_passed = true' and set to false if any filter fails
+            boolean filters_passed = true;
+
+            // test all the filters on the eventbus_msg and send on websocket if it passes
+            for (int filter_num=0; filter_num<filters.size(); filter_num++)
+            {
+                Filter filter = filters.get(filter_num);
+
+                if (!filter.test(record))
+                {
+                    filters_passed = false;
+                }
+            }
+
+            //logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+            //         ": tested filter"+filters.toString()+(filters_passed?"passed":"failed"));
+            return filters_passed;
+        } // end Filters.test()
+
+
+    } // end class Filters
+
     // Subscription to the eventbus message data
     // Each eventbus message may contain a JsonArray of multiple data records
     // Each client can have multiple subscriptions
@@ -1092,6 +1209,29 @@ public class RTMonitor extends AbstractVerticle {
         public String request_id;
         public boolean key_is_record_index; // optimization flag if subscription is filtering on 'primary key'
         public JsonObject msg; // 'rt_subscribe' websocket message when subscription was requested
+        public Filters filters;
+
+        // Construct a new Subscription
+        Subscription(JsonObject msg, String request_id, boolean key_is_record_index)
+        {
+            this.msg = msg;
+
+            this.request_id = request_id;
+
+            this.key_is_record_index = key_is_record_index;
+
+            this.msg = msg;
+
+            try
+            {
+                JsonArray filters_property = msg.getJsonArray("filters", new JsonArray());
+                filters = new Filters(filters_property);
+            }
+            catch (ClassCastException e)
+            {
+                filters = new Filters(new JsonArray());
+            }
+        }
 
         public String toString()
         {
