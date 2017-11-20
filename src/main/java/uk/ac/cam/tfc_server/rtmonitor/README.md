@@ -187,7 +187,10 @@ The Adaptive City Platform may server a web page that then opens a WebSocket con
 URI defined in the RTMonitor (in the example config() given, this would be ```/rtmonitor/sirivm```.
 
 Within RTMonitor, the connecting browser page is considered a *Client*. The client confirms
-its desire to connect by sending a Json message on the WebSocket ```{ "msg_type": "rt_connect" }```.
+its desire to connect by sending a Json message on the WebSocket:
+```
+{ "msg_type": "rt_connect" }
+```
 
 ###  Subscriptions
 
@@ -247,6 +250,38 @@ As another example of use, with SiriVM bus position data the records include
 starting and finishing bus stops for that particular vehicle journey. A
 web page could filter on both of those properties to display all buses on
 a particular route.
+
+```
+{ "msg_type": "rt_subscribe",
+  "request_id": "A",
+  "filters" : [
+      { "test": "=", "key": "DestinationRef", "value": "0500CCITY544" },
+      { "test": "=", "key": "OriginRef", "value": "0500CCITY517" }
+  ]
+}
+```
+
+The ```"test": "inside"``` filter will return records inside the clockwise polygon
+provided a list of points.
+
+```
+{ "msg_type": "rt_request",
+  "request_id": "A",
+  "options": [ "latest_records" ],
+  "filters": [
+      { "test": "inside",
+        "lat_key": "Latitude",
+        "lng_key": "Longitude",
+        "points": [
+            {  "lat": 52.182240996245156, "lng": 0.11908739805221558 },
+            {  "lat": 52.18318827670533, "lng": 0.14784067869186404 },
+            {  "lat": 52.170293005240666, "lng": 0.14775484800338748 },
+            {  "lat": 52.16671324666648, "lng": 0.12389391660690309 }
+        ]
+      }
+  ]
+}
+```
 
 ### Requests
 
