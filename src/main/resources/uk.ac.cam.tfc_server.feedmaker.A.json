@@ -45,6 +45,20 @@
                                          "file_suffix":   ".xml",
                                          "data_bin" :     "/media/tfc/cloudamber/sirivm/data_bin",
                                          "data_monitor" : "/media/tfc/cloudamber/sirivm/data_monitor"
+                                       },
+                                       { 
+                                         "feed_id" :   "sirivm_json",
+                                         "feed_type":  "feed_eventbus_msg",
+                                         "area_id" :   "cam",
+
+                                         "http.post":  true,
+
+                                         "file_suffix":   ".json",
+                                         "data_bin" :     "/media/tfc/sirivm_json/data_bin",
+                                         "data_monitor" : "/media/tfc/sirivm_json/data_monitor",
+
+                                         "msg_type" :  "feed_sirivm",
+                                         "address" :   "tfc.feedmaker.cloudamber.sirivm"
                                        }
                                      ]
           }

@@ -22,14 +22,14 @@
                     "source_address": "tfc.feedmaker.cloudamber.sirivm",
                     "destination_id": "tfc-app3.feedmaker.eventbus",
                     "destination_type": "feed_eventbus_msg",
-                    "url": "http://tfc-app3.cl.cam.ac.uk/feedmaker/eventbus/sirivm_json",
+                    "url": "http://tfc-app3.cl.cam.ac.uk/feedmaker/A/sirivm_json",
                     "http_token": "cam-test-siri"
                 },
                 { 
                     "source_address": "tfc.feedmaker.cloudamber.sirivm",
                     "destination_id": "tfc-app4.feedmaker.eventbus",
                     "destination_type": "feed_eventbus_msg",
-                    "url": "http://tfc-app4.cl.cam.ac.uk/feedmaker/eventbus/sirivm_json",
+                    "url": "http://tfc-app4.cl.cam.ac.uk/feedmaker/A/sirivm_json",
                     "http_token": "cam-test-siri"
                 }
             ]
