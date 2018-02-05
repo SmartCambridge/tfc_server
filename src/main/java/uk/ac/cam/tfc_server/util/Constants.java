@@ -38,6 +38,7 @@ public class Constants {
     // browser socket msg_type values
     // RTMonitor
     public static final String SOCKET_RT_CONNECT = "rt_connect"; // msg_type connect client -> RTMonitor
+    public static final String SOCKET_RT_CONNECT_OK = "rt_connect_ok"; // msg_type connect OK RTMonitor -> client
     public static final String SOCKET_RT_SUBSCRIBE = "rt_subscribe"; // msg_type data subscription client -> RTMonitor
     public static final String SOCKET_RT_UNSUBSCRIBE = "rt_unsubscribe"; // msg_type remove subscription client -> RTMonitor
     public static final String SOCKET_RT_REQUEST = "rt_request"; // client request for 'pull' data

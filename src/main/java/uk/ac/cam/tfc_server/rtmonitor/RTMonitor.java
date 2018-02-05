@@ -225,6 +225,8 @@ public class RTMonitor extends AbstractVerticle {
                     {
                        // Add client with this connection to the client table
                        create_rt_client(URI, sock.writeHandlerID(), sock, sock_msg);
+                       // Send rt_connect_ok in reply
+                       sock.write(Buffer.buffer("{ \"msg_type\": \""+Constants.SOCKET_RT_CONNECT_OK+"\" }"));
                     }
                     // A "rt_subscribe" / "rt_unsubscribe" subscription requests from this client
                     else if (sock_msg.getString("msg_type","").equals(Constants.SOCKET_RT_SUBSCRIBE))
