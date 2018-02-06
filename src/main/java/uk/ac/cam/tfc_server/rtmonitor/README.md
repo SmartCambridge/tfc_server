@@ -121,7 +121,7 @@ a given 'identifier' for a data reading that occured at a particular place and t
 }
 ```
 Note that RTMonitor is intended to be general-purpose, i.e. it cannot be expected to know
-the meaning of the actual sensor data but instead provides generally useful capabilties
+the meaning of the actual sensor data but instead provides generally useful capabilities
 to allow WebSocket access to eventbus messages.
 
 Note that in this example (SiriVM data) the position data for multiple buses (say 10..100)
@@ -326,4 +326,65 @@ for each value of that primary key.  These records may have been accumualated ov
 evenbus messages.
 * ```"previous_records"```: as ```"latest_records"``` above, except it will return the penultimate
 data record for each primary key value.
+
+## Overview of the Java classes within RTMonitor.java
+
+The Java classes defined in RTMonitor.java pretty much mirror the concepts described more generally above.
+
+RTMonitor first starts with an empty *MonitorTable* data structure, which will be initialized according to
+the contents of the Vertx json config() file containing the parameters of each *Monitor* to be launched.
+I.e. as with most tfc_server Verticles, a single RTMonitor instance is designed to run _multiple_
+Monitors.  So after startup is completed, the MonitorTable data structure will be populated with a number
+of Monitor objects.
+
+Each *Monitor* object is designed to subscribe to an eventbus address and listen for data requests on
+a websocket on a defined URL.  The definitions for these are given in the vertx config() file for the 
+RTMonitor. In addition to subscribing to the defined eventbus address, the Monitor will accumulate
+some 'state' from the incoming messages, for example the most recent and previous messages, such that
+these can be requested by clients directly without delay. If the Monitor is told (via vertx config()) the
+defining 'key' of the incoming records, such as MonitoredVehicleRef for the SiriVM data, then the Monitor
+can accumulate the most recent message from, in this example, each monitored vehicle.
+
+Each Monitor starts with an empty *ClientTable* object, intended to hold data about each Client that
+subsequently connects to request data (i.e. the websocket handle to be used to exchange messages, and
+the parameters of the data subscriptions).
+
+When a web page connects to the Monitor (via the websocket on the defined URL), a *Client* object is
+created and added to the Clients list contained within that Monitor.  The Client object includes the handle
+to the websocket, a unique ID allocated to the client, and initially contains an empty *Subscriptions*
+object that will accumulate the active subscription data requests as they come in from the Client. Note
+that all interactions between the RTMonitor and the connected web page are in the form of messages exchanged
+via the websocket in an agreed Json format.
+
+After connecting, a Client can be expected to send one or more formatted Json messages to
+RTMonitor requesting data.
+This data is implicitly to be data records from the eventbus address to which the Monitor is subscribing.
+If the data request is a single request for existing data accumulated in the Monitor, then the results
+can be immediately sent and that particular 'transaction' is completed.
+If the data request is for an ongoing subscription to the eventbus messages, then a *Subscription* object 
+is created containing the subscription parameters which is added to the Client's Subscriptions list.
+
+As a reminder from earlier, here is an example of a typical subscription (in this case for SiriVM bus
+position data, but note that RTMonitor is essentially independent of the format of the actual data
+records being requested).
+
+```
+{ "msg_type": "rt_subscribe",
+  "request_id": "A",
+  "filters" : [
+      { "test": "=", "key": "DestinationRef", "value": "0500CCITY544" },
+      { "test": "=", "key": "OriginRef", "value": "0500CCITY517" }
+  ]
+}
+```
+
+The *Subscription* object (in the Subscriptions list of the Client) contains a copy of the request
+message (as a JsonObject) and a *Filters* object containing the list of filters defined in the request
+(in this example the two DestinationRef=0500CCITY544 and OriginRef=0500CCITY517). Each filter is 
+(surprise) stored in a *Filter* object.
+
+The *Filter* object includes (crucially) a 'test(data record)' method which returns true or false
+depending upon the filter succeeding or failing.  The *Filters* object also contains a 'test(data record)'
+methos that simply calls the same method for each of its Filter objects and returns true if they all succeed.
+I.e. the filters in a given request are 'AND'ed together.
 

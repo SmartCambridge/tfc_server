@@ -52,7 +52,7 @@ import uk.ac.cam.tfc_server.util.Position;
 
 public class RTMonitor extends AbstractVerticle {
 
-    private final String VERSION = "0.08";
+    private final String VERSION = "0.10";
     
     // from config()
     public int LOG_LEVEL;             // optional in config(), defaults to Constants.LOG_INFO
@@ -819,19 +819,16 @@ public class RTMonitor extends AbstractVerticle {
                         }
                     }
 
-                    // If we have NO filtered records then return
-                    if (filtered_records.size() == 0)
+                    // If we have a set of filtered records we can send as "rt_data" on client socket
+                    if (filtered_records.size() > 0)
                     {
-                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                               ": Client.update 0 filtered records");
-                        return;
-                    }
-                    // else we have a set of filtered records we can send as "rt_data" on client socket
-                    else
-                    {
+                        // updated accumulated record count for the current subscription
+                        s.record_count += filtered_records.size();
+
                         // Woo we have successfully found records within the filter scope
                         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                               ": Client.update sending "+filtered_records.size()+" filtered records");
+                               ": Client.update sending "+filtered_records.size()+
+                               " filtered records (subscription total "+s.record_count+")");
 
                         // Build the data object to be sent in response to this subscription
                         JsonObject rt_data = new JsonObject();
@@ -839,6 +836,13 @@ public class RTMonitor extends AbstractVerticle {
                         rt_data.put("request_data", filtered_records);
                         rt_data.put("request_id", request_id);
                         sock.write(Buffer.buffer(rt_data.toString()));
+                    }
+                    else
+                    {
+                        // If we have NO filtered records then do nothing (and move on to next subscription)
+                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                               ": Client.update 0 filtered records"+
+                               " (subscription total "+s.record_count+")");
                     }
 
                 }
@@ -1009,11 +1013,12 @@ public class RTMonitor extends AbstractVerticle {
 
         public String toHtml()
         {
-            String html = UUID+"<br/>";
+            String html = "<div class='client'><h4>Client "+UUID+"</h4>";
             for (String request_id: subscriptions.keySet())
             {
-                html += subscriptions.get(request_id).toHtml()+"<br/>";
+                html += subscriptions.get(request_id).toHtml();
             }
+            html += "</div>";
             return html;
         }
 
@@ -1211,7 +1216,8 @@ public class RTMonitor extends AbstractVerticle {
         public String request_id;
         public boolean key_is_record_index; // optimization flag if subscription is filtering on 'primary key'
         public JsonObject msg; // 'rt_subscribe' websocket message when subscription was requested
-        public Filters filters;
+        public Filters filters; // the parsed 'filters' data given in the websocket request
+        public int record_count; // the accumulated count of data records that have been sent via this subscription
 
         // Construct a new Subscription
         Subscription(JsonObject msg, String request_id, boolean key_is_record_index)
@@ -1223,6 +1229,8 @@ public class RTMonitor extends AbstractVerticle {
             this.key_is_record_index = key_is_record_index;
 
             this.msg = msg;
+
+            this.record_count = 0;
 
             try
             {
@@ -1242,7 +1250,7 @@ public class RTMonitor extends AbstractVerticle {
 
         public String toHtml()
         {
-            return msg.toString();
+            return "<div class='subscription'>Records sent: "+record_count+", "+msg.toString()+"</div>";
         }
     } // end class Subscription
 
@@ -1400,12 +1408,12 @@ public class RTMonitor extends AbstractVerticle {
 
         public String toHtml()
         {
-            String html = "<p>";
+            String html = "<div>";
             for (String UUID: client_table.keySet())
             {
                 html += client_table.get(UUID).toHtml();
             }
-            html += "</p>";
+            html += "</div>";
             return html;
         }
 
@@ -1425,7 +1433,9 @@ public class RTMonitor extends AbstractVerticle {
         Set<String> keys = monitors.keySet();
         for (String key: keys)
         {
+            page += "<div><h3>Monitor "+key+"</h3>";
             page += monitors.get(key).toHtml();
+            page += "</div>";
         }
         page += "</body></html>";
         return page;
