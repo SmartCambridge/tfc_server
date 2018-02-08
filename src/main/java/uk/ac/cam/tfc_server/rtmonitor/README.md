@@ -51,6 +51,24 @@ Each 'Monitor' is launched as a result of an entry in the RTMonitor json config 
         }
 }
 ```
+
+Note the Monitor configuration fields:
+* ```http.uri:``` This is the web address the Monitor will listen on to respond to clients
+connecting via a websocket.
+* ```address:``` This is the eventbus address the Monitor will subscribe to on behalf of its future
+clients, providing the data records that the clients can subscribe to.
+* ```records_array:``` It is common for the actual data records from the original source (e.g. a remote
+sensor) to be embedded within a JsonArray property of the eventbus message.  If so, ```records_array```
+is the name of that property. If the eventbus messages are coming from a FeedMaker, then the property will
+usually be ```request_data``` as in the example above. This requirement arises because sensors (or controlling
+servers) often send the data records in 'batches' (e.g. the sensor readings for the past 5 minutes) and in this case
+the eventbus message will contain a 'batch' (i.e. JsonArray) of data records rather than a single one.
+* ```record_index:``` If the data records have a defining 'key', e.g. if the records are sensor data then
+typically each record will contain the 'id' of the sensor that transmitted the original data, then the property
+in the data record that contains this key can be given in ```record_index```. For SiriVM bus position data, then
+the original 'sensor' was a vehicle, and the unique vehicle identifier is given within the data record as the property
+```VehicleRef``` as in the example above.
+
 In the example above, one Monitor is launched which will listen to the eventbus address
 tfc.feedmaker.cloudamber.sirivm.  It will also listen for WebSocket connect requests coming in
 on port 8099, uri /rtmonitor/sirivm.  In our case we use nginx to allow those requests to 
@@ -66,17 +84,63 @@ bus or an air quality sensor) will transmit its data to the Adaptive City Platfo
 will be received by a feed handler (e.g. the ACP module *FeedMaker*) and broadcast on the
 eventbus as a Json-format message.
 
-These are the messages RTMonitor will receive and process.
+These are the messages RTMonitor will receive and process (an example of bus-position SiriVM data is given
+below).
 
 Note that it is common for a single eventbus message to contain *multiple* data records.  For
 example a car park management system may transmit occupancy figures for multiple car parks in
 a single message.  A SiriVM message from a bus company may contain the timestamped positions
 of multiple buses.
 
+Each eventbus message will typically have the format similar to this example:
+```
+{   "module_name":"feedmaker",
+    "module_id":"A",
+    "msg_type":"siri_vm_flat",
+    "feed_id":"cloudamber_siri_vm",
+    "filename":"1506931281.619_2017-10-02-09-01-21",
+    "filepath":"2017/10/02",
+    "ts":"1506931281.619",
+    "request_data":[ { JsonObject content of a data record },
+                     { JsonObject content of a data record },
+                     ...
+                   ]
+}
+```
+
 ### data records
 
 This is the 'atomic' record of the sensor data, e.g. the timestamped position of a single
-bus, or the timestamped occupancy of a single car park.
+bus, or the timestamped occupancy of a single car park. The ```record_index``` property of the Monitor
+config identifies an optional property in each data record (such as ```VehicleRef```) that contains the
+data source reference identifier.  This allows RTMonitor to accumulate state for each sensor such as its most
+recent data record.
+
+### The data records sent to the subscribing clients
+
+Much more detail on the way RTMonitor works is provided below, but here is the message format returned to
+a client with a 'subscription' to data, as  periodic messages sent to the client via its
+websocket with the format below:
+```
+{
+    "msg_type": "rt_data",
+    "request_id": "bus_stop_widget1_A",
+    "request_data":[ { JsonObject content of a data record },
+                     { JsonObject content of a data record },
+                     ...
+                   ]
+}
+```
+Each client websocket message will be sent directly as a result of an incoming eventbus message containing data records that
+successfully match the criteria given in the client subscription. The 'data record' elements of the property 
+```request_data``` are a subset of the data records contained in the incoming eventbus message.
+
+It is possible for a client subscription to contain no filtering criteria (i.e. effectively a 'request all'), in which case
+RTMonitor acts as an
+eventbus address to websocket bridge for that client and every eventbus message on the monitored eventbus address will be
+sent to the client unchanged, in its entirety.  Note that in this special case the websocket message, as an exact copy of the
+eventbus message, contains the original FeedMaker (for example) metadata such as ```ts``` but does *not* contain the usual
+RTMonitor metadata ```request_id``` and ```"msg_type": "rt_data"```.
 
 ### records\_array and record\_index eventbus message attributes
 
