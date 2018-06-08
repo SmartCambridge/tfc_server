@@ -4,7 +4,7 @@
     <groupId>uk.ac.cam.tfc_server</groupId>
     <artifactId>tfc_server</artifactId>
     <packaging>jar</packaging>
-    <version>3.3.3</version>
+    <version>3.5.2</version>
     <name>tfc_server</name>
     <url>http://maven.apache.org</url>
     <properties>
@@ -64,6 +64,7 @@
             <target>1.8</target>
             <compilerArgs>
               <arg>-Xlint:unchecked</arg>
+              <arg>-Xlint:deprecation</arg>
             </compilerArgs>
           </configuration>
         </plugin>

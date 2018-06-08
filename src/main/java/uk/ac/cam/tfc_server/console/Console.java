@@ -138,7 +138,9 @@ public class Console extends AbstractVerticle {
             
             ctx.put("config_base_uri", BASE_URI);
             
-            template_engine.render(ctx, "templates/console.hbs", res -> {
+	    // Weirdness: render() seems to drop the first character of the
+	    // template name. So doubled as a work around.
+            template_engine.render(ctx, "templates", "cconsole.hbs", res -> {
                     if (res.succeeded())
                     {
                         ctx.response().end(res.result());
