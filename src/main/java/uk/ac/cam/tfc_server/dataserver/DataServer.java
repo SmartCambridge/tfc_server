@@ -40,14 +40,6 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.StaticHandler;
-//import io.vertx.ext.web.handler.sockjs.BridgeOptions;
-//import io.vertx.ext.web.handler.sockjs.PermittedOptions;
-//import io.vertx.ext.web.handler.sockjs.SockJSHandler;
-//import io.vertx.ext.web.handler.sockjs.SockJSHandlerOptions;
-//import io.vertx.ext.web.handler.sockjs.SockJSSocket;
-
-// handlebars for static .hbs web template files
-//import io.vertx.ext.web.templ.HandlebarsTemplateEngine;
 
 import java.io.*;
 import java.time.*;
@@ -84,7 +76,6 @@ public class DataServer extends AbstractVerticle {
     private final int SYSTEM_STATUS_RED_SECONDS = 35;
 
     public  Log logger;
-    //public  HandlebarsTemplateEngine template_engine;
 
     // Vertx event bus
     private EventBus eb = null; // at least for system_status messages, not for the browser
@@ -145,20 +136,6 @@ public class DataServer extends AbstractVerticle {
     FeedAPI feed_api = new FeedAPI(vertx, this, router);
     
     AQAPI aq_api = new AQAPI(vertx, this, router);
-    
-    // **************************************
-    // **************************************
-    // create handlers for template pages
-    // **************************************
-    // **************************************
-
-    //template_engine = HandlebarsTemplateEngine.create();
-
-    //DataPlot data_plot = new DataPlot(vertx, this, router);
-
-    //DataRaw data_raw = new DataRaw(vertx, this, router);
-
-    //DataMap data_map = new DataMap(vertx, this, router);
     
     // ********************************
     // create handler for static pages
