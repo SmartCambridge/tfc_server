@@ -47,9 +47,6 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.StaticHandler;
 
-// handlebars for static .hbs web template files
-import io.vertx.ext.web.templ.HandlebarsTemplateEngine;
-
 import java.io.*;
 import java.time.*;
 import java.time.format.*;
@@ -122,45 +119,6 @@ public class Console extends AbstractVerticle {
             }
         });
     
-    // *****************************************
-    // create handler for console template pages
-    // *****************************************
-
-    final HandlebarsTemplateEngine template_engine = HandlebarsTemplateEngine.create();
-    
-    router.route(HttpMethod.GET, "/"+BASE_URI).handler( ctx -> {
-
-            ctx.put("config_version", VERSION);
-            
-            ctx.put("config_eb_system_status", EB_SYSTEM_STATUS);
-            
-            ctx.put("config_module_id", MODULE_ID);
-            
-            ctx.put("config_base_uri", BASE_URI);
-            
-	    // Weirdness: render() seems to drop the first character of the
-	    // template name. So doubled as a work around.
-            template_engine.render(ctx, "templates", "cconsole.hbs", res -> {
-                    if (res.succeeded())
-                    {
-                        ctx.response().end(res.result());
-                    }
-                    else
-                    {
-                        ctx.fail(res.cause());
-                    }
-                });
-        } );
-
-    // create handler for static resources
-
-    StaticHandler static_handler = StaticHandler.create();
-    static_handler.setWebRoot(WEBROOT);
-    static_handler.setCachingEnabled(false);
-    router.route(HttpMethod.GET, "/static/*").handler( static_handler );
-
-    System.out.println("Console."+MODULE_ID+": StaticHandler "+WEBROOT+" Started for /static/*");
-
     // ************************************
     // create listener to system status eventbus address and
     // handler for GET from /console/status
