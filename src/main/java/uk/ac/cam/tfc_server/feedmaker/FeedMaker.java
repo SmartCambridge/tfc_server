@@ -311,7 +311,7 @@ public class FeedMaker extends AbstractVerticle {
 
         // Do a GET to the config feed hostname/uri
         http_clients.get(FEED_ID)
-           .getNow(config.getString("http.uri"), new Handler<HttpClientResponse>() {
+           .get(config.getString("http.uri"), new Handler<HttpClientResponse>() {
 
             // this handler called when GET response is received
             @Override
@@ -339,7 +339,7 @@ public class FeedMaker extends AbstractVerticle {
                     }
                 });
             }
-        });
+	}).setFollowRedirects(true).end();
     } // end get_feed()
 
     // ***********************************************    
