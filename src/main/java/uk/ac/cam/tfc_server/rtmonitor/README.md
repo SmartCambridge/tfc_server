@@ -253,7 +253,13 @@ URI defined in the RTMonitor (in the example config() given, this would be ```/r
 Within RTMonitor, the connecting browser page is considered a *Client*. The client confirms
 its desire to connect by sending a Json message on the WebSocket:
 ```
-{ "msg_type": "rt_connect" }
+{ "msg_type": "rt_connect",
+  "client_data": { "rt_client_id": <String rt_client_id>,
+                   "rt_client_name": <String rt_client_name>,
+                   "rt_client_url": <String url of web page client>,
+                   "rt_token": <String auth token>
+                 }
+}
 ```
 
 ###  Subscriptions

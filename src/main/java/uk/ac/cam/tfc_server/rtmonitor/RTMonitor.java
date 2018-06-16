@@ -52,7 +52,7 @@ import uk.ac.cam.tfc_server.util.Position;
 
 public class RTMonitor extends AbstractVerticle {
 
-    private final String VERSION = "0.10";
+    private final String VERSION = "0.20";
     
     // from config()
     public int LOG_LEVEL;             // optional in config(), defaults to Constants.LOG_INFO
@@ -91,7 +91,7 @@ public class RTMonitor extends AbstractVerticle {
 
         logger = new Log(LOG_LEVEL);
     
-        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": Version "+VERSION+
+        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": V"+VERSION+
                    " started on port "+HTTP_PORT+" (log_level="+LOG_LEVEL+")");
 
         eb = vertx.eventBus();
@@ -508,13 +508,7 @@ public class RTMonitor extends AbstractVerticle {
             return index_parent.getString(record_index.get(record_index.size()-1));
         }
 
-        // Add a client subscriber to this Monitor
-        // The sock_msg contains a subscription e.g.
-        // { "msg_type": "rt_connect",
-        //   "filters": [
-        //                { "key": "VehicleRef", "value": "SCCM-19612" }
-        //              ]
-        // }
+        // Add a client subscriber to this Monitor (on receipt of rt_connect message)
         public String add_client(String UUID, SockJSSocket sock, JsonObject sock_msg)
         {
             // a simple add of the client
@@ -611,7 +605,7 @@ public class RTMonitor extends AbstractVerticle {
             String html = "<p>Subscribes to eventbus: <b>"+address+"</b></p>"+
                     "<p>Data records in message property: <b>"+array_to_string(records_array)+"</b></p>"+
                     "<p>Record sensor identifier property: <b>"+array_to_string(record_index)+"</b></p>";
-            html += "<p>Client count for this monitor: <b>"+clients.size()+"</b></p>";
+            html += "<p>This Monitor has <b>"+clients.size()+"</b> client(s)</p>";
             html += clients.toHtml();
             return html;
         }
@@ -1018,6 +1012,8 @@ public class RTMonitor extends AbstractVerticle {
         // Return block of info about this client as HTML
         public String toHtml()
         {
+            // Note these values are given in the rt_connect message 'client_data' property
+            // so we don't particularly trust them.
             String client_id = client_data.getString("rt_client_id","unknown-client-id");
             String client_name = client_data.getString("rt_client_name","unknown-client-name");
             String client_url = client_data.getString("rt_client_url","unknown-client-url");
@@ -1030,12 +1026,14 @@ public class RTMonitor extends AbstractVerticle {
             html += "<p>Client token: <b>"+token+"</b></p>";
             
             int subscription_count = subscriptions.size();
-            html += "<p>Client subscription count: <b>"+subscription_count+"</b></p>";
+            html += "<p>This Client has <b>"+subscription_count+"</b> subscriptions</p>";
 
+            html += "<table>";
             for (String request_id: subscriptions.keySet())
             {
                 html += subscriptions.get(request_id).toHtml();
             }
+            html += "</table>";
             html += "</div>";
             return html;
         }
@@ -1236,6 +1234,7 @@ public class RTMonitor extends AbstractVerticle {
         public JsonObject msg; // 'rt_subscribe' websocket message when subscription was requested
         public Filters filters; // the parsed 'filters' data given in the websocket request
         public int record_count; // the accumulated count of data records that have been sent via this subscription
+        public ZonedDateTime created;
 
         // Construct a new Subscription
         Subscription(JsonObject msg, String request_id, boolean key_is_record_index)
@@ -1249,6 +1248,8 @@ public class RTMonitor extends AbstractVerticle {
             this.msg = msg;
 
             this.record_count = 0;
+
+            this.created = ZonedDateTime.now(Constants.PLATFORM_TIMEZONE);
 
             try
             {
@@ -1268,7 +1269,11 @@ public class RTMonitor extends AbstractVerticle {
 
         public String toHtml()
         {
-            return "<div class='subscription'>Records sent: "+record_count+", "+msg.toString()+"</div>";
+            return "<tr class='subscription'>"+
+                   "<td>"+created.toString()+"</td>"+
+                   "<td>"+record_count+"</td>"+
+                   "<td>"+msg.toString()+"</td>"+
+                   "</tr>";
         }
     } // end class Subscription
 
@@ -1442,10 +1447,10 @@ public class RTMonitor extends AbstractVerticle {
     // String content of this verticle 'home' page
     private String home_page()
     {
-        String page = "<html><head><title>RTMonitor v"+VERSION+"</title>";
+        String page = "<html><head><title>RTMonitor V"+VERSION+"</title>";
         page +=    "<style> body { font-family: sans-serif;}</style></head><body>";
         page +=    "<h1>Adaptive City Platform</h1>";
-        page +=    "<p>RTMonitor version "+VERSION+": "+MODULE_NAME+"."+MODULE_ID+"</p>";
+        page +=    "<p>RTMonitor V"+VERSION+": "+MODULE_NAME+"."+MODULE_ID+"</p>";
         page +=    "<p>BASE_URI="+BASE_URI+"</p>";
         page +=     "<p>This RTMonitor has "+monitors.size()+" monitor(s):</p>"; 
 
