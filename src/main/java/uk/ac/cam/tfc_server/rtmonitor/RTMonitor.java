@@ -608,10 +608,10 @@ public class RTMonitor extends AbstractVerticle {
         // Return some human-readable description of this monitor as an HTML string
         public String toHtml()
         {
-            String html = "<p><b>"+address+"</b>, records in <b>"+array_to_string(records_array)+
-                    "</b>, record identifier in <b>"+array_to_string(record_index)+
-                    "</b></p>";
-            html += "<p>Clients: "+clients.size()+"</p>";
+            String html = "<p>Subscribes to eventbus: <b>"+address+"</b></p>"+
+                    "<p>Data records in message property: <b>"+array_to_string(records_array)+"</b></p>"+
+                    "<p>Record sensor identifier property: <b>"+array_to_string(record_index)+"</b></p>";
+            html += "<p>Client count for this monitor: <b>"+clients.size()+"</b></p>";
             html += clients.toHtml();
             return html;
         }
@@ -715,6 +715,10 @@ public class RTMonitor extends AbstractVerticle {
         public SockJSSocket sock;   // actual socket reference
         public Hashtable<String,Subscription> subscriptions; // The actual "rt_subscribe" subscription 
                                                              // packet from web client
+        public JsonObject client_data; // rt_client_id
+                                       // rt_client_name
+                                       // rt_client_url
+                                       // rt_token
 
         // RTMonitor has received a 'rt_subscribe' message, so add to relevant client
         public void add_subscription(JsonObject sock_msg, boolean key_is_record_index)
@@ -1011,9 +1015,23 @@ public class RTMonitor extends AbstractVerticle {
             return filtered_records;
         }
 
+        // Return block of info about this client as HTML
         public String toHtml()
         {
-            String html = "<div class='client'><h4>Client "+UUID+"</h4>";
+            String client_id = client_data.getString("rt_client_id","unknown-client-id");
+            String client_name = client_data.getString("rt_client_name","unknown-client-name");
+            String client_url = client_data.getString("rt_client_url","unknown-client-url");
+            String token = client_data.getString("rt_token","unknown-token");
+            
+            String html = "<div class='client'><h3>Client: "+client_name+"</h3>";
+            html += "<p>Client url: <b>"+client_url+"</b></p>";
+            html += "<p>Client id: <b>"+client_id+"</b></p>";
+            html += "<p>Client websocket UUID: <b>"+UUID+"</b></p>";
+            html += "<p>Client token: <b>"+token+"</b></p>";
+            
+            int subscription_count = subscriptions.size();
+            html += "<p>Client subscription count: <b>"+subscription_count+"</b></p>";
+
             for (String request_id: subscriptions.keySet())
             {
                 html += subscriptions.get(request_id).toHtml();
@@ -1286,6 +1304,8 @@ public class RTMonitor extends AbstractVerticle {
             client.UUID = UUID;
 
             client.sock = sock;
+
+            client.client_data = sock_msg.getJsonObject("client_data", new JsonObject());
 
             // Create initially empty subscription list (will be indexed on "request_id")
             client.subscriptions = new Hashtable<String,Subscription>();
