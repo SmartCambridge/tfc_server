@@ -52,7 +52,7 @@ import uk.ac.cam.tfc_server.util.Position;
 
 public class RTMonitor extends AbstractVerticle {
 
-    private final String VERSION = "0.20";
+    private final String VERSION = "0.21";
     
     // from config()
     public int LOG_LEVEL;             // optional in config(), defaults to Constants.LOG_INFO
@@ -713,6 +713,26 @@ public class RTMonitor extends AbstractVerticle {
                                        // rt_client_name
                                        // rt_client_url
                                        // rt_token
+        public ZonedDateTime created;
+
+        private JsonObject msg; // rt_connect message with which this client was created
+
+        // Construct a new Client 
+        Client(String UUID, SockJSSocket sock, JsonObject msg)
+        {
+            this.UUID = UUID;
+
+            this.sock = sock;
+
+            this.msg = msg;
+
+            client_data = msg.getJsonObject("client_data", new JsonObject());
+
+            // Create initially empty subscription list (will be indexed on "request_id")
+            subscriptions = new Hashtable<String,Subscription>();
+
+            created = ZonedDateTime.now(Constants.PLATFORM_TIMEZONE);
+        }
 
         // RTMonitor has received a 'rt_subscribe' message, so add to relevant client
         public void add_subscription(JsonObject sock_msg, boolean key_is_record_index)
@@ -1019,7 +1039,7 @@ public class RTMonitor extends AbstractVerticle {
             String client_url = client_data.getString("rt_client_url","unknown-client-url");
             String token = client_data.getString("rt_token","unknown-token");
             
-            String html = "<div class='client'><h3>Client: "+client_name+"</h3>";
+            String html = "<div class='client'><h3>Client: "+client_name+". Connected "+created.toString()+"</h3>";
             html += "<p>Client url: <b>"+client_url+"</b></p>";
             html += "<p>Client id: <b>"+client_id+"</b></p>";
             html += "<p>Client websocket UUID: <b>"+UUID+"</b></p>";
@@ -1304,16 +1324,7 @@ public class RTMonitor extends AbstractVerticle {
             }
 
             // create new entry for sock_data
-            Client client = new Client();
-
-            client.UUID = UUID;
-
-            client.sock = sock;
-
-            client.client_data = sock_msg.getJsonObject("client_data", new JsonObject());
-
-            // Create initially empty subscription list (will be indexed on "request_id")
-            client.subscriptions = new Hashtable<String,Subscription>();
+            Client client = new Client(UUID, sock, sock_msg);
 
             logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                        ": ClientTable.add "+UUID);
