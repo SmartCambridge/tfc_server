@@ -52,7 +52,7 @@ import uk.ac.cam.tfc_server.util.Position;
 
 public class RTMonitor extends AbstractVerticle {
 
-    private final String VERSION = "0.21";
+    private final String VERSION = "1.22";
     
     // from config()
     public int LOG_LEVEL;             // optional in config(), defaults to Constants.LOG_INFO
@@ -68,6 +68,8 @@ public class RTMonitor extends AbstractVerticle {
     private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
     private final int SYSTEM_STATUS_AMBER_SECONDS = 25;
     private final int SYSTEM_STATUS_RED_SECONDS = 35;
+
+    private final int SYSTEM_PURGE_SECONDS = 5*60; // check for client purge every 5 mins
 
     private EventBus eb = null;
     private Log logger;
@@ -120,9 +122,17 @@ public class RTMonitor extends AbstractVerticle {
                 HttpServerResponse response = routingContext.response();
                 response.putHeader("content-type", "text/html");
 
-                response.end(home_page());
+                response.end(page_html("home", routingContext));
             });
         logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": serving homepage at "+BASE_URI+"/home");
+
+        router.route(BASE_URI+"/client/:id").handler( routingContext -> {
+
+                HttpServerResponse response = routingContext.response();
+                response.putHeader("content-type", "text/html");
+
+                response.end(page_html("client", routingContext));
+            });
 
         // iterate through all the monitors to be started
         for (int i=0; i<START_MONITORS.size(); i++)
@@ -131,6 +141,11 @@ public class RTMonitor extends AbstractVerticle {
         }
 
         http_server.requestHandler(router::accept).listen(HTTP_PORT);
+
+        // set up periodic 'client purge' to clear out clients 
+        vertx.setPeriodic(SYSTEM_PURGE_SECONDS * 1000 ,id -> {
+            purge_clients();
+        });
 
     } // end start()
 
@@ -348,6 +363,74 @@ public class RTMonitor extends AbstractVerticle {
 
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                 ": rt_request from client "+UUID+" for monitor "+URI);
+    }
+
+    // *****************************************************************************************
+    // *************  Purge clients                  *******************************************
+    // *****************************************************************************************
+    private void purge_clients()
+    {
+        // get the current time, will check the clients against this
+        ZonedDateTime now = ZonedDateTime.now(Constants.PLATFORM_TIMEZONE);
+
+        for (String key: monitors.keySet())
+        {
+            ClientTable clients = monitors.get(key).clients;
+
+            for (String UUID: clients.keySet())
+            {
+                Client c = clients.get(UUID);
+
+                Duration connected_time = Duration.between(c.created, now);
+
+                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                    ": purge test "+UUID+" "+connected_time.getSeconds());
+
+                // kick all clients older than 36 hours
+                if (connected_time.getSeconds() > 36*60*60)
+                {
+                    c.sock.close(); // disconnect this client
+
+                    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                        ": purged client rtroute"+UUID+" "+connected_time.getSeconds());
+                }
+
+                // test case: kick rtroute after 1 hour
+                else if (c.client_data.getString("rt_client_id","").equals("rtroute"))
+                {
+                    if (connected_time.getSeconds() > 60*60)
+                    {
+                        c.sock.close(); // disconnect this client
+
+                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                            ": purged client rtroute"+UUID+" "+connected_time.getSeconds());
+                    }
+                }
+
+                // smartpanel displays client_id starts with "--", kick after 10 mins
+                else if (c.client_data.getString("rt_client_id","").startsWith("--"))
+                {
+                    if (connected_time.getSeconds() > 10*60)
+                    {
+                        c.sock.close(); // disconnect this client
+
+                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                            ": purged client smartpanel display"+UUID+" "+connected_time.getSeconds());
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+    private String format_date(ZonedDateTime d)
+    {
+        return DateTimeFormatter.ofPattern("yyyy-MM-dd").format(d);
+    }
+
+    private String format_time(ZonedDateTime d)
+    {
+        return DateTimeFormatter.ofPattern("HH:mm").format(d);
     }
 
     // *****************************************************************************************
@@ -709,6 +792,8 @@ public class RTMonitor extends AbstractVerticle {
         public SockJSSocket sock;   // actual socket reference
         public Hashtable<String,Subscription> subscriptions; // The actual "rt_subscribe" subscription 
                                                              // packet from web client
+                                                             //
+                                       // Client info received on connection:
         public JsonObject client_data; // rt_client_id
                                        // rt_client_name
                                        // rt_client_url
@@ -812,6 +897,8 @@ public class RTMonitor extends AbstractVerticle {
                         // filter succeeded, so send whole message
                         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                                    ": Client.update filters succeeded, sending whole eventbus msg");
+                        // update count for this subscription
+                        s.record_count += 1;
                         sock.write(Buffer.buffer(eventbus_msg.toString()));
                     }
                 }
@@ -1030,7 +1117,9 @@ public class RTMonitor extends AbstractVerticle {
         }
 
         // Return block of info about this client as HTML
-        public String toHtml()
+        // full = true: return full details including subscriptions
+        // full = false: only return summary
+        public String toHtml(boolean full)
         {
             // Note these values are given in the rt_connect message 'client_data' property
             // so we don't particularly trust them.
@@ -1038,22 +1127,42 @@ public class RTMonitor extends AbstractVerticle {
             String client_name = client_data.getString("rt_client_name","unknown-client-name");
             String client_url = client_data.getString("rt_client_url","unknown-client-url");
             String token = client_data.getString("rt_token","unknown-token");
+            String layout_name = client_data.getString("layout_name","no layout");
+            String layout_owner = client_data.getString("layout_owner","-");
+            String display_name = client_data.getString("display_name","no display");
+            String display_owner = client_data.getString("display_owner","-");
             
-            String html = "<div class='client'><h3>Client: "+client_name+". Connected "+created.toString()+"</h3>";
-            html += "<p>Client url: <b>"+client_url+"</b></p>";
-            html += "<p>Client id: <b>"+client_id+"</b></p>";
-            html += "<p>Client websocket UUID: <b>"+UUID+"</b></p>";
-            html += "<p>Client token: <b>"+token+"</b></p>";
-            
-            int subscription_count = subscriptions.size();
-            html += "<p>This Client has <b>"+subscription_count+"</b> subscriptions</p>";
-
-            html += "<table>";
+            String html = "<div class='client'>";
+            html += "<h3><a href='client/"+UUID+"'>Client: "+client_name+"</a></h3>";
+            html += "<p><b>Client ref: </b>"+client_id;
+            html += " \""+layout_name+"\" ("+layout_owner+") --";
+            html += " \""+display_name+"\" ("+display_owner+")";
+            html += "</p>";
+            html += "<p><b>Connected: </b>"+format_date(created)+"&nbsp;"+format_time(created)+", ";
+            int record_count = 0;
+            // iterate the client subscriptions to get total record count
             for (String request_id: subscriptions.keySet())
             {
-                html += subscriptions.get(request_id).toHtml();
+                record_count += subscriptions.get(request_id).record_count;
             }
-            html += "</table>";
+            html += "<b>Records sent: </b>"+record_count+", ";
+            int subscription_count = subscriptions.size();
+            html += "<b>Subscriptions: </b>"+subscription_count+"</p>";
+
+            html += "<p><b>Url: </b><a href='"+client_url+"'>"+client_url+"</a></p>";
+
+            if (full)
+            {
+                html += "<p><b>Client websocket UUID: </b>"+UUID+"</p>";
+                html += "<p><b>Client token: </b>"+token+"</p>";
+                        
+                html += "<table>";
+                for (String request_id: subscriptions.keySet())
+                {
+                    html += subscriptions.get(request_id).toHtml();
+                }
+                html += "</table>";
+            } // end full listing
             html += "</div>";
             return html;
         }
@@ -1250,10 +1359,13 @@ public class RTMonitor extends AbstractVerticle {
     // Each client can have multiple subscriptions
     class Subscription {
         public String request_id;
-        public boolean key_is_record_index; // optimization flag if subscription is filtering on 'primary key'
+        public boolean key_is_record_index; // Optimization flag if subscription is 
+                                            // filtering on 'primary key'
+
         public JsonObject msg; // 'rt_subscribe' websocket message when subscription was requested
-        public Filters filters; // the parsed 'filters' data given in the websocket request
-        public int record_count; // the accumulated count of data records that have been sent via this subscription
+        public Filters filters; // The parsed 'filters' data given in the websocket request
+        public int record_count; // The accumulated count of data records that have
+                                 // been sent via this subscription
         public ZonedDateTime created;
 
         // Construct a new Subscription
@@ -1265,11 +1377,9 @@ public class RTMonitor extends AbstractVerticle {
 
             this.key_is_record_index = key_is_record_index;
 
-            this.msg = msg;
+            record_count = 0;
 
-            this.record_count = 0;
-
-            this.created = ZonedDateTime.now(Constants.PLATFORM_TIMEZONE);
+            created = ZonedDateTime.now(Constants.PLATFORM_TIMEZONE);
 
             try
             {
@@ -1290,7 +1400,7 @@ public class RTMonitor extends AbstractVerticle {
         public String toHtml()
         {
             return "<tr class='subscription'>"+
-                   "<td>"+created.toString()+"</td>"+
+                   "<td>"+format_date(created)+"&nbsp;"+format_time(created)+"</td>"+
                    "<td>"+record_count+"</td>"+
                    "<td>"+msg.toString()+"</td>"+
                    "</tr>";
@@ -1447,23 +1557,82 @@ public class RTMonitor extends AbstractVerticle {
             String html = "<div>";
             for (String UUID: client_table.keySet())
             {
-                html += client_table.get(UUID).toHtml();
+                html += client_table.get(UUID).toHtml(false);
             }
             html += "</div>";
             return html;
         }
 
     } // end class ClientTable
-   
+
+    // provide page as HTML string
+    private String page_html(String page_name, RoutingContext rc)
+    {
+        if (page_name.equals("home"))
+        {
+            return home_page();
+        }
+
+        if (page_name.equals("client"))
+        {
+            String id = rc.request().getParam("id");
+            return client_page(id);
+        }
+
+        return "<html><body>Page not found</body></html>";
+    }
+
+    private String client_page(String id)
+    {
+        if (id == null)
+        {
+            return "<html><body>No Client </body></html>";
+        }
+        // iterate the monitors to find the client
+        Client c = null;
+        Set<String> keys = monitors.keySet();
+        for (String key: keys)
+        {
+            c = monitors.get(key).clients.get(id);
+            if (c != null)
+            {
+                break;
+            }
+        }
+        String page = "<html><head><title>RTMonitor V"+VERSION+"</title>";
+        page += "<style>";
+        page += "body { font-family: sans-serif;}";
+        page += "p { margin-left: 30px; }";
+        page += "</style></head>";
+        page += "<body>";
+        page += "<h1>Adaptive City Platform: ";
+        page += "RTMonitor V"+VERSION+": "+MODULE_NAME+"."+MODULE_ID+"</h1>";
+        if (c == null)
+        {
+             page += "No client found";
+        }
+        else
+        {
+            page += c.toHtml(true); // full = true
+        }
+        page += "</body></html>";
+
+        return page;
+    }
+
     // String content of this verticle 'home' page
     private String home_page()
     {
         String page = "<html><head><title>RTMonitor V"+VERSION+"</title>";
-        page +=    "<style> body { font-family: sans-serif;}</style></head><body>";
-        page +=    "<h1>Adaptive City Platform</h1>";
-        page +=    "<p>RTMonitor V"+VERSION+": "+MODULE_NAME+"."+MODULE_ID+"</p>";
-        page +=    "<p>BASE_URI="+BASE_URI+"</p>";
-        page +=     "<p>This RTMonitor has "+monitors.size()+" monitor(s):</p>"; 
+        page += "<style>";
+        page += "body { font-family: sans-serif;}";
+        page += "p { margin-left: 30px; }";
+        page += "</style></head>";
+        page += "<body>";
+        page += "<h1>Adaptive City Platform: ";
+        page += "RTMonitor V"+VERSION+": "+MODULE_NAME+"."+MODULE_ID+"</h1>";
+        page += "<p>BASE_URI="+BASE_URI+"</p>";
+        page += "<p>This RTMonitor has "+monitors.size()+" monitor(s):</p>"; 
 
         // iterate the monitors
         Set<String> keys = monitors.keySet();
