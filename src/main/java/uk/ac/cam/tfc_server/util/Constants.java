@@ -1,5 +1,7 @@
 package uk.ac.cam.tfc_server.util;
 
+import java.time.ZoneId;
+
 // Constants used in tfc server platform
 
 public class Constants {
@@ -7,6 +9,7 @@ public class Constants {
 //
     // System-wide definition values
     public static final String PLATFORM_PREFIX = "acp_"; // will be used as global prefix to shared data e.g. "acp_lat"
+    public static final ZoneId PLATFORM_TIMEZONE = ZoneId.of("Europe/London");
 
     // FeedPlayer/FeedMaker msg_type values
     public static final String FEED_GTFS = "feed_gtfs"; // incoming binary Google protobuf GTFS data

@@ -46,6 +46,7 @@ import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientResponse;
+import io.vertx.core.http.HttpClientRequest;
 
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.eventbus.EventBus;
@@ -309,8 +310,7 @@ public class FeedMaker extends AbstractVerticle {
 
         final String FEED_ID = config.getString("feed_id");
 
-        // Do a GET to the config feed hostname/uri
-        http_clients.get(FEED_ID)
+        HttpClientRequest request = http_clients.get(FEED_ID)
            .get(config.getString("http.uri"), new Handler<HttpClientResponse>() {
 
             // this handler called when GET response is received
@@ -339,7 +339,12 @@ public class FeedMaker extends AbstractVerticle {
                     }
                 });
             }
-	}).setFollowRedirects(true).end();
+        });
+
+        request.putHeader("Accept-Encoding", "identity");
+        request.setFollowRedirects(true);
+        request.end();
+
     } // end get_feed()
 
     // ***********************************************    
