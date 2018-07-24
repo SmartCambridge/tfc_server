@@ -1,0 +1,30 @@
+
+{
+    "main":    "uk.ac.cam.tfc_server.zonemanager.ZoneManager",
+    "options":
+        { "config":
+          {
+
+            "module.name":      "zonemanager",
+            "module.id":        "cloudamber.sirivm.jw35",
+
+            "eb.system_status": "tfc.system_status",
+            "eb.console_out":   "tfc.console_out",
+            "eb.manager":       "tfc.manager",
+
+            "zonemanager.log_level": 1,
+
+            "zonemanager.address":   "tfc.zonemanager.cloudamber.sirivm.jw35",
+
+            "zonemanager.zone.address": "tfc.zone.cloudamber.sirivm",
+            "zonemanager.zone.feed":    "tfc.feedmaker.cloudamber.sirivm",
+            "zonemanager.name": "ZoneManager-CloudAmber-SiriVM-jw35",
+            "zonemanager.start": [
+                  "madingley_road_outer_in",
+                  "madingley_road_outer_out"
+            ]
+          }
+        }
+}
+
+
