@@ -1,0 +1,28 @@
+{
+    "main":    "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+            "module.id": "madingley_road_outer_in",
+            "zone.id":   "madingley_road_outer_in",
+            "zone.name": "Madingley Road outer IN",
+
+            "zone.center": {
+                "lat":52.21196237292157,
+                "lng":0.058733336627483375
+            },
+            "zone.zoom":14,
+            "zone.finish_index":2,
+            "zone.path":[
+                {  "lat": 52.21396082676875, "lng": 0.04150819033384324 },
+                {  "lat": 52.21711609716539, "lng": 0.04185151308774948 },
+                {  "lat": 52.21648506101688, "lng": 0.07515382021665573 },
+                {  "lat": 52.21338233621669, "lng": 0.07472466677427293 }
+            ]
+
+        }
+    }
+}
