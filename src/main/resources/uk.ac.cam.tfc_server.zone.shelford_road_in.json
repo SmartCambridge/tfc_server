@@ -1,0 +1,33 @@
+{
+    "main": "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+
+            "module.id": "shelford_road_in",
+            "zone.id": "shelford_road_in",
+            "zone.reverse_id": "shelford_road_out",
+            "zone.name": "Shelford Road IN",
+
+            "zone.map": true,
+
+            "zone.center": {
+                "lat":52.15990406279226,
+                "lng":0.13438940048217776
+            },
+            "zone.zoom":15,
+            "zone.finish_index":3,
+            "zone.path":[
+                {  "lat": 52.15405912033594, "lng": 0.13348817825317386 },
+                {  "lat": 52.15319021201362, "lng": 0.13232946395874026 },
+                {  "lat": 52.15482269243675, "lng": 0.1292824745178223 },
+                {  "lat": 52.166274702326355, "lng": 0.11808156967163087 },
+                {  "lat": 52.16677483789355, "lng": 0.1195836067199707 },
+                {  "lat": 52.15534928625457, "lng": 0.13117074966430667 }
+            ]
+        }
+    }
+}

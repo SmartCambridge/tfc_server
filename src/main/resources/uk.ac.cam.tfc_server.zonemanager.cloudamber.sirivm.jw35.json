@@ -29,7 +29,21 @@
                   "barton_fen_east",
                   "barton_fen_west",
                   "barton_road_outer_in",
-                  "barton_road_outer_out"
+                  "barton_road_outer_out",
+                  "harston_in",
+                  "harston_out",
+                  "shelford_road_in",
+                  "shelford_road_out",
+                  "babraham_road_in",
+                  "babraham_road_out",
+                  "perne_road_south",
+                  "perne_road_north",
+                  "cherry_hinton_road_in",
+                  "cherry_hinton_road_out",
+                  "mill_road_in",
+                  "mill_road_out",
+                  "grange_road_north",
+                  "grange_road_south"
             ]
           }
         }

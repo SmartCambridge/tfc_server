@@ -1,0 +1,36 @@
+{
+    "main": "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+
+            "module.id": "harston_in",
+            "zone.id": "harston_in",
+            "zone.reverse_id": "harston_out",
+            "zone.name": "Harston (A10) IN",
+
+            "zone.map": true,
+
+            "zone.center": {
+                "lat":52.137118625205446,
+                "lng":0.09320039302110673
+            },
+            "zone.zoom":14,
+            "zone.finish_index":4,
+            "zone.path":[
+                {  "lat": 52.12926851915723, "lng": 0.06951112300157548 },
+                {  "lat": 52.13042768225989, "lng": 0.06710786372423173 },
+                {  "lat": 52.13764542842793, "lng": 0.07560510188341142 },
+                {  "lat": 52.13780346817976, "lng": 0.07903832942247392 },
+                {  "lat": 52.14565207034835, "lng": 0.08770722895860672 },
+                {  "lat": 52.14486200522522, "lng": 0.08976716548204423 },
+                {  "lat": 52.1364864531144, "lng": 0.08118409663438798 },
+                {  "lat": 52.13606500006939, "lng": 0.07663507014513017 }
+            ]
+
+        }
+    }
+}

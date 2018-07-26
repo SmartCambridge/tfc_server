@@ -1,0 +1,39 @@
+{
+    "main": "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+            "module.id": "perne_road_north",
+            "zone.id": "perne_road_north",
+            "zone.reverse_id": "perne_road_south",
+            "zone.name": "Perne Road NORTH",
+            "zone.map": false,
+            "zone.center": {
+                "lat": 52.19382467801713,
+                "lng": 0.1568784657865763
+            },
+            "zone.zoom": 17,
+            "zone.finish_index": 2,
+            "zone.path": [
+                {
+                    "lat": 52.19218047437152,
+                    "lng": 0.1548507157713175
+                },
+                {
+                    "lat": 52.192279128305195,
+                    "lng": 0.15429281629621983
+                },
+                {
+                    "lat": 52.195929169945835,
+                    "lng": 0.15565537847578528
+                },
+                {
+                    "lat": 52.1958634060812,
+                    "lng": 0.15620254911482337
+                }
+            ]
+        }
+    }
+}

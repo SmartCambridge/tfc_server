@@ -1,0 +1,31 @@
+{
+    "main": "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+
+            "module.id": "babraham_road_in",
+            "zone.id": "babraham_road_in",
+            "zone.reverse_id": "babraham_road_out",
+            "zone.name": "Babraham Road IN",
+
+            "zone.map": true,
+
+            "zone.center": {
+                "lat":52.168805038549586,
+                "lng":0.15145964920520785
+            },
+            "zone.zoom":15,
+            "zone.finish_index":2,
+            "zone.path":[
+                {  "lat": 52.16772584086075, "lng": 0.15759654343128207 },
+                {  "lat": 52.16722571598276, "lng": 0.15695281326770785 },
+                {  "lat": 52.17556916925645, "lng": 0.14570899307727816 },
+                {  "lat": 52.17612183487455, "lng": 0.14686770737171176 }
+            ]
+        }
+    }
+}

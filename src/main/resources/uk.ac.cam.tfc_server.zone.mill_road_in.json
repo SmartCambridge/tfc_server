@@ -1,0 +1,34 @@
+{
+    "main": "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+
+            "module.id": "mill_road_in",
+            "zone.id": "mill_road_in",
+            "zone.reverse_id": "mill_road_out",
+            "zone.name": "Mill Road IN",
+
+            "zone.map": true,
+
+            "zone.center": {
+                "lat":52.193828993971664,
+                "lng":0.156824067234993
+            },
+            "zone.zoom":14,
+            "zone.finish_index":4,
+            "zone.path":[
+                {  "lat": 52.1971435233222, "lng": 0.1547641307115555 },
+                {  "lat": 52.19551259532192, "lng": 0.1543349772691727 },
+                {  "lat": 52.19640698260326, "lng": 0.15004344284534457 },
+                {  "lat": 52.19640698260326, "lng": 0.14592356979846957 },
+                {  "lat": 52.201036464372265, "lng": 0.13227649033069613 },
+                {  "lat": 52.20229896662015, "lng": 0.1337356120347977 },
+                {  "lat": 52.19803787778697, "lng": 0.1465243846178055 }
+            ]
+        }
+    }
+}

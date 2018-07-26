@@ -1,0 +1,39 @@
+{
+    "main": "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+            "module.id": "grange_road_south",
+            "zone.id": "grange_road_south",
+            "zone.reverse_id": "grange_road_north",
+            "zone.name": "Grange Road SOUTH",
+            "zone.map": false,
+            "zone.center": {
+                "lat": 52.20673120800027,
+                "lng": 0.10922265239059926
+            },
+            "zone.zoom": 16,
+            "zone.finish_index": 2,
+            "zone.path": [
+                {
+                    "lat": 52.210597012402154,
+                    "lng": 0.10589671321213245
+                },
+                {
+                    "lat": 52.21055756711709,
+                    "lng": 0.10681939311325551
+                },
+                {
+                    "lat": 52.202957122107776,
+                    "lng": 0.10613274760544301
+                },
+                {
+                    "lat": 52.202996574140805,
+                    "lng": 0.1050169486552477
+                }
+            ]
+        }
+    }
+}
