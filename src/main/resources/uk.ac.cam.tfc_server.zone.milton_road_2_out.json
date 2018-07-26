@@ -1,0 +1,39 @@
+{
+    "main": "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+            "module.name": "zone",
+            "module.id": "milton_road_2_out",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+            "zone.id": "milton_road_2_out",
+            "zone.reverse_id": "milton_road_2_in",
+            "zone.center": {
+                "lat": 52.224208710767265,
+                "lng": 0.13572340011593464
+            },
+            "zone.zoom": 15,
+            "zone.path": [
+                {
+                    "lat": 52.21875513525759,
+                    "lng": 0.13318376218398953
+                },
+                {
+                    "lat": 52.22021431816311,
+                    "lng": 0.13146714841445828
+                },
+                {
+                    "lat": 52.23017754695493,
+                    "lng": 0.14650897656997586
+                },
+                {
+                    "lat": 52.22899469479659,
+                    "lng": 0.1499636617811575
+                }
+            ],
+            "zone.finish_index": 2,
+            "zone.name": "Milton Road (v2) OUT",
+            "zone.map": false
+        }
+    }
+}
