@@ -1,28 +1,38 @@
 {
-    "main":    "uk.ac.cam.tfc_server.zone.Zone",
+    "main": "uk.ac.cam.tfc_server.zone.Zone",
     "options": {
         "config": {
-
             "module.name": "zone",
             "eb.system_status": "system_status",
             "eb.zone": "tfc.zone",
             "module.id": "madingley_road_outer_out",
-            "zone.id":   "madingley_road_outer_out",
+            "zone.id": "madingley_road_outer_out",
             "zone.name": "Madingley Road outer OUT",
-
             "zone.center": {
-                "lat":52.21196237292157,
-                "lng":0.058733336627483375
+                "lat": 52.21196237292157,
+                "lng": 0.058733336627483375
             },
-            "zone.zoom":14,
-            "zone.finish_index":3,
-            "zone.path":[
-                {  "lat": 52.21701092509659, "lng": 0.041422359645366676 },
-                {  "lat": 52.21606436527046, "lng": 0.074123851954937 },
-                {  "lat": 52.21369787745173, "lng": 0.07386635988950731 },
-                {  "lat": 52.21448672073322, "lng": 0.041765682399272926 }
-            ]
-
+            "zone.zoom": 14,
+            "zone.finish_index": 2,
+            "zone.path": [
+                {
+                    "lat": 52.21648506101688,
+                    "lng": 0.07515382021665573
+                },
+                {
+                    "lat": 52.21338233621669,
+                    "lng": 0.07472466677427293
+                },
+                {
+                    "lat": 52.21396082676875,
+                    "lng": 0.04150819033384324
+                },
+                {
+                    "lat": 52.21711609716539,
+                    "lng": 0.04185151308774948
+                }
+            ],
+            "zone.reverse.id": "madingley_road_outer_in"
         }
     }
 }
