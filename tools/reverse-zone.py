@@ -6,27 +6,31 @@ definition from the corresponding 'in' one. This script:
 
 1) Reads input from a file named on the command line, or stdin
 
-2) Prints it's results to stdout
+2) Prints results to stdout
 
 3) 'rotates' the 'zone.path' so that the previous finish segment
 comes first, and updates zone.finish_index to point to the new
-finish segment (what was the old start one)
+finish segment (what was the old start segment)
 
-2) Where possible, updates 'module.id', 'zone.id', 'zone.reverse_id',
-and 'zone.name' by swapping any trailing '_in' and '_out', and ' IN' and
-' OUT'. This only work for ids and names that conform to the common
-convention. A warning message is printed to stderr if a conversion isn't
-possible. Conversions  are only attempted if the corresponding parameter
-exists. '''
+4) Where possible, updates 'module.id', 'zone.id', 'zone.reverse_id',
+and 'zone.name' by swapping recognised suffixes. This only work for ids
+and names that conform to the common conventions. A warning message is
+printed to stderr if a conversion isn't possible. Conversions  are only
+attempted if the corresponding parameter exists.
+
+5) If the input contains a 'zone.map' key, invert it (true <-> false)
+'''
 
 from collections import OrderedDict, deque
 import json
 import sys
 
 REPLACEMENTS = [['_out', '_in'],
-                ['_in', '_out'],
+                ['_north', '_south'],
+                ['_east', '_west'],
                 [' IN', ' OUT'],
-                [' OUT', ' IN']]
+                [' NORTH', ' SOUTH'],
+                [' EAST', ' WEST']]
 
 
 def fixup(string):
@@ -38,6 +42,8 @@ def fixup(string):
     for choice in REPLACEMENTS:
         if string.endswith(choice[0]):
             return string[:-len(choice[0])] + choice[1]
+        if string.endswith(choice[1]):
+            return string[:-len(choice[1])] + choice[0]
     print('No automatic update possible for %s' % (string), file=sys.stderr)
     return string
 
@@ -73,5 +79,8 @@ if 'zone.id' in config:
 
 if 'zone.name' in config:
     config['zone.name'] = fixup(config['zone.name'])
+
+if 'zone.map' in config:
+    config['zone.map'] = not config['zone.map']
 
 print(json.dumps(data, indent=4))
