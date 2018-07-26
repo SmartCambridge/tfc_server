@@ -1,0 +1,55 @@
+{
+    "main": "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+            "module.id": "barton_fen_west",
+            "zone.id": "barton_fen_west",
+            "zone.reverse_id": "barton_fen_east",
+            "zone.name": "Barton Road/Fen Causeway WEST",
+            "zone.map": false,
+            "zone.center": {
+                "lat": 52.19651600537379,
+                "lng": 0.11425875127315523
+            },
+            "zone.zoom": 15,
+            "zone.finish_index": 4,
+            "zone.path": [
+                {
+                    "lat": 52.19791015800155,
+                    "lng": 0.12103937566280366
+                },
+                {
+                    "lat": 52.19701580096676,
+                    "lng": 0.12099646031856538
+                },
+                {
+                    "lat": 52.197515590939865,
+                    "lng": 0.11284254491329195
+                },
+                {
+                    "lat": 52.196200342103666,
+                    "lng": 0.11095426976680757
+                },
+                {
+                    "lat": 52.1967527513552,
+                    "lng": 0.10121248662471771
+                },
+                {
+                    "lat": 52.19775233159718,
+                    "lng": 0.10142706334590913
+                },
+                {
+                    "lat": 52.19696319116898,
+                    "lng": 0.11009596288204193
+                },
+                {
+                    "lat": 52.19880449704033,
+                    "lng": 0.11228464543819429
+                }
+            ]
+        }
+    }
+}
