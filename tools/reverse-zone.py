@@ -38,7 +38,7 @@ def fixup(string):
     for choice in REPLACEMENTS:
         if string.endswith(choice[0]):
             return string[:-len(choice[0])] + choice[1]
-    print('No automatic update possible for %s' % (id), file=sys.stderr)
+    print('No automatic update possible for %s' % (string), file=sys.stderr)
     return string
 
 
