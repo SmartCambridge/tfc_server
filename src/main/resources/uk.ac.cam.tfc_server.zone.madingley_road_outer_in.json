@@ -6,9 +6,13 @@
             "module.name": "zone",
             "eb.system_status": "system_status",
             "eb.zone": "tfc.zone",
+
             "module.id": "madingley_road_outer_in",
             "zone.id":   "madingley_road_outer_in",
+            "zone.reverse_id":   "madingley_road_outer_out",
             "zone.name": "Madingley Road outer IN",
+
+            "zone.map": true,
 
             "zone.center": {
                 "lat":52.21196237292157,

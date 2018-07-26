@@ -2,12 +2,18 @@
     "main": "uk.ac.cam.tfc_server.zone.Zone",
     "options": {
         "config": {
+
             "module.name": "zone",
             "eb.system_status": "system_status",
             "eb.zone": "tfc.zone",
+
             "module.id": "madingley_road_outer_out",
             "zone.id": "madingley_road_outer_out",
+            "zone.reverse_id": "madingley_road_outer_in",
             "zone.name": "Madingley Road outer OUT",
+
+            "zone.map": false,
+
             "zone.center": {
                 "lat": 52.21196237292157,
                 "lng": 0.058733336627483375
@@ -31,8 +37,8 @@
                     "lat": 52.21711609716539,
                     "lng": 0.04185151308774948
                 }
-            ],
-            "zone.reverse.id": "madingley_road_outer_in"
+            ]
+
         }
     }
 }
