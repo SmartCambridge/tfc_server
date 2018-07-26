@@ -1,0 +1,30 @@
+{
+    "main":    "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+
+            "module.id": "barton_road_outer_in",
+            "zone.id":   "barton_road_outer_in",
+            "zone.reverse_id": "barton_road_outer_out",
+            "zone.name": "Barton Road outer IN",
+
+            "zone.map": true,
+
+            "zone.center": {
+                "lat":52.17919508969048,
+                "lng":0.08643150329589845},
+            "zone.zoom":14,
+            "zone.finish_index":2,
+            "zone.path":[
+                {  "lat": 52.18277384398686, "lng": 0.06832122802734376 },
+                {  "lat": 52.18372111309685, "lng": 0.06643295288085939 },
+                {  "lat": 52.18724688189408, "lng": 0.07115364074707033 },
+                {  "lat": 52.18624706540941, "lng": 0.07278442382812501 }
+            ]
+        }
+    }
+}
