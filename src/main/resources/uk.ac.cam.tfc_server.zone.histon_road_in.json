@@ -16,7 +16,8 @@
                      {"lat":52.21630277403146,"lng":0.11285018816124648},
                      {"lat":52.21756484254275,"lng":0.10855865373741835}],
         "zone.finish_index":2,
-        "zone.name":"Histon Road IN"
+        "zone.name":"Histon Road IN",
+        "zone.map": true
 
                  }
                }

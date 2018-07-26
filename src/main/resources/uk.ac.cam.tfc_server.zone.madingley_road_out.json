@@ -16,7 +16,8 @@
                      {"lat":52.21281020658135,"lng":0.08368492126464844}],
         "zone.finish_index":2,
         "zone.name":"Madingley Road OUT",
-        "zone.id":          "madingley_road_out"
+        "zone.id":          "madingley_road_out",
+        "zone.map": false
                  }
                }
     

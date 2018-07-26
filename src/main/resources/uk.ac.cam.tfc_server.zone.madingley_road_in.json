@@ -17,7 +17,8 @@
                      {"lat":52.21065392038191,"lng":0.10548591613769531}],
         "zone.finish_index":2,
         "zone.name":"Madingley Road IN",
-        "zone.id":          "madingley_road_in"
+        "zone.id":          "madingley_road_in",
+        "zone.map": true
                  }
                }
     

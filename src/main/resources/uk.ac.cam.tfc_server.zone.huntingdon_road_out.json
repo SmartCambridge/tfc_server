@@ -16,7 +16,8 @@
                      {"lat":52.226373344589554,"lng":0.08917808532714844},
                      {"lat":52.224901219867796,"lng":0.08480072021484375}],
         "zone.finish_index":2,
-        "zone.name":"Huntingdon Road OUT"
+        "zone.name":"Huntingdon Road OUT",
+        "zone.map": false
 
                  }
                }

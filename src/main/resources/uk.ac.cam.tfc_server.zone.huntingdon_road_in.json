@@ -16,7 +16,8 @@
                      {"lat":52.211442817717945,"lng":0.11248111724853516},
                      {"lat":52.21267872871188,"lng":0.11509895324707031}],
         "zone.finish_index":2,
-        "zone.name":"Huntingdon Road IN"
+        "zone.name":"Huntingdon Road IN",
+        "zone.map": true
 
                  }
                }

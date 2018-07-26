@@ -19,7 +19,8 @@
                      {"lat":52.210701254697405,"lng":0.10515975991438609},
                      {"lat":52.20157533373154,"lng":0.10382938424299937}],
         "zone.finish_index":4,
-        "zone.name":"The Backs NORTH"
+        "zone.name":"The Backs NORTH",
+        "zone.map": true
 
                  }
                }

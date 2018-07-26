@@ -9,7 +9,7 @@
             "zone.id": "harston_out",
             "zone.reverse_id": "harston_in",
             "zone.name": "Harston (A10) OUT",
-            "zone.map": true,
+            "zone.map": false,
             "zone.center": {
                 "lat": 52.137118625205446,
                 "lng": 0.09320039302110673

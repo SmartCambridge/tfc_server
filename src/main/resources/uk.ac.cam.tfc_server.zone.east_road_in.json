@@ -16,7 +16,8 @@
                      {"lat":52.20249590066629,"lng":0.13253974953840952},
                      {"lat":52.20310083426891,"lng":0.13069438973616343}],
         "zone.finish_index":2,
-        "zone.name":"East Road IN"
+        "zone.name":"East Road IN",
+        "zone.map": true
 
                  }
                }

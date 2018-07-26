@@ -17,7 +17,8 @@
                      {"lat":52.21405856972383,"lng":0.16088104326627217},
                      {"lat":52.21489999522703,"lng":0.15032386858365498}],
         "zone.finish_index":2,
-        "zone.name":"Newmarket Road OUT"
+        "zone.name":"Newmarket Road OUT",
+        "zone.map": false
 
                  }
                }

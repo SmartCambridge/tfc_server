@@ -16,7 +16,8 @@
                      {"lat":52.23344280669015,"lng":0.10976028337609023},
                      {"lat":52.23365307275228,"lng":0.11491012468468398}],
         "zone.finish_index":2,
-        "zone.name":"Histon Road OUT"
+        "zone.name":"Histon Road OUT",
+        "zone.map": false
 
                  }
                }

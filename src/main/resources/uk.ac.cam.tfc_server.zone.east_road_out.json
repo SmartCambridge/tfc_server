@@ -16,7 +16,8 @@
                      {"lat":52.207852564396035,"lng":0.13599014262581477},
                      {"lat":52.20795775814953,"lng":0.13873672465706477}],
         "zone.finish_index":2,
-        "zone.name":"East Road OUT"
+        "zone.name":"East Road OUT",
+        "zone.map": false
                  }
                }
     

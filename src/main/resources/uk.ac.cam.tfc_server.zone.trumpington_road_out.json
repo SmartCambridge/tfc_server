@@ -20,7 +20,8 @@
                      {"lat":52.16924016496907,"lng":0.10814666748046875},
                      {"lat":52.178872724522144,"lng":0.11175155639648438}],
         "zone.finish_index":5,
-        "zone.name":"Trumpington Road OUT"
+        "zone.name":"Trumpington Road OUT",
+        "zone.map": false
 
                  }
                }

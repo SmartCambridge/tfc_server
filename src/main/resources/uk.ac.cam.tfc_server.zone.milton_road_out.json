@@ -16,7 +16,8 @@
                      {"lat":52.23155496676674,"lng":0.1487445831298828},
                      {"lat":52.22958359016109,"lng":0.15071868896484375}],
         "zone.finish_index":2,
-        "zone.name":"Milton Road OUT"
+        "zone.name":"Milton Road OUT",
+        "zone.map": false
 
                  }
                }
