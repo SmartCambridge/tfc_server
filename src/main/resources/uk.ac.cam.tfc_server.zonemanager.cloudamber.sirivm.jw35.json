@@ -21,7 +21,11 @@
             "zonemanager.name": "ZoneManager-CloudAmber-SiriVM-jw35",
             "zonemanager.start": [
                   "madingley_road_outer_in",
-                  "madingley_road_outer_out"
+                  "madingley_road_outer_out",
+                  "histon_road_2_in",
+                  "histon_road_2_out",
+                  "milton_road_2_in",
+                  "milton_road_2_out"
             ]
           }
         }
