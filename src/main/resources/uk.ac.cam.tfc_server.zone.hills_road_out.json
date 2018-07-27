@@ -11,6 +11,7 @@
                      
         "zone.name":        "Hills Road OUT",
         "zone.id":          "hills_road_out",
+        "zone.reverse_id": "hills_road_in",
         "zone.path":        [{"lat":52.19797376106204,"lng":0.12685775756835938},
                              {"lat":52.19881549121571,"lng":0.1295185089111328},
                              {"lat":52.191660276779764,"lng":0.13655662536621094},

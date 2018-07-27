@@ -9,6 +9,7 @@
         "eb.zone":          "tfc.zone",
                      
         "zone.id":          "the_backs_north",
+        "zone.reverse_id": "the_backs_south",
         "zone.center":{"lat":52.199790232386256,"lng":0.10869531552886169},
         "zone.zoom":15,
         "zone.path":[{"lat":52.19894503741195,"lng":0.11185455361555796},
@@ -20,7 +21,7 @@
                      {"lat":52.20157533373154,"lng":0.10382938424299937}],
         "zone.finish_index":4,
         "zone.name":"The Backs NORTH",
-        "zone.map": true
+        "zone.map": false
 
                  }
                }

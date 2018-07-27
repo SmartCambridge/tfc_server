@@ -9,6 +9,7 @@
         "eb.zone":          "tfc.zone",
                      
         "zone.id":          "trumpington_road_in",
+        "zone.reverse_id": "trumpington_road_out",
         "zone.center":{"lat":52.18307729908614,"lng":0.11913661956783894},
         "zone.zoom":14,
         "zone.path":[{"lat":52.16755556871268,"lng":0.11140823364257812},

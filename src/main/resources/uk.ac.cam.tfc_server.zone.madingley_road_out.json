@@ -17,6 +17,7 @@
         "zone.finish_index":2,
         "zone.name":"Madingley Road OUT",
         "zone.id":          "madingley_road_out",
+        "zone.reverse_id": "madingley_road_in",
         "zone.map": false
                  }
                }

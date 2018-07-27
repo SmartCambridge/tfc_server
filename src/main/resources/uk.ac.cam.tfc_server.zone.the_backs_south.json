@@ -9,6 +9,7 @@
         "eb.zone":          "tfc.zone",
                      
         "zone.id":          "the_backs_south",
+        "zone.reverse_id": "the_backs_north",
         "zone.center":{"lat":52.20289390648686,"lng":0.11839418332671325},
         "zone.zoom":15,
         "zone.path":[{"lat":52.21056977058616,"lng":0.10507392889849143},

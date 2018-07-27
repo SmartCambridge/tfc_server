@@ -9,6 +9,7 @@
         "eb.zone":          "tfc.zone",
                      
         "zone.id":          "histon_road_out",
+        "zone.reverse_id": "histon_road_in",
         "zone.center":{"lat":52.20825841138823,"lng":0.13840560913082722},
         "zone.zoom":13,
         "zone.path":[{"lat":52.21682864026931,"lng":0.11422347917687148},

@@ -18,6 +18,7 @@
         "zone.finish_index":2,
         "zone.name":"Madingley Road IN",
         "zone.id":          "madingley_road_in",
+        "zone.reverse_id": "madingley_road_out",
         "zone.map": true
                  }
                }

@@ -9,6 +9,7 @@
         "eb.zone":          "tfc.zone",
                      
         "zone.id":          "newmarket_road_out",
+        "zone.reverse_id": "newmarket_road_in",
         "zone.center":{"lat":52.20445420983166,"lng":0.14191608376564968},
         "zone.zoom":14,
         "zone.path":[{"lat":52.21000898656282,"lng":0.13865089495084248},

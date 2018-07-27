@@ -9,6 +9,7 @@
         "eb.zone":          "tfc.zone",
                      
         "zone.id":          "milton_road_out",
+        "zone.reverse_id": "milton_road_in",
         "zone.center":{"lat":52.22411669991708,"lng":0.14427428245541218},
         "zone.zoom":15,
         "zone.path":[{"lat":52.21541338826678,"lng":0.12690067291259766},
