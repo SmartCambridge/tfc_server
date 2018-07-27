@@ -9,7 +9,7 @@
         "eb.zone":          "tfc.zone",
                      
         "zone.id":          "east_road_out",
-        "zone.reverse_id": "east_road_in",
+        "zone.reverse.id": "east_road_in",
         "zone.center":{"lat":52.20298135849034,"lng":0.10277728982033718},
         "zone.zoom":14,
         "zone.path":[{"lat":52.2021717318512,"lng":0.13229942302132258},

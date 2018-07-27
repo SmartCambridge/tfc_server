@@ -9,7 +9,7 @@
 
             "module.id": "babraham_road_in",
             "zone.id": "babraham_road_in",
-            "zone.reverse_id": "babraham_road_out",
+            "zone.reverse.id": "babraham_road_out",
             "zone.name": "Babraham Road IN",
 
             "zone.map": true,

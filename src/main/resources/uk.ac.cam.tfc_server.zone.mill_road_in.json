@@ -9,7 +9,7 @@
 
             "module.id": "mill_road_in",
             "zone.id": "mill_road_in",
-            "zone.reverse_id": "mill_road_out",
+            "zone.reverse.id": "mill_road_out",
             "zone.name": "Mill Road IN",
 
             "zone.map": true,

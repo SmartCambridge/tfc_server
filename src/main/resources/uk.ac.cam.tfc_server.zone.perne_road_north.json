@@ -7,7 +7,7 @@
             "eb.zone": "tfc.zone",
             "module.id": "perne_road_north",
             "zone.id": "perne_road_north",
-            "zone.reverse_id": "perne_road_south",
+            "zone.reverse.id": "perne_road_south",
             "zone.name": "Perne Road NORTH",
             "zone.map": false,
             "zone.center": {

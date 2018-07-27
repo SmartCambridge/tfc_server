@@ -9,7 +9,7 @@
 
             "module.id": "perne_road_south",
             "zone.id": "perne_road_south",
-            "zone.reverse_id": "perne_road_north",
+            "zone.reverse.id": "perne_road_north",
             "zone.name": "Perne Road SOUTH",
 
             "zone.map": true,

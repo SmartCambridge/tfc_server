@@ -9,7 +9,7 @@
 
             "module.id": "harston_in",
             "zone.id": "harston_in",
-            "zone.reverse_id": "harston_out",
+            "zone.reverse.id": "harston_out",
             "zone.name": "Harston (A10) IN",
 
             "zone.map": true,

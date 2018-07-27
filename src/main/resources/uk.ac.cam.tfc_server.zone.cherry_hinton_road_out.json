@@ -7,7 +7,7 @@
             "eb.zone": "tfc.zone",
             "module.id": "cherry_hinton_road_out",
             "zone.id": "cherry_hinton_road_out",
-            "zone.reverse_id": "cherry_hinton_road_in",
+            "zone.reverse.id": "cherry_hinton_road_in",
             "zone.name": "Cherry Hinton Road OUT",
             "zone.map": false,
             "zone.center": {

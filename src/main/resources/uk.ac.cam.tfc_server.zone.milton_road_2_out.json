@@ -7,7 +7,7 @@
             "eb.system_status": "system_status",
             "eb.zone": "tfc.zone",
             "zone.id": "milton_road_2_out",
-            "zone.reverse_id": "milton_road_2_in",
+            "zone.reverse.id": "milton_road_2_in",
             "zone.center": {
                 "lat": 52.224208710767265,
                 "lng": 0.13572340011593464

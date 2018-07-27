@@ -9,7 +9,7 @@
 
             "module.id": "madingley_road_outer_in",
             "zone.id":   "madingley_road_outer_in",
-            "zone.reverse_id":   "madingley_road_outer_out",
+            "zone.reverse.id":   "madingley_road_outer_out",
             "zone.name": "Madingley Road outer IN",
 
             "zone.map": true,

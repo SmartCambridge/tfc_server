@@ -32,7 +32,7 @@
             ],
             "zone.finish_index": 2,
             "zone.name": "Histon Road v2 OUT",
-            "zone.reverse_id": "histon_road_2_in",
+            "zone.reverse.id": "histon_road_2_in",
             "zone.map": false
         }
     }

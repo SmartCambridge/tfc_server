@@ -7,7 +7,7 @@
             "eb.zone": "tfc.zone",
             "module.id": "mill_road_out",
             "zone.id": "mill_road_out",
-            "zone.reverse_id": "mill_road_in",
+            "zone.reverse.id": "mill_road_in",
             "zone.name": "Mill Road OUT",
             "zone.map": false,
             "zone.center": {

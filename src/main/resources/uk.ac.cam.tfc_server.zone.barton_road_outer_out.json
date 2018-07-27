@@ -7,7 +7,7 @@
             "eb.zone": "tfc.zone",
             "module.id": "barton_road_outer_out",
             "zone.id": "barton_road_outer_out",
-            "zone.reverse_id": "barton_road_outer_in",
+            "zone.reverse.id": "barton_road_outer_in",
             "zone.name": "Barton Road outer OUT",
             "zone.map": false,
             "zone.center": {

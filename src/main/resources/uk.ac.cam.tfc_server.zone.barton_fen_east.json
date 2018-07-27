@@ -9,7 +9,7 @@
 
             "module.id": "barton_fen_east",
             "zone.id":   "barton_fen_east",
-            "zone.reverse_id": "barton_fen_west",
+            "zone.reverse.id": "barton_fen_west",
             "zone.name": "Barton Road/Fen Causeway EAST",
 
             "zone.map": true,

@@ -7,7 +7,7 @@
             "eb.zone": "tfc.zone",
             "module.id": "harston_out",
             "zone.id": "harston_out",
-            "zone.reverse_id": "harston_in",
+            "zone.reverse.id": "harston_in",
             "zone.name": "Harston (A10) OUT",
             "zone.map": false,
             "zone.center": {

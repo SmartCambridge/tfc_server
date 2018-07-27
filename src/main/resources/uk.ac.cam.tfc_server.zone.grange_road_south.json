@@ -7,7 +7,7 @@
             "eb.zone": "tfc.zone",
             "module.id": "grange_road_south",
             "zone.id": "grange_road_south",
-            "zone.reverse_id": "grange_road_north",
+            "zone.reverse.id": "grange_road_north",
             "zone.name": "Grange Road SOUTH",
             "zone.map": false,
             "zone.center": {

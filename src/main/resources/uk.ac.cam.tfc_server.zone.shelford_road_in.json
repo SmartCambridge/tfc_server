@@ -9,7 +9,7 @@
 
             "module.id": "shelford_road_in",
             "zone.id": "shelford_road_in",
-            "zone.reverse_id": "shelford_road_out",
+            "zone.reverse.id": "shelford_road_out",
             "zone.name": "Shelford Road IN",
 
             "zone.map": true,

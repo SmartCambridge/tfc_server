@@ -7,7 +7,7 @@
             "eb.zone": "tfc.zone",
             "module.id": "shelford_road_out",
             "zone.id": "shelford_road_out",
-            "zone.reverse_id": "shelford_road_in",
+            "zone.reverse.id": "shelford_road_in",
             "zone.name": "Shelford Road OUT",
             "zone.map": false,
             "zone.center": {

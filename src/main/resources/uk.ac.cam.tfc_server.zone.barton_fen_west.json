@@ -7,7 +7,7 @@
             "eb.zone": "tfc.zone",
             "module.id": "barton_fen_west",
             "zone.id": "barton_fen_west",
-            "zone.reverse_id": "barton_fen_east",
+            "zone.reverse.id": "barton_fen_east",
             "zone.name": "Barton Road/Fen Causeway WEST",
             "zone.map": false,
             "zone.center": {

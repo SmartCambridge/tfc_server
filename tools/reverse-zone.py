@@ -74,7 +74,7 @@ if 'module.id' in config:
 if 'zone.id' in config:
     new_id = fixup(config['zone.id'])
     if new_id != config['zone.id']:
-        config['zone.reverse_id'] = config['zone.id']
+        config['zone.reverse.id'] = config['zone.id']
         config['zone.id'] = new_id
 
 if 'zone.name' in config:

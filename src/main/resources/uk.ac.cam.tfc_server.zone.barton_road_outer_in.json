@@ -9,7 +9,7 @@
 
             "module.id": "barton_road_outer_in",
             "zone.id":   "barton_road_outer_in",
-            "zone.reverse_id": "barton_road_outer_out",
+            "zone.reverse.id": "barton_road_outer_out",
             "zone.name": "Barton Road outer IN",
 
             "zone.map": true,

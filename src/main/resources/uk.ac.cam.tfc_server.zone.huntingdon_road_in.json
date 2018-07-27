@@ -9,7 +9,7 @@
         "eb.zone":          "tfc.zone",
                      
         "zone.id":          "huntingdon_road_in",
-        "zone.reverse_id": "huntingdon_road_out",
+        "zone.reverse.id": "huntingdon_road_out",
         "zone.center":{"lat":52.21839850870647,"lng":0.1003611564635909},
         "zone.zoom":15,
         "zone.path":[{"lat":52.2261926176202,"lng":0.08900642395019531},

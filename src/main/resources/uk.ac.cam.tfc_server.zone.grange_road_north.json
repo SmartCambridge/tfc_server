@@ -9,7 +9,7 @@
 
             "module.id": "grange_road_north",
             "zone.id": "grange_road_north",
-            "zone.reverse_id": "grange_road_south",
+            "zone.reverse.id": "grange_road_south",
             "zone.name": "Grange Road NORTH",
 
             "zone.map": true,
