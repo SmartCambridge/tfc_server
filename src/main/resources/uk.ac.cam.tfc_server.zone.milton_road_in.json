@@ -19,7 +19,7 @@
                      {"lat":52.21528191810207,"lng":0.12754440307617188}],
         "zone.finish_index":3,
         "zone.name":"Milton Road IN",
-        "zone.map": true
+        "zone.map": false
 
                  }
                }
