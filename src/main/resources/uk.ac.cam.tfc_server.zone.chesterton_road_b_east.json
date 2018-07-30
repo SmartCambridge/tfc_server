@@ -1,0 +1,31 @@
+{
+    "main":    "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+
+            "module.id": "checterton_road_b_east",
+            "zone.id":   "chesterton_road_b_east",
+            "zone.reverse.id":   "chesterton_road_b_west",
+            "zone.name": "Chesterton Road B WEST",
+
+            "zone.map": true,
+
+            "zone.center": {
+                "lat":52.214485539533044,
+                "lng":0.13127862475812438
+            },
+            "zone.zoom":16,
+            "zone.finish_index":2,
+            "zone.path":[
+                {  "lat": 52.214117414401876, "lng": 0.12755571864545348 },
+                {  "lat": 52.21519548652791, "lng": 0.12686907313764098 },
+                {  "lat": 52.216431293118056, "lng": 0.1332205440849066 },
+                {  "lat": 52.21540583901395, "lng": 0.13399302028119567 }
+            ]
+        }
+    }
+}

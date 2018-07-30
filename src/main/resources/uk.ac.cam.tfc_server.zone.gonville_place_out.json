@@ -1,0 +1,39 @@
+{
+    "main": "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+            "module.id": "gonville_place_out",
+            "zone.id": "gonville_place_out",
+            "zone.reverse.id": "gonville_place_in",
+            "zone.name": "Gonville Place OUT",
+            "zone.map": false,
+            "zone.center": {
+                "lat": 52.20237165598558,
+                "lng": 0.12592837214469912
+            },
+            "zone.zoom": 16,
+            "zone.finish_index": 2,
+            "zone.path": [
+                {
+                    "lat": 52.19936000774216,
+                    "lng": 0.12814924120903018
+                },
+                {
+                    "lat": 52.19999128716193,
+                    "lng": 0.1274196803569794
+                },
+                {
+                    "lat": 52.202411108538335,
+                    "lng": 0.13020917773246768
+                },
+                {
+                    "lat": 52.20199027950281,
+                    "lng": 0.13147518038749698
+                }
+            ]
+        }
+    }
+}

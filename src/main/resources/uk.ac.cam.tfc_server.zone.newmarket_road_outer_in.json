@@ -1,0 +1,33 @@
+{
+    "main":    "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+
+            "module.id": "newmarket_road_outer_in",
+            "zone.id":   "newmarket_road_outer_in",
+            "zone.reverse.id":   "nwemarket_road_outer_out",
+            "zone.name": "Newmarket Road outer IN",
+
+            "zone.map": true,
+
+            "zone.center": {
+                "lat":52.213465535783335,
+                "lng":0.18613155931234363
+            },
+            "zone.zoom":14,
+            "zone.finish_index":3,
+            "zone.path":[
+                {  "lat": 52.212150758973564, "lng": 0.18119629472494128 },
+                {  "lat": 52.210152223695076, "lng": 0.18128212541341784 },
+                {  "lat": 52.209678873223716, "lng": 0.17484482377767563 },
+                {  "lat": 52.211519652282746, "lng": 0.16428764909505847 },
+                {  "lat": 52.21341294545809, "lng": 0.16506012529134753 },
+                {  "lat": 52.212098167091774, "lng": 0.17535980790853503 }
+            ]
+        }
+    }
+}

@@ -1,0 +1,47 @@
+{
+    "main": "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+            "module.id": "fen_causeway_east",
+            "zone.id": "fen_causeway_east",
+            "zone.reverse.id": "fen_causeway_west",
+            "zone.name": "Fen Causeway EAST",
+            "zone.map": false,
+            "zone.center": {
+                "lat": 52.198603827174445,
+                "lng": 0.11715880595147611
+            },
+            "zone.zoom": 16,
+            "zone.finish_index": 3,
+            "zone.path": [
+                {
+                    "lat": 52.197775245231036,
+                    "lng": 0.11328569613397123
+                },
+                {
+                    "lat": 52.19847230726237,
+                    "lng": 0.11367193423211576
+                },
+                {
+                    "lat": 52.19781470186432,
+                    "lng": 0.1183926220983267
+                },
+                {
+                    "lat": 52.19786731065421,
+                    "lng": 0.1213537808507681
+                },
+                {
+                    "lat": 52.19703871498032,
+                    "lng": 0.12156835757195951
+                },
+                {
+                    "lat": 52.196933495376754,
+                    "lng": 0.11899343691766263
+                }
+            ]
+        }
+    }
+}

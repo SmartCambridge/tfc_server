@@ -1,0 +1,34 @@
+{
+    "main":    "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+
+            "module.id": "hauzton_in",
+            "zone.id":   "hauxton_in",
+            "zone.reverse.id":   "hauxton_out",
+            "zone.name": "Hauzton (A10) IN",
+
+            "zone.map": true,
+
+            "zone.center": {
+                "lat":52.15607858783419,
+                "lng":0.09964775294065477
+            },
+            "zone.zoom":14,
+            "zone.finish_index":3,
+            "zone.path":[
+                {  "lat": 52.14596706375856, "lng": 0.09325336664915085 },
+                {  "lat": 52.146704440010744, "lng": 0.08707355707883836 },
+                {  "lat": 52.155762637467454, "lng": 0.08664440363645555 },
+                {  "lat": 52.16023839184964, "lng": 0.09857486933469774 },
+                {  "lat": 52.15771096233742, "lng": 0.10226558893918991 },
+                {  "lat": 52.15391954896584, "lng": 0.09514164179563522 }
+            ]
+
+        }
+    }
+}

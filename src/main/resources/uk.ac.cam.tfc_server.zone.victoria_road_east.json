@@ -1,0 +1,33 @@
+{
+    "main":    "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+
+            "module.id": "victoria_road_east",
+            "zone.id":   "victoria_road_east",
+            "zone.reverse.id":   "victoria_road_west",
+            "zone.name": "Victoria Road EAST",
+
+            "zone.map": true,
+            "zone.center": {
+                "lat":52.211945681098165,
+                "lng":0.11861189268529417
+            },
+            "zone.zoom":16,
+            "zone.finish_index":3,
+            "zone.path":[
+                {  "lat": 52.21447002985833, "lng": 0.11229260824620725 },
+                {  "lat": 52.21549550556676, "lng": 0.11164887808263303 },
+                {  "lat": 52.216244876689736, "lng": 0.11456712149083616 },
+                {  "lat": 52.21519312416525, "lng": 0.12263520620763303 },
+                {  "lat": 52.21406246242557, "lng": 0.12212022207677366 },
+                {  "lat": 52.21506165334862, "lng": 0.11486752890050413 }
+            ]
+
+        }
+    }
+}

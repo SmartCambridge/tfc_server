@@ -1,0 +1,47 @@
+{
+    "main": "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+            "module.id": "the_backs_2_south",
+            "zone.id": "the_backs_2_south",
+            "zone.reverse.id": "the_backs_2_north",
+            "zone.name": "The Backs v2 SOUTH",
+            "zone.map": false,
+            "zone.center": {
+                "lat": 52.20531842897708,
+                "lng": 0.11251062154769899
+            },
+            "zone.zoom": 16,
+            "zone.finish_index": 3,
+            "zone.path": [
+                {
+                    "lat": 52.20993383389159,
+                    "lng": 0.11065453290939332
+                },
+                {
+                    "lat": 52.209539373576646,
+                    "lng": 0.11219948530197145
+                },
+                {
+                    "lat": 52.20750127282208,
+                    "lng": 0.11181324720382692
+                },
+                {
+                    "lat": 52.201294351453974,
+                    "lng": 0.11363714933395387
+                },
+                {
+                    "lat": 52.20084720923513,
+                    "lng": 0.1118561625480652
+                },
+                {
+                    "lat": 52.20747497413687,
+                    "lng": 0.10977476835250856
+                }
+            ]
+        }
+    }
+}

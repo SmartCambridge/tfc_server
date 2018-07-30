@@ -1,0 +1,39 @@
+{
+    "main": "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+            "module.id": "cherry_hinton_road_outer_out",
+            "zone.id": "cherry_hinton_road_outer_out",
+            "zone.reverse.id": "cherry_hinton_road_outer_in",
+            "zone.name": "Cherry Hinton Road outer OUT",
+            "zone.map": false,
+            "zone.center": {
+                "lat": 52.182373386480755,
+                "lng": 0.16139321029186252
+            },
+            "zone.zoom": 14,
+            "zone.finish_index": 2,
+            "zone.path": [
+                {
+                    "lat": 52.18542565330131,
+                    "lng": 0.15285305678844455
+                },
+                {
+                    "lat": 52.18742530072848,
+                    "lng": 0.15362553298473358
+                },
+                {
+                    "lat": 52.18521515886723,
+                    "lng": 0.17001919448375702
+                },
+                {
+                    "lat": 52.18342591594646,
+                    "lng": 0.16924671828746798
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,39 @@
+{
+    "main": "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+            "module.id": "milton_out",
+            "zone.id": "milton_out",
+            "zone.reverse.id": "milton_in",
+            "zone.name": "Milton (A10) OUT",
+            "zone.map": false,
+            "zone.center": {
+                "lat": 52.24546054143251,
+                "lng": 0.15161991119384768
+            },
+            "zone.zoom": 14,
+            "zone.finish_index": 2,
+            "zone.path": [
+                {
+                    "lat": 52.23915380439046,
+                    "lng": 0.15234947204589847
+                },
+                {
+                    "lat": 52.23941660299614,
+                    "lng": 0.14917373657226565
+                },
+                {
+                    "lat": 52.244041603746204,
+                    "lng": 0.1502037048339844
+                },
+                {
+                    "lat": 52.243358395343456,
+                    "lng": 0.15346527099609378
+                }
+            ]
+        }
+    }
+}

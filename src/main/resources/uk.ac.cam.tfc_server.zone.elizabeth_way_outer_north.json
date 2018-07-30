@@ -1,0 +1,43 @@
+{
+    "main": "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+            "module.id": "elizabeth_way_outer_north",
+            "zone.id": "elizabeth_way_outer_north",
+            "zone.reverse.id": "elizabeth_way_outer_south",
+            "zone.name": "Elizabeth Way outer NORTH",
+            "zone.map": false,
+            "zone.center": {
+                "lat": 52.214485539533044,
+                "lng": 0.13127862475812438
+            },
+            "zone.zoom": 16,
+            "zone.finish_index": 2,
+            "zone.path": [
+                {
+                    "lat": 52.21720694139353,
+                    "lng": 0.13500153087079528
+                },
+                {
+                    "lat": 52.21708862304058,
+                    "lng": 0.13352095149457457
+                },
+                {
+                    "lat": 52.21846898421334,
+                    "lng": 0.13180433772504332
+                },
+                {
+                    "lat": 52.21908684626767,
+                    "lng": 0.1332205440849066
+                },
+                {
+                    "lat": 52.21769335797753,
+                    "lng": 0.13491570018231872
+                }
+            ]
+        }
+    }
+}

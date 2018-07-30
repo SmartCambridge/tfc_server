@@ -1,0 +1,35 @@
+{
+    "main":    "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+
+            "module.id": "elizabeth_way_south",
+            "zone.id":   "elizabeth_way_south",
+            "zone.reverse.id":   "elizabeth_way_north",
+            "zone.name": "Elizabeth Way SOUTH",
+
+            "zone.map": true,
+
+             "zone.center": {
+                "lat":52.212631992344235,
+                "lng":0.1346580404788256
+            },
+            "zone.zoom":16,
+            "zone.finish_index":3,
+            "zone.path":[
+                {  "lat": 52.21560330034108, "lng": 0.13445419259369376 },
+                {  "lat": 52.21589253209703, "lng": 0.13623517937958243 },
+                {  "lat": 52.21449894358532, "lng": 0.13767284341156485 },
+                {  "lat": 52.2091871298822, "lng": 0.13831657357513907 },
+                {  "lat": 52.20901619463617, "lng": 0.1365355867892504 },
+                {  "lat": 52.21290809571114, "lng": 0.134947719052434 },
+                {  "lat": 52.21410452380418, "lng": 0.13556999154388907 }
+            ]
+
+        }
+    }
+}

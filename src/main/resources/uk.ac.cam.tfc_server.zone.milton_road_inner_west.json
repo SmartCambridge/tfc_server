@@ -1,0 +1,33 @@
+{
+    "main":    "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+
+            "module.id": "milton_road_inner_west",
+            "zone.id":   "milton_road_inner_west",
+            "zone.reverse.id":   "milton_road_inner_east",
+            "zone.name": "Milton Road inner WEST",
+
+            "zone.map": true,
+
+            "zone.center": {
+                "lat":52.214485539533044,
+                "lng":0.13127862475812438
+            },
+            "zone.zoom":16,
+            "zone.finish_index":3,
+            "zone.path":[
+                {  "lat": 52.215326956948424, "lng": 0.12659012340009215 },
+                {  "lat": 52.21558989662205, "lng": 0.1246160175651312 },
+                {  "lat": 52.21697030437245, "lng": 0.12540995143353942 },
+                {  "lat": 52.21937605533975, "lng": 0.13043104670941832 },
+                {  "lat": 52.21820606158316, "lng": 0.1319545414298773 },
+                {  "lat": 52.21619465196452, "lng": 0.12759863398969176 }
+            ]
+        }
+    }
+}

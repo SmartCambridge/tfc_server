@@ -7,10 +7,10 @@
             "eb.system_status": "system_status",
             "eb.zone": "tfc.zone",
 
-            "module.id": "barton_fen_east",
-            "zone.id":   "barton_fen_east",
-            "zone.reverse.id": "barton_fen_west",
-            "zone.name": "Barton Road/Fen Causeway EAST",
+            "module.id": "barton_east",
+            "zone.id":   "barton_east",
+            "zone.reverse.id": "barton_fwest",
+            "zone.name": "Barton Road EAST",
 
             "zone.map": true,
 

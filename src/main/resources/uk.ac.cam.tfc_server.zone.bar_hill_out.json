@@ -1,0 +1,39 @@
+{
+    "main": "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+            "module.id": "bar_hill_out",
+            "zone.id": "bar_hill_out",
+            "zone.reverse.id": "bar_hill_in",
+            "zone.name": "Bar Hill (A14) OUT",
+            "zone.map": false,
+            "zone.center": {
+                "lat": 52.246892981975684,
+                "lng": 0.04169628024101257
+            },
+            "zone.zoom": 13,
+            "zone.finish_index": 2,
+            "zone.path": [
+                {
+                    "lat": 52.24100691198031,
+                    "lng": 0.06392642855644227
+                },
+                {
+                    "lat": 52.23659184707941,
+                    "lng": 0.05808994174003602
+                },
+                {
+                    "lat": 52.24899496061214,
+                    "lng": 0.03302738070487977
+                },
+                {
+                    "lat": 52.253198619129044,
+                    "lng": 0.03817722201347351
+                }
+            ]
+        }
+    }
+}

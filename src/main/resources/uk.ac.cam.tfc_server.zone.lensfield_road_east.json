@@ -1,0 +1,47 @@
+{
+    "main": "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+            "module.id": "lensfield_road_east",
+            "zone.id": "lensfield_road_east",
+            "zone.reverse.id": "lensfield_road_west",
+            "zone.name": "Lensfield Road EAST",
+            "zone.map": false,
+            "zone.center": {
+                "lat": 52.20237165598558,
+                "lng": 0.12592837214469912
+            },
+            "zone.zoom": 16,
+            "zone.finish_index": 3,
+            "zone.path": [
+                {
+                    "lat": 52.19768970436282,
+                    "lng": 0.12276336550712587
+                },
+                {
+                    "lat": 52.19841307179987,
+                    "lng": 0.1224629580974579
+                },
+                {
+                    "lat": 52.19857089585798,
+                    "lng": 0.12456580996513368
+                },
+                {
+                    "lat": 52.19926794541094,
+                    "lng": 0.12645408511161807
+                },
+                {
+                    "lat": 52.19857089585798,
+                    "lng": 0.1274196803569794
+                },
+                {
+                    "lat": 52.19792644409274,
+                    "lng": 0.12533828616142276
+                }
+            ]
+        }
+    }
+}
