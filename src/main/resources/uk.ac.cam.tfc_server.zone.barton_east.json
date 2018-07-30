@@ -9,7 +9,7 @@
 
             "module.id": "barton_east",
             "zone.id":   "barton_east",
-            "zone.reverse.id": "barton_fwest",
+            "zone.reverse.id": "barton_west",
             "zone.name": "Barton Road EAST",
 
             "zone.map": true,
