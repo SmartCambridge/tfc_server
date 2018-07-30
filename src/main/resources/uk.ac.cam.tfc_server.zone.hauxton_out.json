@@ -5,10 +5,10 @@
             "module.name": "zone",
             "eb.system_status": "system_status",
             "eb.zone": "tfc.zone",
-            "module.id": "hauzton_out",
+            "module.id": "hauxton_out",
             "zone.id": "hauxton_out",
             "zone.reverse.id": "hauxton_in",
-            "zone.name": "Hauzton (A10) OUT",
+            "zone.name": "Hauxton (A10) OUT",
             "zone.map": false,
             "zone.center": {
                 "lat": 52.15607858783419,

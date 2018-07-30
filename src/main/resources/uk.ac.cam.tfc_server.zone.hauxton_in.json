@@ -7,10 +7,10 @@
             "eb.system_status": "system_status",
             "eb.zone": "tfc.zone",
 
-            "module.id": "hauzton_in",
+            "module.id": "hauxton_in",
             "zone.id":   "hauxton_in",
             "zone.reverse.id":   "hauxton_out",
-            "zone.name": "Hauzton (A10) IN",
+            "zone.name": "Hauxton (A10) IN",
 
             "zone.map": true,
 
