@@ -9,7 +9,7 @@
 
             "module.id": "newmarket_road_outer_in",
             "zone.id":   "newmarket_road_outer_in",
-            "zone.reverse.id":   "nwemarket_road_outer_out",
+            "zone.reverse.id":   "newmarket_road_outer_out",
             "zone.name": "Newmarket Road outer IN",
 
             "zone.map": true,
