@@ -11,7 +11,7 @@
             "eb.console_out":        "tfc.console_out",
             "eb.manager":            "tfc.manager",
               
-            "rtmonitor.log_level":   2,
+            "rtmonitor.log_level":   1,
 
             "rtmonitor.http.port":   8090,
 
@@ -20,6 +20,11 @@
                                       "address":    "tfc.feedmaker.cloudamber.sirivm",
                                       "records_array": "request_data",
                                       "record_index": "VehicleRef"
+                                    },
+                                    {
+                                      "http.uri":   "/rtmonitor/sirivm-zones",
+                                      "address":    "tfc.zone.cloudamber.sirivm",
+                                      "record_index": "module_id"
                                     }
                                   ]
               
