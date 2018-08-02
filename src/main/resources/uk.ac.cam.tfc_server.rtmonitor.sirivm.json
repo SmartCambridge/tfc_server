@@ -20,7 +20,12 @@
                                       "address":    "tfc.feedmaker.cloudamber.sirivm",
                                       "records_array": "request_data",
                                       "record_index": "VehicleRef"
-                                    }
+                                    },
+                                    {
+                                      "http.uri":   "/rtmonitor/sirivm-zones",
+                                      "address":    "tfc.zone.cloudamber.sirivm",
+                                      "record_index": "module_id"
+                                    },
                                   ]
               
 
