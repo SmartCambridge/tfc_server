@@ -38,6 +38,7 @@ public class Vehicle {
     public boolean within; // true if within bounds at current timestamp
     public Long start_ts; // timestamp of successful start (otherwise 0)
     public Long start_ts_delta; // reliability indicator: (position.ts - prev_position.ts) at time of start
+    public double distance; // distance travelled with zone (otherwise 0)
 
     // Initialize a new Vehicle object from a JSON position record
     Vehicle(String vehicle_id, JsonObject position_record)
@@ -54,6 +55,7 @@ public class Vehicle {
         within = false;
         start_ts = 0L;
         start_ts_delta = 0L;
+        distance = 0.0;
 
     }
 

@@ -148,6 +148,8 @@ public class ZoneCompute {
                       // calculate 'time delta' within which this start time was calculated
                       // i.e. the difference in timestamps between points when vehicle entered zone
                       v.start_ts_delta = v.position.ts - v.prev_position.ts;
+                      // Calculate how far the vehicle has already travelled in the zone
+                      v.distance = i.position.distance(v.position);
 
                       // ZONE_START (entry via start line)
                       zone_start(v);
@@ -164,6 +166,7 @@ public class ZoneCompute {
           {
               // vehicle is continuing to travel within zone
               //System.out.println("Zone: vehicle_id("+vehicle_id+") inside zone "+ZONE_NAME);
+              v.distance += v.prev_position.distance(v.position);
           }
       // HAS VEHICLE EXITTED ZONE? either via the finish line (zone_completion) or not (zone_exit)
       else if (!v.within && v.prev_within)
@@ -175,6 +178,7 @@ public class ZoneCompute {
               if (i.success)
                   {
                       Long finish_ts = i.position.ts;
+                      v.distance += v.prev_position.distance(i.position);
                       
                       // if we also have a good entry, then this is a successful COMPLETION
                       if (v.start_ts>0L)
@@ -197,6 +201,7 @@ public class ZoneCompute {
               // Reset the Zone start time for this vehicle
               v.start_ts = 0L;
               v.start_ts_delta = 0L;
+              v.distance = 0.0;
           }
     }
 
@@ -367,6 +372,9 @@ public class ZoneCompute {
 
       // calculate duration of exit vector
       Long finish_ts_delta = v.position.ts - v.prev_position.ts;
+
+      // Calculate average speed
+      double speed = v.distance / duration;
       
       // Build console string and output
       // e.g. 2016-03-16 15:19:08,Cam Test,315,no_route,00:00:29,0.58,COMPLETED,15:11:41,15:18:55,00:07:14
@@ -376,6 +384,8 @@ public class ZoneCompute {
       completed_log += v.current_position_record.toString()+",";
       completed_log += finish_ts+",";
       completed_log += duration+",";
+      completed_log += v.distance+",";
+      completed_log += speed+",";
       completed_log += ts_to_datetime_str(v.position.ts) + ",";
       completed_log += ts_to_time_str(v.start_ts) + ",";
       completed_log += ts_to_time_str(finish_ts) + ","; // finish time
@@ -399,6 +409,9 @@ public class ZoneCompute {
       msg.put("duration", duration);
       // note we send start_ts_delta + finish_ts_delta as the 'confidence' factor
       msg.put("ts_delta", finish_ts_delta + v.start_ts_delta);
+      // report the distance travelled and average speed
+      msg.put("distance", v.distance);
+      msg.put("avg_speed", speed);
 
       // Send zone_completed message to common zone.address
       msg_handler.handle_msg(msg);

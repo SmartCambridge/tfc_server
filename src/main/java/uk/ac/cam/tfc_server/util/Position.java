@@ -62,7 +62,7 @@ public class Position {
     
     // Return distance in m between positions p1 and p2.
     // lat/longs in e.g. p1.lat etc
-    double distance(Position p) {
+    public double distance(Position p) {
         //double R = 6378137.0; // Earth's mean radius in meter
         double R = 6380000.0; // Earth's radius at Lat 52 deg in meter
         double dLat = Math.toRadians(p.lat - lat);
