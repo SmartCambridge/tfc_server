@@ -25,9 +25,13 @@
                                       "http.uri":   "/rtmonitor/sirivm-zones",
                                       "address":    "tfc.zone.cloudamber.sirivm",
                                       "record_index": "module_id"
+                                    },
+                                    { "http.uri":   "/rtmonitor/parking",
+                                      "address":    "tfc.feedmaker.cam",
+                                      "records_array": "request_data",
+                                      "record_index": "parking_id"
                                     }
                                   ]
-              
 
           }
         }
