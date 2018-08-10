@@ -1,4 +1,4 @@
-                                                                                
+
 {
     "main":    "uk.ac.cam.tfc_server.zonemanager.ZoneManager",
     "options":
@@ -48,8 +48,6 @@
                   "barton_west",
                   "barton_road_outer_in",
                   "barton_road_outer_out",
-                  "harston_in",
-                  "harston_out",
                   "shelford_road_in",
                   "shelford_road_out",
                   "babraham_road_in",
