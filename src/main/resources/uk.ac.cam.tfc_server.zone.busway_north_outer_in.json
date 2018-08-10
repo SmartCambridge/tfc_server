@@ -1,0 +1,32 @@
+
+{
+    "main":    "uk.ac.cam.tfc_server.zone.Zone",
+    "options": { "config":
+                 {
+        "module.name":      "zone",
+        "module.id":        "busway_north_outer_in",
+
+        "eb.system_status": "system_status",
+        "eb.zone":          "tfc.zone",
+
+        "zone.id":          "busway_north_outer_in",
+        "zone.reverse.id": "busway_north_outer_out",
+
+        "zone.center": {
+            "lat":52.24686937520481,
+            "lng":0.09952738881111146},
+        "zone.zoom":14,
+        "zone.finish_index":2,
+        "zone.path":[
+            {  "lat": 52.26105580601783, "lng": 0.07768347859382631 },
+            {  "lat": 52.26320964501791, "lng": 0.08154585957527162 },
+            {  "lat": 52.244294314285355, "lng": 0.109526664018631 },
+            {  "lat": 52.24213955663541, "lng": 0.106780081987381 }
+        ],
+
+        "zone.name":"Guided Busway (northern) outer IN",
+        "zone.map": true
+               }
+             }
+}
+
