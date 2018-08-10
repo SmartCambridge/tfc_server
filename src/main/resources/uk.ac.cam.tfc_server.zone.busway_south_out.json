@@ -1,0 +1,47 @@
+{
+    "main": "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+            "module.name": "zone",
+            "module.id": "busway_south_out",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+            "zone.id": "busway_south_out",
+            "zone.reverse.id": "busway_south_in",
+            "zone.center": {
+                "lat": 52.18387600858932,
+                "lng": 0.1350626349449158
+            },
+            "zone.zoom": 15,
+            "zone.finish_index": 3,
+            "zone.path": [
+                {
+                    "lat": 52.18976965359115,
+                    "lng": 0.1328954100608826
+                },
+                {
+                    "lat": 52.18908560987063,
+                    "lng": 0.13512700796127322
+                },
+                {
+                    "lat": 52.17748157278151,
+                    "lng": 0.12929052114486697
+                },
+                {
+                    "lat": 52.17529725442963,
+                    "lng": 0.12757390737533572
+                },
+                {
+                    "lat": 52.17582360601056,
+                    "lng": 0.12568563222885135
+                },
+                {
+                    "lat": 52.18450750791967,
+                    "lng": 0.12950509786605838
+                }
+            ],
+            "zone.name": "Guided Busway (southern) OUT",
+            "zone.map": false
+        }
+    }
+}

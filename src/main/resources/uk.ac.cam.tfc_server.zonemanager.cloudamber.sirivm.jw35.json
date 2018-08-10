@@ -73,7 +73,21 @@
                   "the_backs_2_north",
                   "the_backs_2_south",
                   "victoria_road_east",
-                  "victoria_road_west"
+                  "victoria_road_west",
+                  "hills_road_outer_in",
+                  "hills_road_outer_out",
+                  "hills_road_inner_in",
+                  "hills_road_inner_out",
+                  "brooklands_ave_east",
+                  "brooklands_ave_west",
+                  "busway_south_in",
+                  "busway_south_out",
+                  "busway_north_in",
+                  "busway_north_out",
+                  "victoria_ave_in",
+                  "victoria_ave_out",
+                  "maids_causeway_in",
+                  "maids_causeway_out"
             ]
           }
         }

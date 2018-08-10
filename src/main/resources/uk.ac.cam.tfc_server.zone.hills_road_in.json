@@ -22,7 +22,7 @@
         "zone.center":      {"lat":52.191733476750535,"lng":0.1393497467040694},
         "zone.zoom" :       14,
         "zone.name":"Hills Road IN",
-        "zone.map": true
+        "zone.map": false
                }
              }   
 }

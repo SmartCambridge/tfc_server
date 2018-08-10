@@ -1,0 +1,32 @@
+
+{
+    "main":    "uk.ac.cam.tfc_server.zone.Zone",
+    "options": { "config":
+                 {
+        "module.name":      "zone",
+        "module.id":        "maids_causeway_in",
+
+        "eb.system_status": "system_status",
+        "eb.zone":          "tfc.zone",
+
+        "zone.id":          "maids_causeway_in",
+        "zone.reverse.id": "maids_causeway_out",
+
+        "zone.center": {
+            "lat":52.20844308422573,
+            "lng":0.1293684728443623},
+        "zone.zoom":15,
+        "zone.finish_index":2,
+        "zone.path":[
+            {  "lat": 52.20904793686798, "lng": 0.13621347025036815 },
+            {  "lat": 52.2078119248633, "lng": 0.13638513162732127 },
+            {  "lat": 52.20725965306618, "lng": 0.12823121622204783 },
+            {  "lat": 52.20828529522567, "lng": 0.12818830087780955 }
+        ],
+
+        "zone.name":"Maids Causeway IN",
+        "zone.map": true
+               }
+             }
+}
+
