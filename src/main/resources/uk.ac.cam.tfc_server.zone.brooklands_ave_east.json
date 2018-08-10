@@ -1,0 +1,32 @@
+
+{
+    "main":    "uk.ac.cam.tfc_server.zone.Zone",
+    "options": { "config":
+                 {
+        "module.name":      "zone",
+        "module.id":        "brooklands_ave_east",
+
+        "eb.system_status": "system_status",
+        "eb.zone":          "tfc.zone",
+
+        "zone.id":          "brooklands_ave_east",
+        "zone.reverse.id": "brooklands_ave_west",
+
+        "zone.center": {
+            "lat":52.19360744109708,
+            "lng":0.1349422708153725},
+        "zone.zoom":15,
+        "zone.finish_index":2,
+        "zone.path":[
+            {  "lat": 52.19284453443958, "lng": 0.1320884004235268 },
+            {  "lat": 52.19150283924828, "lng": 0.13324711471796039 },
+            {  "lat": 52.19095036475281, "lng": 0.12444946914911272 },
+            {  "lat": 52.192107922484794, "lng": 0.12500736862421039 }
+        ],
+
+        "zone.name":"Brooklands Avenue EAST",
+        "zone.map": true
+               }
+             }
+}
+
