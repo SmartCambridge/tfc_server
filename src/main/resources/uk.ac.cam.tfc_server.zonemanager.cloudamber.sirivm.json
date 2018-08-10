@@ -102,6 +102,8 @@
                   "busway_south_out",
                   "busway_north_in",
                   "busway_north_out",
+                  "busway_north_outer_in",
+                  "busway_north_outer_out",
                   "victoria_ave_in",
                   "victoria_ave_out",
                   "maids_causeway_in",
