@@ -124,6 +124,12 @@ import uk.ac.cam.tfc_server.util.Log;
         // An eventbus message has come in..., update all the clients
         public void update(JsonObject eventbus_msg, Monitor m)
         {
+            // Do nothing if no clients
+            if (client_table.size() == 0)
+            {
+                return;
+            }
+
             logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                        ": "+m.address+" updating "+ client_table.size()+" clients");
 

@@ -81,7 +81,10 @@ public class RTMonitor extends AbstractVerticle {
     
     // data structure to hold eventbus and subscriber data for each monitor
     private MonitorTable monitors;
-    
+
+    // dictionary to hold rt_tokens of connected clients
+    private Hashtable<String,RTToken> rt_tokens;
+
     @Override
     public void start(Future<Void> fut) throws Exception
     {
@@ -102,7 +105,9 @@ public class RTMonitor extends AbstractVerticle {
 
         // send periodic "system_status" messages
         init_system_status();
-        
+
+        rt_tokens = new Hashtable<String,RTToken>();
+
         // initialize object to hold MonitorInfo for each monitor
         monitors = new MonitorTable();
     
@@ -257,11 +262,12 @@ public class RTMonitor extends AbstractVerticle {
                     // The connecting page is expected to first send { "msg_type": "rt_connect" ... }
                     else if (sock_msg.getString("msg_type","").equals(Constants.SOCKET_RT_CONNECT))
                     {
-                        String token_hash = check_token(sock_msg, headers);
+                        String token_hash = register_token(sock_msg, headers);
 
                         if (token_hash == null)
                         {
                             send_nok(sock,"","bad connect");
+                            sock.close();
                             return;
                         }
 
@@ -336,7 +342,9 @@ public class RTMonitor extends AbstractVerticle {
     // *****************************************************************************************
     // *************  Check an incoming rt_token  **********************************************
     // *****************************************************************************************
-    private String check_token(JsonObject sock_msg, MultiMap headers)
+    
+    // On client connection, check their token, store a cached version, and return hash reference
+    private String register_token(JsonObject sock_msg, MultiMap headers)
     {
         JsonObject client_data = sock_msg.getJsonObject("client_data", null);
 
@@ -426,7 +434,20 @@ public class RTMonitor extends AbstractVerticle {
             return null;
         }
 
-        return token_hash;
+        // Seems ok so far, so create token
+        RTToken new_token = new RTToken(token_hash, token, client_origin);
+
+        boolean token_check_ok = new_token.check();
+
+        if (token_check_ok)
+        {
+            // Add the decrypted token to the global cache
+            rt_tokens.put(token_hash, new_token);
+
+            return token_hash;
+        }
+        
+        return null;
     }
 
     // *****************************************************************************************
