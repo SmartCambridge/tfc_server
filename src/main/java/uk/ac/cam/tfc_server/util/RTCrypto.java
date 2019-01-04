@@ -16,7 +16,12 @@ import java.util.Random;
 
 public class RTCrypto {
 
-    String RTMONITOR_KEY = "H7tj6Rq98Xpsw1Kc";
+    private String RTMONITOR_KEY;
+
+    public RTCrypto(String key)
+    {
+        RTMONITOR_KEY = key;
+    }
 
     // String plaintext -> Base64-encoded String ciphertext
     public String encrypt(String key, String plaintext) {

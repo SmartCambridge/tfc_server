@@ -85,6 +85,8 @@ public class RTMonitor extends AbstractVerticle {
     // dictionary to hold rt_tokens of connected clients
     private Hashtable<String,RTToken> rt_tokens;
 
+    private String RTMONITOR_KEY; // key from secrets.sh, shared with tfc_web
+
     @Override
     public void start(Future<Void> fut) throws Exception
     {
@@ -97,7 +99,9 @@ public class RTMonitor extends AbstractVerticle {
             }
 
         logger = new Log(LOG_LEVEL);
-    
+
+        RTMONITOR_KEY = System.getenv("RTMONITOR_KEY");
+
         logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": V"+VERSION+
                    " started on port "+HTTP_PORT+" (log_level="+LOG_LEVEL+")");
 
@@ -364,7 +368,7 @@ public class RTMonitor extends AbstractVerticle {
             return null;
         }
 
-        RTCrypto rt_crypto = new RTCrypto();
+        RTCrypto rt_crypto = new RTCrypto(RTMONITOR_KEY);
 
         JsonObject token = rt_crypto.rt_token(token_string);
 
