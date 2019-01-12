@@ -83,6 +83,16 @@ import uk.ac.cam.tfc_server.util.Log;
             clients = new ClientTable();
         }
 
+        // Add a client subscriber to this Monitor (on receipt of rt_connect message)
+        public String add_client(String UUID, 
+                                 SockJSSocket sock, 
+                                 JsonObject sock_msg,
+                                 RTToken token)
+        {
+            // a simple add of the client
+            return clients.add(UUID, sock, sock_msg, token);
+        }
+
         // A relevant message has appeared on the EventBus, so update this monitor state
         public void update_state(JsonObject eventbus_msg)
         {
@@ -174,13 +184,6 @@ import uk.ac.cam.tfc_server.util.Log;
             // Now JsonObject records_parent contains the String with the
             // property as the last value in record_index.
             return index_parent.getString(record_index.get(record_index.size()-1));
-        }
-
-        // Add a client subscriber to this Monitor (on receipt of rt_connect message)
-        public String add_client(String UUID, SockJSSocket sock, JsonObject sock_msg)
-        {
-            // a simple add of the client
-            return clients.add(UUID, sock, sock_msg);
         }
 
         // return true if the "key": "A>B>C" in the sock_msg matches the monitor 'record_index'

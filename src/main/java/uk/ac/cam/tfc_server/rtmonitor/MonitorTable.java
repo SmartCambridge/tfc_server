@@ -30,9 +30,13 @@ import io.vertx.ext.web.handler.sockjs.SockJSSocket;
         }
 
         // add_client() is called when a client browser connects to a websocket
-        public String add_client(String uri, String UUID, SockJSSocket sock, JsonObject sock_msg)
+        public String add_client(String uri, 
+                                 String UUID, 
+                                 SockJSSocket sock, 
+                                 JsonObject sock_msg,
+                                 RTToken token)
         {
-            return monitors.get(uri).add_client(UUID, sock, sock_msg);
+            return monitors.get(uri).add_client(UUID, sock, sock_msg, token);
         }
 
         // add_subscription() is called when a websocket 'rt_subscribe" subscription arrives

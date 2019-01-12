@@ -54,7 +54,7 @@ import uk.ac.cam.tfc_server.util.RTCrypto;
 
 public class RTMonitor extends AbstractVerticle {
 
-    private final String VERSION = "1.24";
+    private final String VERSION = "1.25";
     
     // from config()
     public static int LOG_LEVEL;             // optional in config(), defaults to Constants.LOG_INFO
@@ -266,6 +266,7 @@ public class RTMonitor extends AbstractVerticle {
                     // The connecting page is expected to first send { "msg_type": "rt_connect" ... }
                     else if (sock_msg.getString("msg_type","").equals(Constants.SOCKET_RT_CONNECT))
                     {
+                        // Valid token will be added to rt_tokens Hashtable and hash returned
                         String token_hash = register_token(sock_msg, headers);
 
                         if (token_hash == null)
@@ -276,7 +277,8 @@ public class RTMonitor extends AbstractVerticle {
                         }
 
                         // Add client with this connection to the client table
-                        create_rt_client(URI, sock.writeHandlerID(), sock, sock_msg);
+                        create_rt_client(URI, sock.writeHandlerID(), sock, sock_msg, rt_tokens.get(token_hash));
+
                         // Send rt_connect_ok in reply
                         sock.write(Buffer.buffer("{ \"msg_type\": \""+Constants.SOCKET_RT_CONNECT_OK+"\" }"));
                     }
@@ -457,10 +459,14 @@ public class RTMonitor extends AbstractVerticle {
     // *****************************************************************************************
     // *************  Handle a client connection     *******************************************
     // *****************************************************************************************
-    private void create_rt_client(String URI, String UUID, SockJSSocket sock, JsonObject sock_msg)
+    private void create_rt_client(String URI, 
+                                  String UUID, 
+                                  SockJSSocket sock, 
+                                  JsonObject sock_msg, 
+                                  RTToken token)
     {
         // create entry in client table for correct monitor
-        monitors.add_client(URI, UUID, sock, sock_msg);
+        monitors.add_client(URI, UUID, sock, sock_msg, token);
 
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                 ": adding client "+UUID+" with "+sock_msg.toString());

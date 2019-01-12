@@ -32,8 +32,12 @@ import uk.ac.cam.tfc_server.util.Log;
         // 'UUID' is a unique key generated for this call
         // 'sock' is the socket the client connected on
         // 'sock_msg' is the JsonObject subscription message
+        // 'token_hash' is the RTMonitor 'rt_tokens' dictionary key of the connection token
         // returns UUID of entry added
-        public String add(String UUID, SockJSSocket sock, JsonObject sock_msg)
+        public String add(String UUID, 
+                          SockJSSocket sock, 
+                          JsonObject sock_msg,
+                          RTToken token)
         {
             if (sock == null)
             {
@@ -43,7 +47,7 @@ import uk.ac.cam.tfc_server.util.Log;
             }
 
             // create new entry for sock_data
-            Client client = new Client(UUID, sock, sock_msg);
+            Client client = new Client(UUID, sock, sock_msg, token);
 
             logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                        ": ClientTable.add "+UUID);

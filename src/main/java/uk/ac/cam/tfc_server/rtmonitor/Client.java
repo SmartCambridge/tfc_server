@@ -25,6 +25,7 @@ import uk.ac.cam.tfc_server.util.Log;
                                                              // packet from web client
                                                              //
                                        // Client info received on connection:
+        public RTToken token;          // Valid RTToken created on connection
         public JsonObject client_data; // rt_client_id
                                        // rt_client_name
                                        // rt_client_url
@@ -39,11 +40,13 @@ import uk.ac.cam.tfc_server.util.Log;
         private String MODULE_ID = "Client";
 
         // Construct a new Client 
-        Client(String UUID, SockJSSocket sock, JsonObject msg)
+        Client(String UUID, SockJSSocket sock, JsonObject msg, RTToken token)
         {
             this.UUID = UUID;
 
             this.sock = sock;
+
+            this.token = token; 
 
             this.msg = msg;
 
@@ -364,7 +367,6 @@ import uk.ac.cam.tfc_server.util.Log;
             String client_id = client_data.getString("rt_client_id","unknown-client-id");
             String client_name = client_data.getString("rt_client_name","unknown-client-name");
             String client_url = client_data.getString("rt_client_url","unknown-client-url");
-            String token = client_data.getString("rt_token","unknown-token");
             String layout_name = client_data.getString("layout_name","no layout");
             String layout_owner = client_data.getString("layout_owner","-");
             String display_name = client_data.getString("display_name","no display");
@@ -392,7 +394,7 @@ import uk.ac.cam.tfc_server.util.Log;
             if (full)
             {
                 html += "<p><b>Client websocket UUID: </b>"+UUID+"</p>";
-                html += "<p><b>Client token: </b>"+token+"</p>";
+                html += token.toHtml();
                         
                 html += "<table>";
                 for (String request_id: subscriptions.keySet())

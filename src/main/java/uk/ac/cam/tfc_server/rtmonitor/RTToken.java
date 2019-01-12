@@ -56,5 +56,16 @@ class RTToken {
         return true;
     }
 
+    public String toHtml()
+    {
+        String html = "<div class='token'>";
+        html += "<h3>Token: "+token_hash+"</h3>";
+        html += "<p><b>Origin: </b>"+origin+"</p>";
+        html += "<p><b>Use count: </b>"+use_count+"</p>";
+        html += "<pre>"+client_token.encodePrettily()+"</pre>";
+        html += "</div>";
+        return html;
+    }
+
 }
 
