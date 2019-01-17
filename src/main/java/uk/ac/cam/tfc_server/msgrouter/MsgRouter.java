@@ -41,7 +41,7 @@ import uk.ac.cam.tfc_server.util.Log;
 
 public class MsgRouter extends AbstractVerticle {
 
-    private final String VERSION = "0.10";
+    private final String VERSION = "0.20";
     
     // from config()
     public int LOG_LEVEL;             // optional in config(), defaults to Constants.LOG_INFO
@@ -412,6 +412,7 @@ public class MsgRouter extends AbstractVerticle {
         //            "destination_type":  "everynet_jsonrpc",              
         //            "url" :  "http://localhost:8080/everynet_feed/test/adeunis_test2",
         //            "http_token": "test-msgrouter-post"
+        //            "http_token_header": "x-api-key"    // defaults to "X-Auth-Token"
         //        },
         //        { 
         //            "source_address": "tfc.everynet_feed.test",
@@ -691,7 +692,8 @@ public class MsgRouter extends AbstractVerticle {
         }
 
         // { "destination_id": "xyz",
-        //   "http_token":"foo!bar",
+        //   "http_token":"foo!bar", // optional
+        //   "http_token_header": "x-api-key" // optional - default to X-Auth-Token
         //   "url": "http://localhost:8080/efgh"
         // }
 
@@ -764,6 +766,8 @@ public class MsgRouter extends AbstractVerticle {
         {
             String http_token = info.getString("http_token","");
 
+            String http_token_header = info.getString("http_token_header","");
+
             UrlParts u = null;
             
             try
@@ -776,13 +780,14 @@ public class MsgRouter extends AbstractVerticle {
             }
             
             return destination_type+"/"+destination_id+" -> "+
-                   "<"+http_token+"> "+
+                   "<"+http_token_header+": "+http_token+"> "+
                    (u.http_ssl ? "https://" : "http://")+
                    u.http_host +":"+
                    u.http_port +
                    u.http_path;
         }
 
+        // Here is where we POST the data to the destination
         public void send(String msg)
         {
             logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
@@ -809,10 +814,13 @@ public class MsgRouter extends AbstractVerticle {
                 request.putHeader("content-type", "application/json");
                 request.setTimeout(15000);
 
+                // info is the original router config
                 String auth_token = info.getString("http_token");
                 if (auth_token != null)
                     {
-                        request.putHeader("X-Auth-Token", auth_token);
+                        // auth_token_header in the config is optional, defaults to "X-Auth-Token"
+                        String auth_token_header = info.getString("http_token_header", "X-Auth-Token");
+                        request.putHeader(auth_token_header, auth_token);
                     }
                 // Make sure the request is ended when you're done with it
                 request.end(msg);

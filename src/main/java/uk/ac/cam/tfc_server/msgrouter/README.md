@@ -5,11 +5,35 @@ supported by the Smart Cambridge programme.
 
 ## Overview
 
-MsgRouter subscribes to an eventbus address, filters the messages received, and forwards messages to
+MsgRouter subscribes to an eventbus address, filters the messages received, and POSTs messages to
 defined destination addresses.
 
 MsgRouter contains within it a 'destinations' structure that contains the reference information for
 each destination, e.g. the URL and an identifier.
+
+## msgrouter.routers config fields
+
+`source_address`: the eventbus address to be listened to for possible messages to be sent to destination.
+
+`destination_id`: any string that will uniquely (within tfc_server) identify this destination.
+
+`destination_type`: current values `feed_eventbus_msg` or `feed_eventbus_0`:
+
+    `feed_eventbus_msg`: will send the eventbus record 'as-is', with an array of records in the 
+    `request_data` property. This is by far the typical use.
+
+    `feed_eventbus_0`: assumes the original data source produces *single* data records, which the
+    eventbus source has still packaged into a `request_data` array property with a single element.
+    This setting will unwrap the feedhandler envelope and just send `request_data[0]`.  Currently
+    used for forwarding LoraWAN data.
+
+`url`: the complete http destination address for the messages to be posted to.
+
+`http_token_header`: optional, e.g. `X-Auth-Token` or `x-api-key`, as requested at time of setup
+by client. Defaults to `X-Auth-Token`.
+
+`http_token`: optional, a security key to be used to protect the recipient. So combined with the
+above, MsgRouter will post messages to `url` with the header `http_token_header: http_token`.
 
 ## Sample MsgRouter service config files
 
@@ -39,6 +63,7 @@ each destination, e.g. the URL and an identifier.
                 "destination_id": "tfc-app3.feedmaker.eventbus",
                 "destination_type": "feed_eventbus_msg",
                 "url": "http://tfc-app3.cl.cam.ac.uk/feedmaker/eventbus/sirivm_json",
+                "http_token_header": "X-Auth-Token",
                 "http_token": "cam-test-siri"
                 },
                 {

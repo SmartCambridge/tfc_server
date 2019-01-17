@@ -26,4 +26,5 @@ test-tmp
 *[#]*
 .vertx
 secrets.sh
+secrets/
 
