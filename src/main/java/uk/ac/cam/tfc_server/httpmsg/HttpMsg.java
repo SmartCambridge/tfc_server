@@ -53,7 +53,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class HttpMsg extends AbstractVerticle {
 
-    private final String VERSION = "0.05";
+    private final String VERSION = "0.06";
     
     // from config()
     private String MODULE_NAME;       // config module.name - normally "httpmsg"
@@ -123,7 +123,7 @@ public class HttpMsg extends AbstractVerticle {
 
     // *********************************************************************
     // connect router to http_server, including the feed POST handlers added
-    http_server.requestHandler(router::accept).listen(HTTP_PORT);
+    http_server.requestHandler(router).listen(HTTP_PORT);
     logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
                ": http server started on :"+HTTP_PORT+"/"+MODULE_NAME+"/"+MODULE_ID);
     

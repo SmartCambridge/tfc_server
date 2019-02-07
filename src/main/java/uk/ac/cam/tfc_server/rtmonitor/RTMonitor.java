@@ -151,7 +151,7 @@ public class RTMonitor extends AbstractVerticle {
             start_monitor(START_MONITORS.getJsonObject(i), router);
         }
 
-        http_server.requestHandler(router::accept).listen(HTTP_PORT);
+        http_server.requestHandler(router).listen(HTTP_PORT);
 
         // set up periodic 'client purge' to clear out clients 
         vertx.setPeriodic(SYSTEM_PURGE_SECONDS * 1000 ,id -> {

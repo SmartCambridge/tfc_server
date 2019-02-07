@@ -59,7 +59,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class Console extends AbstractVerticle {
 
-    private final String VERSION = "1.07";
+    private final String VERSION = "1.08";
     
     public int LOG_LEVEL; // optional in config(), defaults to Constants.LOG_INFO
 
@@ -158,7 +158,7 @@ public class Console extends AbstractVerticle {
         });
     
     // connect router to http_server
-      http_server.requestHandler(router::accept).listen(HTTP_PORT);
+      http_server.requestHandler(router).listen(HTTP_PORT);
 
       // send system status message from this module (i.e. to itself) immediately on startup, then periodically
       send_status();

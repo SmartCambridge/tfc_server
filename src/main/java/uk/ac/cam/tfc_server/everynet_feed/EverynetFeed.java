@@ -60,7 +60,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class EverynetFeed extends AbstractVerticle {
 
-    private final String VERSION = "0.06";
+    private final String VERSION = "0.07";
     
     // from config()
     private String MODULE_NAME;       // config module.name - normally "feedscraper"
@@ -131,7 +131,7 @@ public class EverynetFeed extends AbstractVerticle {
 
     // *********************************************************************
     // connect router to http_server, including the feed POST handlers added
-    http_server.requestHandler(router::accept).listen(HTTP_PORT);
+    http_server.requestHandler(router).listen(HTTP_PORT);
     logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": http server started on port "+ HTTP_PORT);
     
   } // end start()

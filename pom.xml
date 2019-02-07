@@ -4,13 +4,13 @@
     <groupId>uk.ac.cam.tfc_server</groupId>
     <artifactId>tfc_server</artifactId>
     <packaging>jar</packaging>
-    <version>3.5.2</version>
+    <version>3.6.3</version>
     <name>tfc_server</name>
     <url>http://maven.apache.org</url>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>1.9</maven.compiler.source>
+        <maven.compiler.target>1.9</maven.compiler.target>
     </properties>
   
     <dependencies>
@@ -27,6 +27,11 @@
       <dependency>
           <groupId>io.vertx</groupId>
           <artifactId>vertx-web</artifactId>
+          <version>${project.version}</version>
+      </dependency>
+      <dependency>
+          <groupId>io.vertx</groupId>
+          <artifactId>vertx-web-client</artifactId>
           <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -67,8 +72,8 @@
           <artifactId>maven-compiler-plugin</artifactId>
           <version>3.1</version>
           <configuration>
-            <source>1.8</source>
-            <target>1.8</target>
+            <source>1.9</source>
+            <target>1.9</target>
             <compilerArgs>
               <arg>-Xlint:unchecked</arg>
               <arg>-Xlint:deprecation</arg>

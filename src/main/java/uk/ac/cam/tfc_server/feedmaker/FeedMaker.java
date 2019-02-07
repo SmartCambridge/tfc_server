@@ -43,10 +43,10 @@ import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 
-import io.vertx.core.http.HttpClient;
-import io.vertx.core.http.HttpClientOptions;
-import io.vertx.core.http.HttpClientResponse;
-import io.vertx.core.http.HttpClientRequest;
+import io.vertx.ext.web.client.WebClient;
+import io.vertx.ext.web.client.WebClientOptions;
+import io.vertx.ext.web.client.HttpRequest;
+import io.vertx.ext.web.client.HttpResponse;
 
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.eventbus.EventBus;
@@ -65,7 +65,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class FeedMaker extends AbstractVerticle {
 
-    private final String VERSION = "0.51";
+    private final String VERSION = "0.52";
     
     // from config()
     private String MODULE_NAME;       // config module.name - normally "feedscraper"
@@ -86,7 +86,7 @@ public class FeedMaker extends AbstractVerticle {
     private final int SYSTEM_STATUS_RED_SECONDS = 35;
 
     // global vars
-    private HashMap<String,HttpClient> http_clients; // used to store a HttpClient for each feed_id
+    private HashMap<String,WebClient> web_clients; // used to store a WebClient for each feed_id
     private EventBus eb = null;
 
     private Log logger;
@@ -98,8 +98,8 @@ public class FeedMaker extends AbstractVerticle {
 
     String BASE_URI = null;
 
-    // create holder for HttpClients
-    http_clients = new HashMap<String,HttpClient>();
+    // create holder for WebClients
+    web_clients = new HashMap<String,WebClient>();
 
     // load FeedMaker initialization values from config()
     if (!get_config())
@@ -142,7 +142,7 @@ public class FeedMaker extends AbstractVerticle {
     // connect router to http_server, including the feed POST handlers added
     if (HTTP_PORT != 0) 
         {
-            http_server.requestHandler(router::accept).listen(HTTP_PORT);
+            http_server.requestHandler(router).listen(HTTP_PORT);
             logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": http server started");
         }
     
@@ -310,22 +310,20 @@ public class FeedMaker extends AbstractVerticle {
 
         final String FEED_ID = config.getString("feed_id");
 
-        HttpClientRequest request = http_clients.get(FEED_ID)
-           .get(config.getString("http.uri"), new Handler<HttpClientResponse>() {
+        // get the WebClient pre-configured for this feed id
+        web_clients.get(FEED_ID)
+            // apply methods to this WebClient
+            .get(config.getString("http.uri"))
+            .putHeader("Accept-Encoding", "identity")
+            .send( async_response -> {
+                if (async_response.succeeded())
+                {
+                        Buffer buffer = async_response.result().body();
 
-            // this handler called when GET response is received
-            @Override
-            public void handle(HttpClientResponse client_response) {
-                // specify this 'bodyHandler' to handle the entire body of the response (as
-                // opposed to parts as they arrive).
-                client_response.bodyHandler(new Handler<Buffer>() {
-                    // and here we go... handle() will be called with the GET response buffer
-                    @Override
-                    public void handle(Buffer buffer) {
                         // print out the received GET data for LOG_LEVEL=1 (debug)
                         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
-                                   ": GET reponse length=" + buffer.length() );
-
+                                   ": GET "+ async_response.result().statusCode() +
+                                   " response length=" + buffer.length() );
 
                         // Now send the buffer to be processed, which may cause exception if bad data
                         try {
@@ -336,14 +334,14 @@ public class FeedMaker extends AbstractVerticle {
                                        ": proceed_feed error");
                             logger.log(Constants.LOG_WARN, e.getMessage());
                         }
-                    }
-                });
-            }
-        });
-
-        request.putHeader("Accept-Encoding", "identity");
-        request.setFollowRedirects(true);
-        request.end();
+                }
+                else // async_response failed
+                {
+                    // print out the received GET data for LOG_LEVEL=1 (debug)
+                    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
+                               ": GET FAILED " + async_response.cause().getMessage() );
+                }
+            }); // end .send
 
     } // end get_feed()
 
@@ -631,17 +629,20 @@ public class FeedMaker extends AbstractVerticle {
                         config.put("file_suffix",".bin");
                     }
 
-                // create a new HttpClient for this feed, and add to http_clients list
+                // create a new WebClient for this feed, and add to web_clients list
                 if (http_get)
                     {
-                        http_clients.put(config.getString("feed_id"),
-                             vertx.createHttpClient( new HttpClientOptions()
-                                                       .setSsl(config.getBoolean("http.ssl"))
-                                                       .setTrustAll(true)
-                                                       .setDefaultPort(config.getInteger("http.port"))
+                        WebClientOptions options = new WebClientOptions()
                                                        .setDefaultHost(config.getString("http.host"))
+                                                       .setDefaultPort(config.getInteger("http.port"))
+                                                       .setFollowRedirects(true)
                                                        .setKeepAlive(false)
-                            ));
+                                                       .setSsl(config.getBoolean("http.ssl"))
+                                                       .setTrustAll(true);
+                                                       
+                        WebClient client = WebClient.create(vertx, options);
+
+                        web_clients.put(config.getString("feed_id"), client);
                     }
             }
 

@@ -112,7 +112,7 @@ public class StaticServer extends AbstractVerticle {
     // connect router to http_server
     // ********************************
 
-    http_server.requestHandler(router::accept).listen(HTTP_PORT);
+    http_server.requestHandler(router).listen(HTTP_PORT);
 
   } // end start()
 
