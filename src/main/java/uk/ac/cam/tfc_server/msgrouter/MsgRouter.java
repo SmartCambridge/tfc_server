@@ -16,6 +16,7 @@ package uk.ac.cam.tfc_server.msgrouter;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
@@ -25,10 +26,10 @@ import io.vertx.ext.jdbc.JDBCClient;
 import io.vertx.ext.sql.SQLConnection;
 import io.vertx.ext.sql.ResultSet;
 
-import io.vertx.core.http.HttpClient;
-import io.vertx.core.http.HttpClientOptions;
-import io.vertx.core.http.HttpClientResponse;
-import io.vertx.core.http.HttpClientRequest;
+import io.vertx.ext.web.client.WebClient;
+import io.vertx.ext.web.client.WebClientOptions;
+import io.vertx.ext.web.client.HttpRequest;
+import io.vertx.ext.web.client.HttpResponse;
 
 import java.io.*;
 import java.net.URL;
@@ -60,7 +61,7 @@ public class MsgRouter extends AbstractVerticle {
     private ArrayList<JsonObject> START_ROUTERS; // config msgrouters.routers parameters
 
     // global vars
-    private HashMap<String,HttpClient> http_clients; // used to store a HttpClient for each feed_id
+    private HashMap<String,WebClient> web_clients; // used to store a WebClient for each feed_id
 
     private Destinations destinations; // stores destination_type->destination_id -> http POST mapping
     
@@ -83,8 +84,8 @@ public class MsgRouter extends AbstractVerticle {
 
         eb = vertx.eventBus();
 
-        // create holder for HttpClients, one per router
-        http_clients = new HashMap<String,HttpClient>();
+        // create holder for WebClients, one per router
+        web_clients = new HashMap<String,WebClient>();
 
         // create holders for sensor and application data
         sensors = new Sensors();
@@ -433,12 +434,6 @@ public class MsgRouter extends AbstractVerticle {
 
         final boolean has_destination = destinations.put(router_config);
 
-        //final HttpClient http_client = vertx.createHttpClient( new HttpClientOptions()
-        //                                               .setSsl(router_config.getBoolean("http.ssl"))
-        //                                               .setTrustAll(true)
-        //                                               .setDefaultPort(router_config.getInteger("http.port"))
-        //                                               .setDefaultHost(router_config.getString("http.host"))
-        //                                                     );
         String router_filter_text;
         if (has_filter)
             {
@@ -467,7 +462,7 @@ public class MsgRouter extends AbstractVerticle {
             if (!has_filter || source_filter.match(msg))
             {
                 // route this message if it matches the filter within the RouterConfig
-                //route_msg(http_client, router_config, msg);
+                //route_msg(web_client, router_config, msg);
                 if (has_destination)
                 {
                     String destination_type = router_config.getString("destination_type");
@@ -681,10 +676,10 @@ public class MsgRouter extends AbstractVerticle {
         public JsonObject info;          // Data packet defining Destination as received from eventbus add_destination 
                                          // or PostgreSQL csn_destination table
 
-        public HttpClient http_client;   // We pre-define an HttpClient for each Destination. Hopefully this is more efficient.
+        public WebClient web_client;   // We pre-define an WebClient for each Destination. Hopefully this is more efficient.
         UrlParts u;                      // To hold the results of the parse_url()
 
-        private class UrlParts {         // The results from using Java URL parsing in parse_url (for vertx.createHttpClient)
+        private class UrlParts {         // The results from using Java URL parsing in parse_url
             public boolean http_ssl;
             public int     http_port;
             public String  http_host;
@@ -729,18 +724,19 @@ public class MsgRouter extends AbstractVerticle {
             // inject http_path into the destination "info"
             info.put("http_path", u.http_path);
             
-            http_client = vertx.createHttpClient( new HttpClientOptions()
-                                                       .setSsl(u.http_ssl)
-                                                       .setTrustAll(true)
-                                                       .setDefaultPort(u.http_port)
-                                                       .setDefaultHost(u.http_host)
-                                                );
+            WebClientOptions options = new WebClientOptions()
+                                           .setSsl(u.http_ssl)
+                                           .setTrustAll(true)
+                                           .setDefaultPort(u.http_port)
+                                           .setDefaultHost(u.http_host);
+                                           
+            web_client = WebClient.create(vertx, options);
 
             //logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
             //     ": created destination "+this.toString());
         }
 
-        // Parse the string url into it's constituent parts for createHttpClientOptions
+        // Parse the string url into it's constituent parts for WebClientOptions
         private UrlParts parse_url(String url_string) throws MalformedURLException
         {
             URL url = new URL(url_string);
@@ -795,35 +791,44 @@ public class MsgRouter extends AbstractVerticle {
 
             try
             {
-                HttpClientRequest request = http_client.post(u.http_path, response -> {
-                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                                   ": msg posted to " + this.toString());
+                Buffer post_body = Buffer.buffer(msg);
 
-                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                                   ": response was " + response.statusCode());
+                // Build request
+                HttpRequest<Buffer> request = web_client.post(u.http_path);
 
-                    });
-
-                request.exceptionHandler( e -> {
-                        logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
-                                   ": Destination HttpClientRequest error for "+destination_id);
-                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+e.getMessage());
-                        });
-
-                // Now do stuff with the request
-                request.putHeader("content-type", "application/json");
-                request.setTimeout(15000);
-
+                // Add optional token header
                 // info is the original router config
                 String auth_token = info.getString("http_token");
                 if (auth_token != null)
-                    {
-                        // auth_token_header in the config is optional, defaults to "X-Auth-Token"
-                        String auth_token_header = info.getString("http_token_header", "X-Auth-Token");
-                        request.putHeader(auth_token_header, auth_token);
-                    }
-                // Make sure the request is ended when you're done with it
-                request.end(msg);
+                {
+                    // auth_token_header in the config is optional, defaults to "X-Auth-Token"
+                    String auth_token_header = info.getString("http_token_header", "X-Auth-Token");
+                    request.putHeader(auth_token_header, auth_token);
+                }
+
+                // Add remaining settings and send POST
+                request.putHeader("content-type", "application/json")
+                    .timeout(15000) // give up after 15 seconds
+                    // send this POST...
+                    .sendBuffer( post_body, async_response -> {
+                        if (async_response.succeeded())
+                        {
+                            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                                       ": msg posted to " + this.toString());
+
+                            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                                       ": response was " + async_response.result().statusCode());
+                        }
+                        else // async_response failed
+                        {
+                            logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+                                       ": Destination HttpClientRequest error for "+destination_id);
+                            
+                            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                                       ": POST FAILED " + async_response.cause().getMessage() );
+                        }
+                    }); // end .send
+
             }
             catch (Exception e)
             {
