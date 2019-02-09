@@ -65,7 +65,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class FeedMaker extends AbstractVerticle {
 
-    private final String VERSION = "0.52";
+    private final String VERSION = "0.53";
     
     // from config()
     private String MODULE_NAME;       // config module.name - normally "feedscraper"
@@ -281,9 +281,14 @@ public class FeedMaker extends AbstractVerticle {
                             // if the token matches the config(), or config() http.token is null
                             // then parse this assumed gtfs-realtime POST data
                             if (HTTP_TOKEN==null || HTTP_TOKEN.equals(post_token))
-                                {
-                                    process_feed(buffer, config, parser);
-                                }
+                            {
+                                process_feed(buffer, config, parser);
+                            }
+                            else
+                            { 
+                                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
+                                       ": token error "+post_token+"/"+HTTP_TOKEN);
+                            }
                         } catch (Exception e) {
                             logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
                                        ": proceed_feed error");
@@ -389,6 +394,8 @@ public class FeedMaker extends AbstractVerticle {
     final String file_suffix = config.getString("file_suffix");
     write_bin_file(buf, bin_path, filename, file_suffix);
 
+    logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                                       ": write_bin_file "+bin_path+" "+filename+"."+file_suffix);
     // Write file to DATA_MONITOR
     //
     final String monitor_path = config.getString("data_monitor");
