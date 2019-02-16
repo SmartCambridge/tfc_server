@@ -3,10 +3,13 @@ package uk.ac.cam.tfc_server.rtmonitor;
 import java.util.*;
 import java.time.*;
 import java.time.format.*;
+
+import io.vertx.core.MultiMap;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
 import io.vertx.ext.web.handler.sockjs.SockJSSocket;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.net.SocketAddress;
 
 import uk.ac.cam.tfc_server.util.Constants;
 import uk.ac.cam.tfc_server.util.Log;
@@ -34,6 +37,10 @@ import uk.ac.cam.tfc_server.util.Log;
 
         private JsonObject msg; // rt_connect message with which this client was created
 
+        private MultiMap headers; // headers when this client was created
+
+        private SocketAddress socket_address; // socket address when this client was created
+
         private Log logger;
 
         private String MODULE_NAME = "RTMonitor";
@@ -49,6 +56,10 @@ import uk.ac.cam.tfc_server.util.Log;
             this.token = token; 
 
             this.msg = msg;
+
+            headers = sock.headers();
+
+            socket_address = sock.remoteAddress();
 
             logger = new Log(RTMonitor.LOG_LEVEL);
 
@@ -379,13 +390,15 @@ import uk.ac.cam.tfc_server.util.Log;
             html += " \""+display_name+"\" ("+display_owner+")";
             html += "</p>";
             html += "<p><b>Connected: </b>"+RTMonitor.format_date(created)+"&nbsp;"+RTMonitor.format_time(created)+", ";
-            int record_count = 0;
+
             // iterate the client subscriptions to get total record count
+            int record_count = 0;
             for (String request_id: subscriptions.keySet())
             {
                 record_count += subscriptions.get(request_id).record_count;
             }
             html += "<b>Records sent: </b>"+record_count+", ";
+
             int subscription_count = subscriptions.size();
             html += "<b>Subscriptions: </b>"+subscription_count+"</p>";
 
@@ -393,7 +406,23 @@ import uk.ac.cam.tfc_server.util.Log;
 
             if (full)
             {
+                // Client websocket UUID
                 html += "<p><b>Client websocket UUID: </b>"+UUID+"</p>";
+
+                // Http request headers at connect time
+                html += "<p><b>Http connect headers:</b>";
+
+                for (String name : headers.names()) 
+                {
+                    html += "<br/>" + name + " = ";        
+                    List<String> values = headers.getAll(name);
+                    for (String value : values)
+                    {
+                        html += "\"" + value + "\" ";
+                    }
+                }
+                html += "</p>";
+
                 html += token.toHtml();
                         
                 html += "<table>";
