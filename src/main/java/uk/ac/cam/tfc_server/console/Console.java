@@ -59,7 +59,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class Console extends AbstractVerticle {
 
-    private final String VERSION = "1.08";
+    private final String VERSION = "1.09";
     
     public int LOG_LEVEL; // optional in config(), defaults to Constants.LOG_INFO
 
@@ -68,7 +68,6 @@ public class Console extends AbstractVerticle {
     private String EB_MANAGER; // from config()
     private String MODULE_NAME; // from config()
     private String MODULE_ID; // from config()
-    private String WEBROOT; // from config()
 
     private final int SYSTEM_STATUS_PERIOD = 8000; // publish status heartbeat every 8 s
     private final int SYSTEM_STATUS_AMBER_SECONDS = 15;
@@ -236,8 +235,6 @@ public class Console extends AbstractVerticle {
                 return false;
             }
 
-        // where the built-in webserver will find static files
-        WEBROOT = config().getString(MODULE_NAME+".webroot");
         return true;
     }
 

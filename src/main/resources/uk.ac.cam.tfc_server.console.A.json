@@ -10,8 +10,7 @@
             "eb.console_out":   "tfc.console_out",
             "eb.manager":       "tfc.manager",
 
-            "console.http.port":  8081,
-            "console.webroot":   "webroot"
+            "console.http.port":  8081
         }
     }
 }

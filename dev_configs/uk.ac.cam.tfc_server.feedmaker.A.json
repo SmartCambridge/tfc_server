@@ -25,7 +25,7 @@
                                          "http.post":  true,
 
                                          "msg_type" :  "feed_sirivm",
-                                         "address" :   "tfc.feedmaker.cloudamber.xml",
+                                         "address" :   "tfc.feedmaker.cloudamber.sirivm",
 
                                          "tag_record": "VehicleActivity",
                                          "tag_map":    [ { "original_tag": "RecordedAtTime",
