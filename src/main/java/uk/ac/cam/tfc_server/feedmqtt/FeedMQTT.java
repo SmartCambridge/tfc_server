@@ -244,6 +244,8 @@ public class FeedMQTT extends AbstractVerticle {
         // ***************************************************
         // CONNECT TO MQTT SERVER
         // ***************************************************
+        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
+                   ": MQTT connecting to "+HOST+":"+PORT.toString());
         client.connect(PORT, HOST, connect_response -> {
 
             if (connect_response.succeeded())
