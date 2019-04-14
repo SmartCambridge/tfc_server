@@ -184,7 +184,7 @@ public class FeedMQTT extends AbstractVerticle {
 
         final String USERNAME = config.getString("username");
 
-        client_options.setClientId(USERNAME);
+        client_options.setUsername(USERNAME);
 
         final String PASSWORD = config.getString("password");
 
@@ -237,6 +237,9 @@ public class FeedMQTT extends AbstractVerticle {
             }
             catch (Exception e)
             {
+                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
+                           ": MQTT process_feed exception");
+                logger.log(Constants.LOG_DEBUG, e.getMessage());
                 return;
             }
         });
