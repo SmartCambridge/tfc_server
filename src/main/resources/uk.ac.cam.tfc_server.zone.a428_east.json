@@ -1,0 +1,40 @@
+{
+    "main": "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+            "module.id": "a428_east",
+            "zone.id": "a428_east",
+            "zone.reverse.id": "a428_west",
+            "zone.name": "A428 EAST",
+            "zone.map": true,
+            "zone.center": {
+                "lat":52.22732625644483,
+                "lng":-0.15767097473144534
+            },
+            "zone.zoom":13,
+            "zone.finish_index":2,
+            "zone.path": [
+                {
+                    "lat": 52.2214901719116,
+                    "lng": -0.22830963134765628
+                },
+                {
+                    "lat": 52.22779941887071,
+                    "lng": -0.22882461547851565
+                },
+                {   "lat": 52.230743427331866,
+                "lng": -0.1064300537109375
+                },
+                {   "lat": 52.22611704066942,
+                    "lng": -0.10385513305664064
+                },
+                {   "lat": 52.216652475452165,
+                    "lng": -0.1474571228027344
+                }
+            ]
+        }
+    }
+}
