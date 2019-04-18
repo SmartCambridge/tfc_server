@@ -1,0 +1,43 @@
+{
+    "main": "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+            "module.id": "a1m_south",
+            "zone.id": "a1m_south",
+            "zone.reverse.id": "a1m_north",
+            "zone.name": "A1M SOUTH",
+            "zone.map": false,
+            "zone.center": {
+                "lat": 52.197010355033555,
+                "lng": -0.2955844625830651
+            },
+            "zone.zoom": 14,
+            "zone.finish_index": 2,
+            "zone.path": [
+                {
+                    "lat": 52.208241122423466,
+                    "lng": -0.2974298223853112
+                },
+                {
+                    "lat": 52.20613721345041,
+                    "lng": -0.28601434081792837
+                },
+                {
+                    "lat": 52.18451377764345,
+                    "lng": -0.30163552612066274
+                },
+                {
+                    "lat": 52.18619773177717,
+                    "lng": -0.3090169653296471
+                },
+                {
+                    "lat": 52.20466441789291,
+                    "lng": -0.3036096319556237
+                }
+            ]
+        }
+    }
+}
