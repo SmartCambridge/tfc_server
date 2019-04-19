@@ -24,6 +24,9 @@ test-tmp
 *~
 *[#]*[#]
 *[#]*
+
+nohup.out
+
 .vertx
 secrets.sh
 secrets/
