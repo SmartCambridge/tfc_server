@@ -4,7 +4,7 @@ package uk.ac.cam.tfc_server.batcher;
 // *************************************************************************************************
 // *************************************************************************************************
 // Batcher.java
-// Version 0.03
+// Version 0.04
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
@@ -130,6 +130,8 @@ public class Batcher extends AbstractVerticle {
 
         conf.put(BW_MODULE_NAME+".log_level", bwc.LOG_LEVEL);
 
+        conf.put(BW_MODULE_NAME+".msg_type", bwc.MSG_TYPE);
+
         conf.put(BW_MODULE_NAME+".data_bin", bwc.DATA_BIN);
 
         conf.put(BW_MODULE_NAME+".start_ts", bwc.START_TS);
@@ -155,7 +157,8 @@ public class Batcher extends AbstractVerticle {
         logger.log(Constants.LOG_DEBUG, batcherworker_options.toJson().toString());
         
         // note the BatcherWorker json config() file has MODULE_ID of this BATCHER
-        vertx.deployVerticle("service:uk.ac.cam.tfc_server.batcherworker."+bwc.MODULE_ID,
+//        vertx.deployVerticle("service:uk.ac.cam.tfc_server.batcherworker."+bwc.MODULE_ID,
+        vertx.deployVerticle("uk.ac.cam.tfc_server.batcher.BatcherWorker",
                              batcherworker_options,
                              res -> {
                 if (res.succeeded()) {
@@ -224,6 +227,8 @@ public class Batcher extends AbstractVerticle {
                         BatcherWorkerConfig bwc = new BatcherWorkerConfig(batcherworker_id);
 
                         bwc.LOG_LEVEL = LOG_LEVEL;
+
+                        bwc.MSG_TYPE = config().getString(BW_MODULE_NAME+"."+batcherworker_id+".msg_type","gtfs_bin");
                         
                         bwc.DATA_BIN = config().getString(BW_MODULE_NAME+"."+batcherworker_id+".data_bin");
 
@@ -252,8 +257,9 @@ public class Batcher extends AbstractVerticle {
 
     private class BatcherWorkerConfig {
         public String MODULE_ID; // id of worker module e.g. "A"
-        public String DATA_BIN;     // path to root of bin files without ending '/'
-        public String DATA_ZONE;     // path to root of zone completion files without ending '/'
+        public String MSG_TYPE;  // empty => gtfs, "sirivm_json" => SiriVM JSON
+        public String DATA_BIN;  // path to root of bin files without ending '/'
+        public String DATA_ZONE; // path to root of zone completion files without ending '/'
         public Long START_TS;    // unix timestamp of start of data
         public Long FINISH_TS;   // unix timestamp of end of data
         public ArrayList<String> ZONES;

@@ -4,7 +4,7 @@ package uk.ac.cam.tfc_server.batcher;
 // *************************************************************************************************
 // *************************************************************************************************
 // BatcherWorker.java
-// Version 0.02
+// Version 0.03
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
@@ -68,6 +68,7 @@ public class BatcherWorker extends AbstractVerticle {
 
     private String BATCHER_ADDRESS; // eventbus address to communicate with Batcher controller
 
+    private String MSG_TYPE; // "gtfs_bin" | "sirivm_json"
     private String TFC_DATA_BIN; // root of bin input files
     private Long   START_TS;   // UTC timestamp for first position record file to publish
     private Long   FINISH_TS;  // UTC timestamp to end feed
@@ -270,18 +271,76 @@ public class BatcherWorker extends AbstractVerticle {
                     {
                         try
                             {
-                                process_gtfs_file(file_path);
+                                if (MSG_TYPE.equals("sirivm_json"))
+                                {
+                                    process_sirivm_file(file_path);
+                                }
+                                else if (MSG_TYPE.equals("gtfs_bin"))
+                                {
+                                    process_gtfs_file(file_path);
+                                }
                             }
                         catch (Exception e)
                             {
                                 System.err.println(MODULE_NAME+"."+MODULE_ID+
-                                                       ": process_gtfs_file exception "+file_path.toString());
+                                                       ": process_file exception "+file_path.toString());
                             }
                     }
         
             });
         
       } // end process_gtfs_dir()
+
+    void process_sirivm_file(Path file_path) throws Exception
+    {
+        Buffer file_data;
+
+        //System.err.println(MODULE_NAME+"."+MODULE_ID+": reading sirivm_json "+file_path.toString());
+        // Read the file
+        try
+            {
+                file_data = vertx.fileSystem().readFileBlocking(file_path.toString());
+            }
+        catch (Exception e)
+            {
+                System.err.println(MODULE_NAME+"."+MODULE_ID+": error reading "+file_path.toString());
+                e.printStackTrace();
+                return;
+            }
+
+        try
+        {
+            String fs = file_path.toString();
+            String basename = get_basename(fs);
+            String yyyymmdd = get_date(fs);
+
+            //logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": processing gtfs file "+yyyymmdd+"/"+basename);
+
+            JsonObject msg = new JsonObject(file_data);
+
+            // Here is where we process the current feed_bus_position message
+            // If there are NO zones then we pass the message straight to the filers
+            // If there are zones then we pass the message to each zone.
+            if (zones.size() == 0)
+                {
+                    msg_handler.handle_msg(msg);
+                }
+            else
+                {
+                    // Here is where we pass the current feed data through the configured zones
+                    for (String zone_id: zones.keySet())
+                        {
+                            zones.get(zone_id).handle_feed(msg);
+                        }
+                }
+
+          //eb.publish(FEEDPLAYER_ADDRESS, msg);
+          //logger.log(Constants.LOG_DEBUG, "BatcherWorker: ."+MODULE_ID+" published to "+FEEDPLAYER_ADDRESS);
+        } catch (Exception e)
+        {
+            System.err.println(MODULE_NAME+"."+MODULE_ID+": exception processing sirivm_json file "+file_path.toString());
+        }
+    }
 
     // process single gtfs binary file
     void process_gtfs_file(Path file_path) throws Exception
@@ -352,6 +411,13 @@ public class BatcherWorker extends AbstractVerticle {
         // extract substring i.e. "1457334014"
         String ts_string = fs.substring(ts_start, ts_start+ts_length);
         
+        // if ts_string has a '.' then trim to a long int
+        int point_position = ts_string.indexOf('.');
+
+        if (point_position > 0)
+        {
+            ts_string = ts_string.substring(0, point_position);
+        }
         return Long.parseLong(ts_string);
     }
 
@@ -410,6 +476,8 @@ public class BatcherWorker extends AbstractVerticle {
                 System.err.println(MODULE_NAME+"."+MODULE_ID+" config() error: failed to load batcher.address");
                 return false;
             }
+
+        MSG_TYPE = config().getString(MODULE_NAME+".msg_type","gtfs_bin"); // "gtfs_bin" | "sirivm_json"
 
         TFC_DATA_BIN = config().getString(MODULE_NAME+".data_bin");
         if (TFC_DATA_BIN==null)

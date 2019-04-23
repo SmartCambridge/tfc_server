@@ -10,13 +10,13 @@
 
             "eb.system_status":      "tfc.system_status",
 
-            "batcher.log_level":     2,
+            "batcher.log_level":     1,
 
             "batcher.address" :      "tfc.batcher.a428",
 
             "batcher.batcherworkers": [ "a428" ],
 
-            "batcherworker.a428.msg_type": "feed_sirivm",
+            "batcherworker.a428.msg_type": "sirivm_json",
             "batcherworker.a428.data_bin":  "/media/tfc/sirivm_json/data_bin",
             "batcherworker.a428.start_ts" :  1555628403,
             "batcherworker.a428.finish_ts" : 1555714798,
