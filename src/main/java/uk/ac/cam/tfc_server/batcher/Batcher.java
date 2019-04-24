@@ -147,6 +147,7 @@ public class Batcher extends AbstractVerticle {
 
         // set as WORKER verticle (i.e. synchronous, not non-blocking)
         batcherworker_options.setWorker(true);
+        batcherworker_options.setWorkerPoolSize(5);
         batcherworker_options.setMaxWorkerExecuteTime(MAXWORKER_NS);
         long mwet = batcherworker_options.getMaxWorkerExecuteTime();
         //boolean mwet = batcherworker_options.isWorker();
