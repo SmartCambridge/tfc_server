@@ -18,13 +18,11 @@
 
             "batcherworker.a428.msg_type": "sirivm_json",
             "batcherworker.a428.data_bin":  "/media/tfc/cloudamber/sirivm/data_bin_json",
-            "batcherworker.a428.start_ts" :  1514764800,
-            "batcherworker.a428.finish_ts" : 1546300799,
+            "batcherworker.a428.start_ts" :  1554076800,
+            "batcherworker.a428.finish_ts" : 1556323200,
             "batcherworker.a428.zones" : [
-                  "a1m_north",
-                  "a1m_south",
-                  "a428_east",
-                  "a428_west"
+                  "a428_st_neots_madingley_east",
+                  "a428_st_neots_madingley_west"
             ],
             "batcherworker.a428.filers":
             [
