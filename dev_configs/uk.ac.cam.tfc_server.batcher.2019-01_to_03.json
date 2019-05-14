@@ -18,8 +18,8 @@
 
             "batcherworker.a428.msg_type": "sirivm_json",
             "batcherworker.a428.data_bin":  "/media/tfc/cloudamber/sirivm/data_bin_json",
-            "batcherworker.a428.start_ts" :  1554076800,
-            "batcherworker.a428.finish_ts" : 1556323200,
+            "batcherworker.a428.start_ts" :  1546300800,
+            "batcherworker.a428.finish_ts" : 1554076800,
             "batcherworker.a428.zones" : [
                   "milton_pandr_north",
                   "milton_pandr_south"

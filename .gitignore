@@ -21,6 +21,10 @@ ScratchTest.java
 test-results
 test-tmp
 *.class
+
+nohup.err
+nohup.log
+
 *~
 *[#]*[#]
 *[#]*
