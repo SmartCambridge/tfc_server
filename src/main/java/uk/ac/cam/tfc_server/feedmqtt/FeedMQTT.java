@@ -457,6 +457,16 @@ public class FeedMQTT extends AbstractVerticle {
 
         MqttClient client = null; // MqttFeed object will be null if config bad
 
+        boolean watchdog_running = false; // set 'true' to avoid multiple instances
+
+        long watchdog_timer; // id of timer - so we can reset to longer interval
+
+        long watchdog_count = 0;
+
+        int watchdog_period = SYSTEM_WATCHDOG_PERIOD; // time (s) between status checks
+
+        int WATCHDOG_MAX = 10; // when disconnected, check WATCHDOG_MAX times before doubling period
+
         MqttFeed(JsonObject config) {
 
             this.config = config;
@@ -526,12 +536,19 @@ public class FeedMQTT extends AbstractVerticle {
             // *********************************
             client = MqttClient.create(vertx, client_options);
 
+            // catch exceptions buried in netty
+            client.exceptionHandler( e -> {
+                logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
+                           ": MQTT exception" );
+            });
+
             // ***************************************************
             // REGISTER MQTT CLOSE HANDLER 
             // ***************************************************
             client.closeHandler( Void -> {
                 logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
                            ": MQTT server closed connection" );
+
             }); // end closeHandler
 
             // ***************************************************
@@ -567,15 +584,25 @@ public class FeedMQTT extends AbstractVerticle {
             logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
                        ": MQTT connecting to "+HOST+":"+PORT.toString());
 
+            // Connect to the MQTT server
+            // Note we will only start the watchdog AFTER the first connect attempt, good or bad, to avoid race.
             client.connect(PORT, HOST, connect_response -> {
                 if (connect_response.succeeded())
                 {
                     logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+": MQTT connected");
 
+                    logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
+                            ": MQTT period set to "+Integer.toString(watchdog_period));
+
+                    restart_watchdog(SYSTEM_WATCHDOG_PERIOD);
+
+                    // subscribe to the MQTT topic, e.g. '+/devices/+/up' for TTN device uplink data
                     subscribe();
                 }
                 else
                 {
+                    start_watchdog(SYSTEM_WATCHDOG_PERIOD); // if watchdog already running, this will do nothing
+
                     logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+": MQTT connect FAILED");
                 }
             }); // end connect
@@ -588,6 +615,65 @@ public class FeedMQTT extends AbstractVerticle {
         {
              client.subscribe(TOPIC, 0); // Subscribe with QoS ZERO
         }
+
+        // *************************
+        // START WATCHDOG TIMER
+        // *************************
+        private void start_watchdog(int period)
+        {
+            if (!watchdog_running)
+            {
+                watchdog_running = true;
+                    
+                logger.log(Constants.LOG_INFO,MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+": MQTT start_watchdog("+Integer.toString(period)+")");
+
+                // send periodic "system_status" messages
+                watchdog_timer = vertx.setPeriodic(period, id -> { watchdog();  });
+            }
+        }
+
+        private void restart_watchdog(int period)
+        {
+            if (watchdog_running)
+            {
+                vertx.cancelTimer(watchdog_timer);
+            };
+
+            watchdog_count = 0;
+
+            watchdog_running = false;
+
+            watchdog_period = period;
+
+            start_watchdog(period);
+        }
+
+        // *************************
+        // WATCHDOG CHECKS
+        // wakes up on timer
+        // *************************
+        private void watchdog()
+        {
+            logger.log(Constants.LOG_DEBUG,MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
+                    ": MQTT watchdog("+Integer.toString(watchdog_period)+") "+(client.isConnected() ? "connected" : "DISCONNECTED"));
+
+            if (!client.isConnected())
+            {
+                watchdog_count++;
+
+                // We are DISCONNECTED, so polling reconnects at watchdog_period.
+                // We will incrementally double the period until we're polling 10mins+
+                if (watchdog_count >= WATCHDOG_MAX && watchdog_period < 600000)
+                {
+                    restart_watchdog(watchdog_period * 2);
+                }
+
+                logger.log(Constants.LOG_DEBUG,MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+": MQTT watchdog("+Integer.toString(watchdog_period)+") DISCONNECTED");
+                // re-connect
+                connect();
+            }
+        }
+
     } // end MqttFeed class
 
 } // end FeedMQTT class
