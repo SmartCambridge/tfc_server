@@ -72,6 +72,7 @@ public class FeedMQTT extends AbstractVerticle {
     private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
     private final int SYSTEM_STATUS_AMBER_SECONDS = 25;
     private final int SYSTEM_STATUS_RED_SECONDS = 35;
+    private final int SYSTEM_WATCHDOG_PERIOD = 9123; // check connect status every 9 seconds
 
     // global vars
     private HashMap<String,MqttFeed> mqtt_feeds; // used to store an MqttClient for each feed_id
@@ -79,57 +80,62 @@ public class FeedMQTT extends AbstractVerticle {
 
     private Log logger;
     
-  @Override
-  public void start(Future<Void> fut) throws Exception {
+    @Override
+    public void start(Future<Void> fut) throws Exception {
 
-    // create holder for MqttClients, indexed on feed_id
-    mqtt_feeds = new HashMap<String,MqttFeed>();
+        // create holder for MqttClients, indexed on feed_id
+        mqtt_feeds = new HashMap<String,MqttFeed>();
 
-    // load FeedMaker initialization values from config()
-    if (!get_config())
-          {
-              Log.log_err("FeedMQTT: "+ MODULE_ID + " failed to load initial config()");
-              vertx.close();
-              return;
-          }
+        // load FeedMaker initialization values from config()
+        if (!get_config())
+              {
+                  Log.log_err("FeedMQTT: "+ MODULE_ID + " failed to load initial config()");
+                  vertx.close();
+                  return;
+              }
 
-    logger = new Log(LOG_LEVEL);
-    
-    logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": Version "+VERSION+" started");
+        logger = new Log(LOG_LEVEL);
+        
+        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": Version "+VERSION+" started");
 
-    // create link to EventBus
-    eb = vertx.eventBus();
+        // create link to EventBus
+        eb = vertx.eventBus();
 
-    // send periodic "system_status" messages
-    vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> { send_status();  });
+        // send periodic "system_status" messages
+        vertx.setPeriodic(SYSTEM_STATUS_PERIOD, id -> { send_status();  });
 
-    // iterate through all the feedmqtt's to be started
-    for (int i=0; i<START_FEEDS.size(); i++)
-        {
-          start_client(START_FEEDS.getJsonObject(i));
-        }
+        // iterate through all the feedmqtt's to be started
+        for (int i=0; i<START_FEEDS.size(); i++)
+            {
+              start_client(START_FEEDS.getJsonObject(i));
+            }
 
-  } // end start()
+    } // end start()
 
-   private void start_client(JsonObject config)
+
+    // *******************************************************************
+    // *****  FeedMQTT config can contain multiple feed configs
+    // *****  so start each one (with add_feed_handler(feed config json )
+    // *******************************************************************
+    private void start_client(JsonObject config)
     {
         // ********************************************************************
         // create monitor directory if necessary
         // ********************************************************************
-          FileSystem fs = vertx.fileSystem();          
-          String monitor_path = config.getString("data_monitor");
-          if (!fs.existsBlocking(monitor_path))
-          {
-            try {
-                fs.mkdirsBlocking(monitor_path);
-                logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
+        FileSystem fs = vertx.fileSystem();          
+        String monitor_path = config.getString("data_monitor");
+        if (!fs.existsBlocking(monitor_path))
+        {
+          try {
+              fs.mkdirsBlocking(monitor_path);
+              logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+
                                         ": start_client created monitor path "+monitor_path);
-            } catch (Exception e) {
-                logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
+          } catch (Exception e) {
+              logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
                                         ": start_client FAIL: error creating monitor path "+monitor_path);
-                return;
-            }
+              return;
           }
+        }
           // monitor_path now exists
 
         // ************************************************************************************
@@ -189,62 +195,7 @@ public class FeedMQTT extends AbstractVerticle {
             return;
         }
 
-        // ***************************************************
-        // REGISTER MQTT CLOSE HANDLER 
-        // ***************************************************
-        feed.client.closeHandler( Void -> {
-            logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+"."+feed.FEED_ID+
-                       ": MQTT server closed connection" );
-        }); // end closeHandler
-
-        // ***************************************************
-        // REGISTER MQTT SUBSCRIBE CALLBACK
-        // ***************************************************
-        feed.client.publishHandler( mqtt_data -> {
-            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+feed.FEED_ID+": MQTT data received");
-            try {
-                process_feed(mqtt_data, config);
-            }
-            catch (Exception e)
-            {
-                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+feed.FEED_ID+
-                           ": MQTT process_feed exception");
-                logger.log(Constants.LOG_DEBUG, e.getMessage());
-                return;
-            }
-        }); // end publishHandler
-
-        // ***************************************************
-        // CONNECT TO MQTT SERVER
-        // ***************************************************
-        connect_feed(feed);
-
-        logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+"."+feed.FEED_ID+": MQTT handler started");
     }
-
-    private void connect_feed(MqttFeed feed)
-    {
-        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+feed.FEED_ID+
-                   ": MQTT connecting to "+feed.HOST+":"+feed.PORT.toString());
-
-        feed.client.connect(feed.PORT, feed.HOST, connect_response -> {
-
-            if (connect_response.succeeded())
-            {
-                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+feed.FEED_ID+": MQTT connected");
-
-                // *************************
-                // SUBSCRIBE TO MQTT TOPIC
-                // *************************
-                feed.client.subscribe(feed.TOPIC, 0); // Subscribe with QoS ZERO
-
-            }
-            else
-            {
-                logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+"."+feed.FEED_ID+": MQTT connect FAILED");
-            }
-        }); // end connect
-    };
 
     // ***********************************************    
     // get current local time as "YYYY-MM-DD-hh-mm-ss"
@@ -427,21 +378,21 @@ public class FeedMQTT extends AbstractVerticle {
         });
     }
 
-  // ***************************************************
-  // Write the 'buf' as a file 'filepath' (non-blocking)
-  private void write_file(FileSystem fs, Buffer buf, String file_path)
-  {
-    fs.writeFile(file_path, 
-                 buf, 
-                 result -> {
-      if (result.succeeded()) {
-          logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
-                     ": File "+file_path+" written");
-      } else {
-        Log.log_err(MODULE_NAME+"."+MODULE_ID+": write_file error ..." + result.cause());
-      }
-    });
-  } // end write_file
+    // ***************************************************
+    // Write the 'buf' as a file 'filepath' (non-blocking)
+    private void write_file(FileSystem fs, Buffer buf, String file_path)
+    {
+        fs.writeFile(file_path, 
+                     buf, 
+                     result -> {
+            if (result.succeeded()) {
+                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                             ": File "+file_path+" written");
+            } else {
+                Log.log_err(MODULE_NAME+"."+MODULE_ID+": write_file error ..." + result.cause());
+            }
+        });
+    } // end write_file
 
     // Load initialization global constants defining this FeedMaker from config()
     private boolean get_config()
@@ -491,23 +442,20 @@ public class FeedMQTT extends AbstractVerticle {
         return true;
     }
 
+    // **********************************************************
+    // ****  CLASS MqttFeed
+    // **********************************************************
     private class MqttFeed {
 
-        JsonObject config;
-
-        String FEED_ID;
-
+        JsonObject config; // JSON config object given in instantiation
+        String FEED_ID;    // which is checked and parsed into these values
         String USERNAME;
-
         String PASSWORD;
-
         Integer PORT;
-
         String HOST;
-
         String TOPIC;
 
-        MqttClient client = null;
+        MqttClient client = null; // MqttFeed object will be null if config bad
 
         MqttFeed(JsonObject config) {
 
@@ -567,8 +515,80 @@ public class FeedMQTT extends AbstractVerticle {
                 return;
             }
 
-            client = MqttClient.create(vertx, client_options);
+            // Initialize and connect the MQTT client
+            init(client_options);
         }
 
-    }
+        private void init(MqttClientOptions client_options)
+        {
+            // *********************************
+            // NOW CREATE THE VERTX MQTT CLIENT
+            // *********************************
+            client = MqttClient.create(vertx, client_options);
+
+            // ***************************************************
+            // REGISTER MQTT CLOSE HANDLER 
+            // ***************************************************
+            client.closeHandler( Void -> {
+                logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
+                           ": MQTT server closed connection" );
+            }); // end closeHandler
+
+            // ***************************************************
+            // REGISTER MQTT SUBSCRIBE CALLBACK
+            // ***************************************************
+            client.publishHandler( mqtt_data -> {
+                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+": MQTT data received");
+                try {
+                    process_feed(mqtt_data, config);
+                }
+                catch (Exception e)
+                {
+                    logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
+                               ": MQTT process_feed exception");
+                    logger.log(Constants.LOG_WARN, e.getMessage());
+                    return;
+                }
+            }); // end publishHandler
+
+            // ***************************************************
+            // CONNECT TO MQTT SERVER
+            // ***************************************************
+            connect();
+
+            logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+": MQTT handler started");
+        }
+
+        // ***************************************************
+        // CONNECT TO MQTT SERVER
+        // ***************************************************
+        private void connect()
+        {
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
+                       ": MQTT connecting to "+HOST+":"+PORT.toString());
+
+            client.connect(PORT, HOST, connect_response -> {
+                if (connect_response.succeeded())
+                {
+                    logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+": MQTT connected");
+
+                    subscribe();
+                }
+                else
+                {
+                    logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+": MQTT connect FAILED");
+                }
+            }); // end connect
+        }
+
+        // *************************
+        // SUBSCRIBE TO MQTT TOPIC
+        // *************************
+        private void subscribe()
+        {
+             client.subscribe(TOPIC, 0); // Subscribe with QoS ZERO
+        }
+    } // end MqttFeed class
+
 } // end FeedMQTT class
+
