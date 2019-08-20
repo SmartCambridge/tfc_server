@@ -82,6 +82,12 @@ nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server
 nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.msgrouter.cloudamber" -cluster >/dev/null 2>>/var/log/tfc_prod/msgrouter.cloudamber.err & disown
 
 # #############################################################################################
+# ################   MQTT FEED HANDLER            #############################################
+# #############################################################################################
+
+nohup java -cp "$TFC_JAR:secrets" -Xmx100m -Xms10m -Xmn2m -Xss10m io.vertx.core.Launcher run "service:feedmqtt.ttn" -cluster >/dev/null 2>>/var/log/tfc_prod/feedmqtt.ttn.err & disown
+
+# #############################################################################################
 # ################   RTMONITOR                    #############################################
 # #############################################################################################
 
