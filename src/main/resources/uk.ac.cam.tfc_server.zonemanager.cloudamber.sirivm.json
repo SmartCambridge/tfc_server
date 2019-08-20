@@ -107,7 +107,11 @@
                   "victoria_ave_in",
                   "victoria_ave_out",
                   "maids_causeway_in",
-                  "maids_causeway_out"
+                  "maids_causeway_out",
+                  "a1m_north",
+                  "a1m_south",
+                  "a428_east",
+                  "a428_west"
               ]
           }
         }
