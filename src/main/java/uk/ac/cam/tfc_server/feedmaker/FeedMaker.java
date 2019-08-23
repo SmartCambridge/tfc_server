@@ -322,6 +322,7 @@ public class FeedMaker extends AbstractVerticle {
         // get the WebClient pre-configured for this feed id
         HttpRequest<Buffer> request = web_clients.get(FEED_ID).get(config.getString("http.uri"));
 
+        /*
         if (config.getString("http.basic_id")!=null)
         {
             logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
@@ -333,6 +334,9 @@ public class FeedMaker extends AbstractVerticle {
         }
                                                        
         request.putHeader("Accept-Encoding", "identity")
+        */
+        //debug!! hardcoded test hack for DatexII
+        request.putHeader("Authorization", "Basic Q2FtYnNVbmk6UDhNU2F0c1c5TDM=")
             .send( async_response -> {
                 if (async_response.succeeded())
                 {
