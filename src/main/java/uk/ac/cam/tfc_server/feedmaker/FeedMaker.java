@@ -65,7 +65,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class FeedMaker extends AbstractVerticle {
 
-    private final String VERSION = "0.53";
+    private final String VERSION = "0.54";
     
     // from config()
     private String MODULE_NAME;       // config module.name - normally "feedscraper"
@@ -187,6 +187,10 @@ public class FeedMaker extends AbstractVerticle {
           else if (config.getString("feed_type").equals(Constants.FEED_GTFS))
           {
               parser = new ParseFeedGTFS(config, logger);
+          }
+          else if (config.getString("feed_type").equals(Constants.FEED_PARKING_DATEX))
+          {
+              parser = new ParseParkingDatex(config, logger);
           }
           else
           {
@@ -316,13 +320,25 @@ public class FeedMaker extends AbstractVerticle {
         final String FEED_ID = config.getString("feed_id");
 
         // get the WebClient pre-configured for this feed id
-        web_clients.get(FEED_ID)
-            // apply methods to this WebClient
-            .get(config.getString("http.uri"))
-            .putHeader("Accept-Encoding", "identity")
+        HttpRequest<Buffer> request = web_clients.get(FEED_ID).get(config.getString("http.uri"));
+
+        if (config.getString("http.basic_id")!=null)
+        {
+            logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
+                               ": get_feed basicAuth for: "+config.getString("http.basic_id"));
+
+            request.basicAuthentication(config.getString("http.basic_id"),
+                                        config.getString("http.basic_pwd")
+                                       );
+        }
+                                                       
+        request.putHeader("Accept-Encoding", "identity")
             .send( async_response -> {
                 if (async_response.succeeded())
                 {
+                        logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
+                                   ": GET SUCCEEDED: "+ async_response.result().statusCode() );
+
                         Buffer buffer = async_response.result().body();
 
                         // print out the received GET data for LOG_LEVEL=1 (debug)
@@ -646,7 +662,7 @@ public class FeedMaker extends AbstractVerticle {
                                                        .setKeepAlive(false)
                                                        .setSsl(config.getBoolean("http.ssl"))
                                                        .setTrustAll(true);
-                                                       
+
                         WebClient client = WebClient.create(vertx, options);
 
                         web_clients.put(config.getString("feed_id"), client);
