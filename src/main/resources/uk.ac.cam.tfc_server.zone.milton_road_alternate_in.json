@@ -1,0 +1,33 @@
+{
+    "main":    "uk.ac.cam.tfc_server.zone.Zone",
+    "options": {
+        "config": {
+
+            "module.name": "zone",
+            "eb.system_status": "system_status",
+            "eb.zone": "tfc.zone",
+
+            "module.id": "milton_road_alternate_in",
+            "zone.id":   "milton_road_alternate_in",
+            "zone.reverse.id":   "milton_road_alternate_out",
+            "zone.name": "Milton Road (A14 to Elizabeth Way) IN",
+
+            "zone.map": true,
+
+            "zone.center": {
+                "lat":52.22837453854545,
+                "lng":0.14440761879086497
+            },
+            "zone.zoom":15,
+            "zone.finish_index":3,
+            "zone.path":[
+                {  "lat": 52.23673280169261, "lng": 0.14850603416562083 },
+                {  "lat": 52.236391142542296, "lng": 0.15322672203183177 },
+                {  "lat": 52.230135687111726, "lng": 0.15236841514706614 },
+                {  "lat": 52.2185686581864, "lng": 0.13382898643612864 },
+                {  "lat": 52.22056681482662, "lng": 0.1314257271587849 },
+                {  "lat": 52.23042482422966, "lng": 0.14601694419980052 }
+            ]
+        }
+    }
+}
