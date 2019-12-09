@@ -18,17 +18,18 @@
 
             "feedmaker.feeds":     [
                                        { 
-                                         "feed_id" :   "sirivm_json",
-                                         "feed_type":  "feed_plain",
+                                         "feed_id" :   "general",
+                                         "feed_type":  "feed_eventbus_msg",
                                          "area_id" :   "cam",
 
                                          "http.post":  true,
+                                         "http.token": "testtoken",
 
                                          "file_suffix":   ".json",
-                                         "data_bin" :     "/media/tfc/test/siri_vm/data_bin",
-                                         "data_monitor" : "/media/tfc/test/siri_vm/data_monitor",
+                                         "data_bin" :     "/media/tfc/test/general/data_bin",
+                                         "data_monitor" : "/media/tfc/test/general/data_monitor",
 
-                                         "msg_type" :  "feed_sirivm",
+                                         "msg_type" :  "feed_cam_sensonr",
                                          "address" :   "tfc.feedmaker.test"
                                        }
                                      ]
