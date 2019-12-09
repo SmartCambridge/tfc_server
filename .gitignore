@@ -28,6 +28,9 @@ nohup.log
 *~
 *[#]*[#]
 *[#]*
+
+nohup.out
+
 .vertx
 secrets.sh
 secrets/
