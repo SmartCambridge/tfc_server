@@ -114,7 +114,15 @@ public class RTMonitor extends AbstractVerticle {
         }
         else
         {
+            // RTMONITOR_KEY from Config was not null
+            // Config key will override Environment Var
             key_source = "Config";
+            // But if Config key not valid (e.g. "") we will force key to 'null'
+            // This allows us to disable an Env Var key via Config if necessary
+            if (RTMONITOR_KEY.length() < 16)
+            {
+                RTMONITOR_KEY = null;
+            }
         }
 
         String key_message;
