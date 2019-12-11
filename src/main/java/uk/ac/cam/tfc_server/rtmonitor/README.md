@@ -526,7 +526,19 @@ An unencrypted token may look like:
   "issuer" : "/transport/map/",
   "issued" : "2019-12-10T17:40:06.548461+00:00",
   "expires" : "2019-12-10T18:40:06.548461+00:00",
-  "origin" : [ "https://tfc-app[1-5].cl.cam.ac.uk", "https://smartcambridge.org", "https://www.smartcambridge.org" ],
+  "origin" : [ "https://tfc-app[1-5].cl.cam.ac.uk", "http://localhost" ],
   "uses" : "5"
 }
 ```
+
+For development purposes, a java `util/MakeToken <key>` utility is provided which uses `RTCrypto.java`
+to encrypt a token input via standard input, e.g.
+```
+cat token_file.json | java -cp target/tfc_server-3.6.3-fat.jar MakeToken <key>
+```
+
+That `<key>` would need also be provided to RTMonitor via its `Config` `rtmonitor.key` parameter or an
+environment variable `RTMONITOR_KEY`.
+
+The encrypted token will need to be embedded in the client web page as the `rt_token` property of the
+`CLIENT_DATA` provided to the `RTMonitor_API(CLIENT_DATA, RTMONITOR_URI)` object instantiation.

@@ -15,7 +15,7 @@
 
             "rtmonitor.http.port":   8099,
 
-            "rtmonitor.key":         "coffee",
+            "rtmonitor.key":         "abcdefghijklmnop",
 
             "rtmonitor.monitors": [ {
                                       "http.uri":   "/rtmonitor/coffee",
