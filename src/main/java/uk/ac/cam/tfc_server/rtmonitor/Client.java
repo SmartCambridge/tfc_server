@@ -24,7 +24,7 @@ import uk.ac.cam.tfc_server.util.Log;
     class Client {
         public String UUID;         // unique ID for this connection
         public SockJSSocket sock;   // actual socket reference
-        public Hashtable<String,Subscription> subscriptions; // The actual "rt_subscribe" subscription 
+        public Hashtable<String,Subscription> subscriptions; // The actual "rt_subscribe" subscription
                                                              // packet from web client
                                                              //
                                        // Client info received on connection:
@@ -46,14 +46,14 @@ import uk.ac.cam.tfc_server.util.Log;
         private String MODULE_NAME = "RTMonitor";
         private String MODULE_ID = "Client";
 
-        // Construct a new Client 
+        // Construct a new Client
         Client(String UUID, SockJSSocket sock, JsonObject msg, RTToken token)
         {
             this.UUID = UUID;
 
             this.sock = sock;
 
-            this.token = token; 
+            this.token = token;
 
             this.msg = msg;
 
@@ -73,7 +73,7 @@ import uk.ac.cam.tfc_server.util.Log;
 
         // RTMonitor has received a 'rt_subscribe' message, so add to relevant client
         public void add_subscription(JsonObject sock_msg, boolean key_is_record_index)
-        {            
+        {
             String request_id  = sock_msg.getString("request_id");
             if (request_id == null)
             {
@@ -208,7 +208,7 @@ import uk.ac.cam.tfc_server.util.Log;
 
         // Handle an incoming "rt_request" for one-off pull of data
         public void handle_rt_request(JsonObject sock_msg, Monitor m, boolean key_is_record_index)
-        {            
+        {
             logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                        ": Client.handle_rt_request "+UUID+ " " +sock_msg.toString()+
                        " key_is_record_index="+key_is_record_index);
@@ -269,7 +269,7 @@ import uk.ac.cam.tfc_server.util.Log;
 
                 reply_messages.add(m.previous_msg);
             }
-           
+
             // "latest_msg" is the default if no "options" specified
             if (options.size() == 0 || options.contains("latest_msg"))
             {
@@ -286,7 +286,7 @@ import uk.ac.cam.tfc_server.util.Log;
                 //                          "options" : [ "previous_records" ],
                 //                          "request_data": [ ... filtered records ... ]
                 //                        }
-                
+
                 JsonObject msg_previous_records = new JsonObject();
 
                 msg_previous_records.put("msg_type", Constants.SOCKET_RT_DATA);
@@ -317,7 +317,7 @@ import uk.ac.cam.tfc_server.util.Log;
                 //                          "options" : [ "latest_records" ],
                 //                          "request_data": [ ... filtered records ... ]
                 //                        }
-                
+
                 JsonObject msg_latest_records = new JsonObject();
 
                 msg_latest_records.put("msg_type", Constants.SOCKET_RT_DATA);
@@ -340,8 +340,8 @@ import uk.ac.cam.tfc_server.util.Log;
                         ": Client.handle_rt_request for "+filtered_latest_records.size()+" latest_records");
 
             }
-           
-           
+
+
             // Now send accumulated messages
             for (int i=0; i<reply_messages.size(); i++)
             {
@@ -382,7 +382,7 @@ import uk.ac.cam.tfc_server.util.Log;
             String layout_owner = client_data.getString("layout_owner","-");
             String display_name = client_data.getString("display_name","no display");
             String display_owner = client_data.getString("display_owner","-");
-            
+
             String html = "<div class='client'>";
             html += "<h3><a href='client/"+UUID+"'>Client: "+client_name+"</a></h3>";
             html += "<p><b>Client ref: </b>"+client_id;
@@ -412,9 +412,9 @@ import uk.ac.cam.tfc_server.util.Log;
                 // Http request headers at connect time
                 html += "<p><b>Http connect headers:</b>";
 
-                for (String name : headers.names()) 
+                for (String name : headers.names())
                 {
-                    html += "<br/>" + name + " = ";        
+                    html += "<br/>" + name + " = ";
                     List<String> values = headers.getAll(name);
                     for (String value : values)
                     {
@@ -423,8 +423,15 @@ import uk.ac.cam.tfc_server.util.Log;
                 }
                 html += "</p>";
 
-                html += token.toHtml();
-                        
+                if (token != null)
+                {
+                    html += token.toHtml();
+                }
+                else
+                {
+                    html += "<div class='token'>NO TOKEN</div>";
+                }
+
                 html += "<table>";
                 for (String request_id: subscriptions.keySet())
                 {

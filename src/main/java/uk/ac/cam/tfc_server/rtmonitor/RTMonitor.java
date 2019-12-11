@@ -55,8 +55,8 @@ import uk.ac.cam.tfc_server.util.RTCrypto;
 
 public class RTMonitor extends AbstractVerticle {
 
-    private final String VERSION = "1.25";
-    
+    private final String VERSION = "1.31";
+
     // from config()
     public static int LOG_LEVEL;             // optional in config(), defaults to Constants.LOG_INFO
     private String MODULE_NAME;       // config module.name - normally "msgrouter"
@@ -65,9 +65,9 @@ public class RTMonitor extends AbstractVerticle {
     private String EB_MANAGER;        // config eb.manager
 
     private int HTTP_PORT;            // config rtmonitor.http.port
-    
+
     private String BASE_URI; // used as template parameter for web pages, built from config()
-    
+
     private final int SYSTEM_STATUS_PERIOD = 10000; // publish status heartbeat every 10 s
     private final int SYSTEM_STATUS_AMBER_SECONDS = 25;
     private final int SYSTEM_STATUS_RED_SECONDS = 35;
@@ -79,14 +79,14 @@ public class RTMonitor extends AbstractVerticle {
 
     // monitor configs:
     private JsonArray START_MONITORS; // config module_name.monitors parameters
-    
+
     // data structure to hold eventbus and subscriber data for each monitor
     private MonitorTable monitors;
 
     // dictionary to hold rt_tokens of connected clients
     private Hashtable<String,RTToken> rt_tokens;
 
-    private String RTMONITOR_KEY; // key from secrets.sh, shared with tfc_web
+    private String RTMONITOR_KEY; // key from config() or secrets.sh, shared with tfc_web
 
     @Override
     public void start(Future<Void> fut) throws Exception
@@ -101,10 +101,35 @@ public class RTMonitor extends AbstractVerticle {
 
         logger = new Log(LOG_LEVEL);
 
-        RTMONITOR_KEY = System.getenv("RTMONITOR_KEY");
+        String key_source = "none";
+
+        // If we found an encryption key in config() use that, otherwise look for environment var
+        if (RTMONITOR_KEY == null)
+        {
+            RTMONITOR_KEY = System.getenv("RTMONITOR_KEY");
+            if (RTMONITOR_KEY != null)
+            {
+                key_source = "Env";
+            }
+        }
+        else
+        {
+            key_source = "Config";
+        }
+
+        String key_message;
+
+        if (RTMONITOR_KEY == null)
+        {
+            key_message = "(no key)";
+        }
+        else
+        {
+            key_message = "(with "+key_source+" key "+RTMONITOR_KEY+")";
+        }
 
         logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": V"+VERSION+
-                   " started on port "+HTTP_PORT+" (log_level="+LOG_LEVEL+")");
+                   " started on port "+HTTP_PORT+" "+ key_message+" (log_level="+LOG_LEVEL+")");
 
         eb = vertx.eventBus();
 
@@ -115,7 +140,7 @@ public class RTMonitor extends AbstractVerticle {
 
         // initialize object to hold MonitorInfo for each monitor
         monitors = new MonitorTable();
-    
+
         // *************************************************************************************
         // *************************************************************************************
         // *********** Start web server (incl Socket)
@@ -154,7 +179,7 @@ public class RTMonitor extends AbstractVerticle {
 
         http_server.requestHandler(router).listen(HTTP_PORT);
 
-        // set up periodic 'client purge' to clear out clients 
+        // set up periodic 'client purge' to clear out clients
         vertx.setPeriodic(SYSTEM_PURGE_SECONDS * 1000 ,id -> {
             purge_clients();
         });
@@ -194,7 +219,7 @@ public class RTMonitor extends AbstractVerticle {
         final String RECORDS_ARRAY = config.getString("records_array");
 
         final String RECORD_INDEX = config.getString("record_index");
-        
+
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                    ": setting up monitor for "+ADDRESS+" at "+HTTP_PORT+":"+URI);
 
@@ -204,11 +229,11 @@ public class RTMonitor extends AbstractVerticle {
         // and set up consumer for eventbus messages
         eb.consumer(ADDRESS, message -> {
                         handle_message(URI, message.body().toString());
-                   
+
             });
-                    
+
         // *********************************
-        // create handler for browser socket 
+        // create handler for browser socket
         // *********************************
 
         SockJSHandlerOptions sock_options = new SockJSHandlerOptions().setHeartbeatInterval(2000);
@@ -267,18 +292,26 @@ public class RTMonitor extends AbstractVerticle {
                     // The connecting page is expected to first send { "msg_type": "rt_connect" ... }
                     else if (sock_msg.getString("msg_type","").equals(Constants.SOCKET_RT_CONNECT))
                     {
-                        // Valid token will be added to rt_tokens Hashtable and hash returned
-                        String token_hash = register_token(sock_msg, headers);
-
-                        if (token_hash == null)
+                        if (RTMONITOR_KEY != null)
                         {
-                            send_nok(sock,"","bad connect");
-                            sock.close();
-                            return;
-                        }
+                            // Valid token will be added to rt_tokens Hashtable and hash returned
+                            String token_hash = register_token(sock_msg, headers);
 
-                        // Add client with this connection to the client table
-                        create_rt_client(URI, sock.writeHandlerID(), sock, sock_msg, rt_tokens.get(token_hash));
+                            if (token_hash == null)
+                            {
+                                send_nok(sock,"","bad connect");
+                                sock.close();
+                                return;
+                            }
+
+                            // Add TOKEN PROTECTED client with this connection to the client table
+                            create_rt_client(URI, sock.writeHandlerID(), sock, sock_msg, rt_tokens.get(token_hash));
+                        }
+                        else
+                        {
+                            // Add client with NO TOKEN
+                            create_rt_client(URI, sock.writeHandlerID(), sock, sock_msg, null);
+                        }
 
                         // Send rt_connect_ok in reply
                         sock.write(Buffer.buffer("{ \"msg_type\": \""+Constants.SOCKET_RT_CONNECT_OK+"\" }"));
@@ -345,11 +378,11 @@ public class RTMonitor extends AbstractVerticle {
         // Update the relevant clients that have subscribed
         monitors.update_clients(URI, new JsonObject(msg));
     }
-    
+
     // *****************************************************************************************
     // *************  Check an incoming rt_token  **********************************************
     // *****************************************************************************************
-    
+
     // On client connection, check their token, store a cached version, and return hash reference
     private String register_token(JsonObject sock_msg, MultiMap headers)
     {
@@ -382,7 +415,7 @@ public class RTMonitor extends AbstractVerticle {
             ": sock connect rt_token "+token_hash+" "+token.encodePrettily());
 
         // check origin from headers against origin pattern list in token
-        
+
         // Get 'Origin' in client websocket connect header
         String client_origin = headers.get("Origin");
 
@@ -453,17 +486,17 @@ public class RTMonitor extends AbstractVerticle {
 
             return token_hash;
         }
-        
+
         return null;
     }
 
     // *****************************************************************************************
     // *************  Handle a client connection     *******************************************
     // *****************************************************************************************
-    private void create_rt_client(String URI, 
-                                  String UUID, 
-                                  SockJSSocket sock, 
-                                  JsonObject sock_msg, 
+    private void create_rt_client(String URI,
+                                  String UUID,
+                                  SockJSSocket sock,
+                                  JsonObject sock_msg,
                                   RTToken token)
     {
         // create entry in client table for correct monitor
@@ -646,26 +679,30 @@ public class RTMonitor extends AbstractVerticle {
     // String content of this verticle 'home' page
     private String home_page()
     {
-        String page = "<html><head><title>RTMonitor V"+VERSION+"</title>";
-        page += "<style>";
-        page += "body { font-family: sans-serif;}";
-        page += "p { margin-left: 30px; }";
-        page += "</style></head>";
-        page += "<body>";
+        String page = "<html><head><title>RTMonitor V"+VERSION+"</title>\n";
+        page += "<style>\n";
+        page += "body { font-family: sans-serif;}\n";
+        page += ".red { color: red; font-weight: bold;}\n";
+        page += "p { margin-left: 30px; }\n";
+        page += "</style></head>\n";
+        page += "<body>\n";
         page += "<h1>Adaptive City Platform: ";
-        page += "RTMonitor V"+VERSION+": "+MODULE_NAME+"."+MODULE_ID+"</h1>";
-        page += "<p>BASE_URI="+BASE_URI+"</p>";
-        page += "<p>This RTMonitor has "+monitors.size()+" monitor(s):</p>"; 
+        page += "RTMonitor V"+VERSION+": "+MODULE_NAME+"."+MODULE_ID+"</h1>\n";
+        page += "<p>BASE_URI="+BASE_URI+"</p>\n";
+        page += "<p>TOKEN KEY: "+( RTMONITOR_KEY == null ?
+                    "<span class='red'>DISABLED</span>" :
+                    "OK" )+"</p>\n";
+        page += "<p>This RTMonitor has "+monitors.size()+" monitor(s):</p>\n";
 
         // iterate the monitors
         Set<String> keys = monitors.keySet();
         for (String key: keys)
         {
-            page += "<div><h3>Monitor "+key+"</h3>";
+            page += "<div><h3>Monitor "+key+"</h3>\n";
             page += monitors.get(key).toHtml();
-            page += "</div>";
+            page += "</div>\n";
         }
-        page += "</body></html>";
+        page += "\n</body></html>";
         return page;
     }
 
@@ -679,14 +716,14 @@ public class RTMonitor extends AbstractVerticle {
         //   module.id - unique module reference to be used by this verticle
         //   eb.system_status - String eventbus address for system status messages
         //   eb.manager - eventbus address for manager messages
-        
+
         MODULE_NAME = config().getString("module.name");
         if (MODULE_NAME == null)
         {
           Log.log_err("RTMonitor: module.name config() not set");
           return false;
         }
-        
+
         MODULE_ID = config().getString("module.id");
         if (MODULE_ID == null)
         {
@@ -699,7 +736,7 @@ public class RTMonitor extends AbstractVerticle {
             {
                 LOG_LEVEL = Constants.LOG_INFO;
             }
-        
+
         EB_SYSTEM_STATUS = config().getString("eb.system_status");
         if (EB_SYSTEM_STATUS == null)
         {
@@ -723,9 +760,12 @@ public class RTMonitor extends AbstractVerticle {
         }
 
         BASE_URI = config().getString(MODULE_NAME+".http.uri","/"+MODULE_NAME+"/"+MODULE_ID);
-        
+
+        // Optional rtmonitor.key in config (will override environment variable)
+        RTMONITOR_KEY = config().getString(MODULE_NAME+".key");
+
         START_MONITORS = config().getJsonArray(MODULE_NAME+".monitors");
-        
+
         return true;
     }
 
