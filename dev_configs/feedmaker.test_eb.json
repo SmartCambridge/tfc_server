@@ -29,8 +29,8 @@
                                          "data_bin" :     "/media/tfc/test/general/data_bin",
                                          "data_monitor" : "/media/tfc/test/general/data_monitor",
 
-                                         "msg_type" :  "feed_cam_sensonr",
-                                         "address" :   "tfc.feedmaker.test"
+                                         "msg_type" :  "feed_cam_sensor",
+                                         "address" :   "tfc.feedmaker.general"
                                        }
                                      ]
           }
