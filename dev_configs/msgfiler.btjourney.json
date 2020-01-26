@@ -1,0 +1,36 @@
+                                                                                
+{
+    "main":    "uk.ac.cam.tfc_server.msgfiler.MsgFiler",
+    "options":
+        { "config":
+          {
+
+            "module.name":           "msgfiler",
+            "module.id":             "btjourney",
+
+            "eb.system_status":      "tfc.system_status",
+            "eb.console_out":        "tfc.console_out",
+            "eb.manager":            "tfc.manager",
+
+            "msgfiler.log_level":    1,
+
+            "msgfiler.address": "tfc.msgfiler.btjourney",
+
+            "msgfiler.filers":
+            [
+                { "source_address": "tfc.feedmaker.btjourney",
+                  "source_filter": { "field": "msg_type",
+                                     "compare": "=",
+                                     "value": "feed_btjourney_locations"
+                                   },
+                  "flatten_path":    "a>b>c[77]>request_data[0]>items[77]",
+                  "store_path": "/media/tfc/btjourney/locations/data_link",
+                  "store_name": "{{id}}.json",
+                  "store_mode": "write"
+                }
+            ]
+              
+          }
+        }
+}
+

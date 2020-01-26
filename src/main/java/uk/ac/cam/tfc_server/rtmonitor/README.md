@@ -204,49 +204,16 @@ will arrive in a single transmission from the bus comany and hence in a single e
 message, but the complete 'map' of the positions of all buses in the city will depend on
 the arrival of multiple messages over a period of time.
 
-#### RTMonitor monitor config() properties ```records_data``` and ```record_index```
+#### RTMonitor monitor config() properties `records_array` and `record_index`
 
-Hence the *records\_data* config() parameter tells RTMonitor the name of the JsonArray property
+Hence the *records\_array* config() parameter tells RTMonitor the name of the JsonArray property
 that can hold multiple data records in the eventbus message.  In the example SiriVM data above,
 the records are provided in a JsonArray property *request\_data*.
 
-The ```records_data``` property on the monitor config() can specify a JsonArray property
-nested within JsonObjects in the monitored eventbus messages, e.g.
-```
-  "records_data": "A>B>C"
-```
-In the above example, each eventbus messages is expected to contain a JsonObject as property
-```A``` which itself contains a JsonObject as property ```B``` which contains a JsonArray as
-property ```C```.
-
-The ```record_index``` property defines the position of the 'primary key' *within* the data
+The ```record_index``` property defines the name of the 'primary key' *within* the data
 records. E.g. in SiriVM bus position data the *VehicleRef* is the unique identifier of the bus,
 so that property name is passed to the RTMonitor in its vertx config() *record\_index* property,
 as shown in the example full vertx config() show at the top of this README.
-
-With a ```"records_array": "A>B>C"``` and ```"record_index" : "D>E"``` the incoming eventbus
-messages should look like this:
-
-```
-{
-    ...
-    "A": {
-           ...
-           "B" : {
-                   ...
-                   "C": [ { ... "D": { "E": "X", ...  },
-                          { ... "D": { "E": "Y", ...  },
-                          ...
-                        ]
-                   ...
-                 }
-           ...
-         }
-    ...
-}
-```
-where the "C" property contains all the data records, and the two data records shown have key
-values "X" and "Y" respectively.
 
 This concept is obviously important if you want to do some types of analysis across multiple
 data records, e.g. display the path taken by an individual bus.

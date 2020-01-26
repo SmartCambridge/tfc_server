@@ -23,12 +23,6 @@ package uk.ac.cam.tfc_server.feedmaker;
 // Returns:
 /*
 {
-   "module_name": "feedmaker",                  // as given to the FeedMaker in config, typically "feedmaker"
-   "module_id":   "cam_parking_local",          // from config, but platform unique value within module_name
-   "msg_type":    "car_parking",                // Constants.FEED_CAR_PARKING
-   "feed_id":     "cam_parking_local",          // identifies http source, matches config
-   "filename":    "1459762951_2016-04-04-10-42-31",
-   "filepath":    "2016/04/04",
    "request_data":[                             // actual parsed data from source, in this case car park occupancy
                     { "area_id":         "cam",
                       "parking_id":      "grafton_east",
@@ -39,6 +33,14 @@ package uk.ac.cam.tfc_server.feedmaker;
                     } ...
                    ]
 }
+
+The FeedMaker will add the following properties to the eventbus message:
+   "module_name": "feedmaker",                  // as given to the FeedMaker in config, typically "feedmaker"
+   "module_id":   "cam_parking_local",          // from config, but platform unique value within module_name
+   "msg_type":    "car_parking",                // Constants.FEED_CAR_PARKING
+   "feed_id":     "cam_parking_local",          // identifies http source, matches config
+   "filename":    "1459762951_2016-04-04-10-42-31",
+   "filepath":    "2016/04/04"
 
 */
 // So the basic idea is that ParseFeed is passed a general (typically human-readable) page from which it

@@ -1,0 +1,1910 @@
+{
+  "sites": [
+    {
+      "id": "{1F867FB8-83E6-4E63-A265-51CD2E71E053}",
+      "name": "A1303Mad/M11Jct",
+      "description": "A1303 Madingley Road Between Park & Ride and M11",
+      "location": {
+        "lat": 52.21421,
+        "lng": 0.0792
+      }
+    },
+    {
+      "id": "{C0669D53-2DA2-435C-B425-74179143795A}",
+      "name": "Madingley Road / Storey's Way",
+      "description": "Madingley Road / Storey's Way",
+      "location": {
+        "lat": 52.21145,
+        "lng": 0.10371
+      }
+    },
+    {
+      "id": "{ABD3D082-B375-4EFC-AC05-D7FDED3AB22A}",
+      "name": "Milton Road / Kings Hedges",
+      "description": "Milton Road / Kings Hedges",
+      "location": {
+        "lat": 52.22752,
+        "lng": 0.14536
+      }
+    },
+    {
+      "id": "{FC9EAC00-9BAA-4A8E-861A-97531661D3C7}",
+      "name": "Milton Road / Union Lane",
+      "description": "Milton Road / Union Lane",
+      "location": {
+        "lat": 52.22075,
+        "lng": 0.1343
+      }
+    },
+    {
+      "id": "{187D4636-FF4A-4EC4-98D5-70887A0C3898}",
+      "name": "Huntington Road / Storey's Way",
+      "description": "Huntington Road / Storey's Way",
+      "location": {
+        "lat": 52.21842,
+        "lng": 0.10228
+      }
+    },
+    {
+      "id": "{47B9F7F7-81A8-4DCC-83A1-B9E177D71D38}",
+      "name": "Hills Road / Cherry Hinton Road",
+      "description": "Hills Road / Cherry Hinton Road",
+      "location": {
+        "lat": 52.18937,
+        "lng": 0.13601
+      }
+    },
+    {
+      "id": "{DB14D55D-A7C2-432C-8A46-284815154833}",
+      "name": "Cambridge Road / Kings Hedges",
+      "description": "Cambridge Road / Kings Hedges",
+      "location": {
+        "lat": 52.23258,
+        "lng": 0.11246
+      }
+    },
+    {
+      "id": "{5A5B326F-B70D-4BB2-AA31-8D647DB54E83}",
+      "name": "Huntingdon Road / Girton Road",
+      "description": "Huntingdon Road / Girton Road",
+      "location": {
+        "lat": 52.22577,
+        "lng": 0.08723
+      }
+    },
+    {
+      "id": "{11AB98B0-4A1A-478A-857D-A23C30C9CC48}",
+      "name": "A603 Barton Road Jct M11",
+      "description": "A603 Barton Road Jct M11",
+      "location": {
+        "lat": 52.1919,
+        "lng": 0.07892
+      }
+    },
+    {
+      "id": "{D863B3A5-4330-4A3B-AE61-5B5F435FB335}",
+      "name": "A1303 St Neots Road Jct A428",
+      "description": "A1303 St Neots Road Jct A428",
+      "location": {
+        "lat": 52.216,
+        "lng": 0.0388
+      }
+    },
+    {
+      "id": "{F06AFB58-EEBB-4D0A-887E-BF7913B1B9E1}",
+      "name": "Trumpington Road / Shelford Road",
+      "description": "Trumpington Road / Shelford Road",
+      "location": {
+        "lat": 52.17149,
+        "lng": 0.11285
+      }
+    },
+    {
+      "id": "{CA31BF74-167C-469D-A2BF-63F9C2CE919A}",
+      "name": "Hills Road / Fendon Road",
+      "description": "Hills Road / Fendon Road",
+      "location": {
+        "lat": 52.1762,
+        "lng": 0.1452
+      }
+    },
+    {
+      "id": "{5D6F13FA-AE7B-4924-B37C-F9D899FAA325}",
+      "name": "Hauxton Road / M11",
+      "description": "Hauxton Road / M11",
+      "location": {
+        "lat": 52.16098,
+        "lng": 0.10459
+      }
+    },
+    {
+      "id": "{F957674F-CBFF-4089-B45B-778FCDD80629}",
+      "name": "Newmarket Road / Barnwell Road",
+      "description": "Newmarket Road / Barnwell Road",
+      "location": {
+        "lat": 52.21234,
+        "lng": 0.16352
+      }
+    },
+    {
+      "id": "{952D4ABB-857B-467D-9770-62DC0A4B5A5A}",
+      "name": "Barton Road / Grange Road",
+      "description": "Barton Road / Grange Road",
+      "location": {
+        "lat": 52.19699,
+        "lng": 0.10442
+      }
+    },
+    {
+      "id": "{F99550C6-52B8-4906-BE1C-1D15C48062DD}",
+      "name": "Newmarket Road / Coldhams Lane",
+      "description": "Newmarket Road / Coldhams Lane",
+      "location": {
+        "lat": 52.20917,
+        "lng": 0.14287
+      }
+    },
+    {
+      "id": "{60D1C306-08B8-44C5-A635-8C1F8D138320}",
+      "name": "East Road/ Newmarket Road",
+      "description": "East Road/ Newmarket Road",
+      "location": {
+        "lat": 52.2082,
+        "lng": 0.13761
+      }
+    },
+    {
+      "id": "{F26F9640-494D-4E39-AAEE-F89D3754E23E}",
+      "name": "Elizabeth Way/ Chesterton Road",
+      "description": "Elizabeth Way/ Chesterton Road",
+      "location": {
+        "lat": 52.21627,
+        "lng": 0.13487
+      }
+    },
+    {
+      "id": "{4F06512E-609C-4A43-947F-610721F931E0}",
+      "name": "East Road/ Mill Road",
+      "description": "East Road/ Mill Road",
+      "location": {
+        "lat": 52.20248,
+        "lng": 0.13123
+      }
+    },
+    {
+      "id": "{7E0659AA-D627-435E-BDCA-4BF01A65A5D9}",
+      "name": "Madingley Road/ Queen's Road",
+      "description": "Madingley Road/ Queen's Road",
+      "location": {
+        "lat": 52.2102,
+        "lng": 0.11171
+      }
+    },
+    {
+      "id": "{6C962749-9A2A-433F-B7A2-EDFDC5E25A18}",
+      "name": "Perne Road/ Brookfields",
+      "description": "Perne Road/ Brookfields",
+      "location": {
+        "lat": 52.19601,
+        "lng": 0.15582
+      }
+    },
+    {
+      "id": "{54060BF9-8ABD-4567-B3AF-339E1F712E13}",
+      "name": "Victoria Road/ Milton Road: Mitchams Corner",
+      "description": "Victoria Road/ Milton Road: Mitchams Corner",
+      "location": {
+        "lat": 52.21478,
+        "lng": 0.12546
+      }
+    },
+    {
+      "id": "{F5F57BF9-4F89-4664-B233-38D36C3B68D1}",
+      "name": "Fen Causeway/ Trumpington Road",
+      "description": "Fen Causeway/ Trumpington Road",
+      "location": {
+        "lat": 52.19807,
+        "lng": 0.12187
+      }
+    },
+    {
+      "id": "{CCDAFA02-1E22-484B-9CA2-02E05AA9201C}",
+      "name": "Trumpington Road/ Brooklands Avenue",
+      "description": "Trumpington Road/ Brooklands Avenue",
+      "location": {
+        "lat": 52.19171,
+        "lng": 0.12429
+      }
+    },
+    {
+      "id": "{F0686BD9-379A-44BC-928D-5BB28A762281}",
+      "name": "Newnham Road/ Queen's Road",
+      "description": "Newnham Road/ Queen's Road",
+      "location": {
+        "lat": 52.19828,
+        "lng": 0.11219
+      }
+    },
+    {
+      "id": "{1E9F6DD4-07EB-4FE3-BCE3-ADB901B8B8CC}",
+      "name": "Huntingdon Road/ Victoria Road",
+      "description": "Huntingdon Road/ Victoria Road",
+      "location": {
+        "lat": 52.21391,
+        "lng": 0.11103
+      }
+    },
+    {
+      "id": "{98E55D29-1E7B-408D-A20B-193A11C61210}",
+      "name": "Cherry Hinton Road/Perne Road",
+      "description": "Cherry Hinton Road/Perne Road",
+      "location": {
+        "lat": 52.18693,
+        "lng": 0.15242
+      }
+    },
+    {
+      "id": "{AFB967E5-37F0-406A-B273-0F3BABC08484}",
+      "name": "Queen Edith Way / Hills Road",
+      "description": "Queen Edith Way / Hills Road",
+      "location": {
+        "lat": 52.1787,
+        "lng": 0.14286
+      }
+    },
+    {
+      "id": "{0D7C672E-EEE9-4924-815E-B49CC382DFFA}",
+      "name": "Coldhams Lane / Brooks Road",
+      "description": "Coldhams Lane / Brooks Road",
+      "location": {
+        "lat": 52.20031,
+        "lng": 0.15773
+      }
+    },
+    {
+      "id": "{F9072877-E815-4D5C-9DB4-76F7C7C27D7C}",
+      "name": "A1303 Newmarket Road / Airport Way",
+      "description": "A1303 Newmarket Road / Airport Way",
+      "location": {
+        "lat": 52.21104,
+        "lng": 0.19141
+      }
+    },
+    {
+      "id": "{E5A5E9B5-4AED-43AC-B379-2F5F208F86A1}",
+      "name": "Babraham Road / Cherry Hinton Road",
+      "description": "Babraham Road / Cherry Hinton Road",
+      "location": {
+        "lat": 52.16566,
+        "lng": 0.16002
+      }
+    },
+    {
+      "id": "{F66B4D3F-0294-41ED-AA5C-8EEAA787F8F9}",
+      "name": "Cherry Hinton Road/High Street",
+      "description": "Cherry Hinton Road/High Street",
+      "location": {
+        "lat": 52.18403,
+        "lng": 0.17141
+      }
+    },
+    {
+      "id": "{911C93B2-19C9-402B-9685-32F124260BF9}",
+      "name": "Histon Road / Gilbert Road",
+      "description": "Histon Road / Gilbert Road",
+      "location": {
+        "lat": 52.22218,
+        "lng": 0.11231
+      }
+    },
+    {
+      "id": "{BF4B5889-5496-4DAA-BE5D-A0405E3AF65C}",
+      "name": "Trumpington Road/ Long Road",
+      "description": "Trumpington Road/ Long Road",
+      "location": {
+        "lat": 52.18074,
+        "lng": 0.11613
+      }
+    },
+    {
+      "id": "{32E0BCF3-4F0F-4F5A-9FDA-E7F9DC37B1D3}",
+      "name": "Milton Interchange A1304 / A14",
+      "description": "Milton Interchange A1304 / A14",
+      "location": {
+        "lat": 52.23665,
+        "lng": 0.15061
+      }
+    },
+    {
+      "id": "{F1C8F438-3BB7-476E-A868-C398E4366BB9}",
+      "name": "Gonville Place / Hills Road",
+      "description": "Gonville Place / Hills Road",
+      "location": {
+        "lat": 52.1993,
+        "lng": 0.1275
+      }
+    },
+    {
+      "id": "{D3A66DC4-6F17-4451-8118-3CFBBBCC73E3}",
+      "name": "Horningsea Road / A14",
+      "description": "Horningsea Road / A14",
+      "location": {
+        "lat": 52.22858,
+        "lng": 0.17944
+      }
+    },
+    {
+      "id": "{ED6D0930-73E0-4777-8C4E-28B4AAF66F8A}",
+      "name": "Kings Hedges CRC Jct",
+      "description": "Kings Hedges CRC Jct",
+      "location": {
+        "lat": 52.23389,
+        "lng": 0.13504
+      }
+    }
+  ],
+  "links": [
+    {
+      "id": "CAMBRIDGE_JTMS|9800WBETRSU3",
+      "name": "34 Barton Rd Out *",
+      "description": "MACSSL208528 to MACSSL208518",
+      "sites": [
+        "{952D4ABB-857B-467D-9770-62DC0A4B5A5A}",
+        "{11AB98B0-4A1A-478A-857D-A23C30C9CC48}"
+      ],
+      "length": 2045
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XIVHRXA0",
+      "name": "31 Coldhams Ln OB *",
+      "description": "MACSSL208530 to MACSSL210010",
+      "sites": [
+        "{F99550C6-52B8-4906-BE1C-1D15C48062DD}",
+        "{0D7C672E-EEE9-4924-815E-B49CC382DFFA}"
+      ],
+      "length": 1602
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YUH7KFF1",
+      "name": "66 Storey's Way SB *",
+      "description": "",
+      "sites": [
+        "{187D4636-FF4A-4EC4-98D5-70887A0C3898}",
+        "{C0669D53-2DA2-435C-B425-74179143795A}"
+      ],
+      "length": 1018
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XEYKHHKD",
+      "name": "14 Huntingdon Rd OB",
+      "description": "MACSSL208514 to MACSSL208517",
+      "sites": [
+        "{187D4636-FF4A-4EC4-98D5-70887A0C3898}",
+        "{5A5B326F-B70D-4BB2-AA31-8D647DB54E83}"
+      ],
+      "length": 1343
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XFYLRKEG",
+      "name": "48 Hills Road out **",
+      "description": "MACSSL212483 to MACSSL208515",
+      "sites": [
+        "{F1C8F438-3BB7-476E-A868-C398E4366BB9}",
+        "{47B9F7F7-81A8-4DCC-83A1-B9E177D71D38}"
+      ],
+      "length": 1244
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZQVSGEM1",
+      "name": "49 Cherry Hinton Rd IB - calibrated",
+      "description": "",
+      "sites": [
+        "{F66B4D3F-0294-41ED-AA5C-8EEAA787F8F9}",
+        "{98E55D29-1E7B-408D-A20B-193A11C61210}"
+      ],
+      "length": 1332
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WJ0FVHGT",
+      "name": "54 Grantchester NB",
+      "description": "MACSSL208522 to MACSSL208518",
+      "sites": [
+        "{F06AFB58-EEBB-4D0A-887E-BF7913B1B9E1}",
+        "{11AB98B0-4A1A-478A-857D-A23C30C9CC48}"
+      ],
+      "length": 3875
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800Y7QUVJYW",
+      "name": "46 Queen SB",
+      "description": "MACSSL208544 to MACSSL208551",
+      "sites": [
+        "{7E0659AA-D627-435E-BDCA-4BF01A65A5D9}",
+        "{F0686BD9-379A-44BC-928D-5BB28A762281}"
+      ],
+      "length": 1444
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZS0TMB0N",
+      "name": "57 Fendon / Mowbray Rd SB - calibrated",
+      "description": "",
+      "sites": [
+        "{98E55D29-1E7B-408D-A20B-193A11C61210}",
+        "{CA31BF74-167C-469D-A2BF-63F9C2CE919A}"
+      ],
+      "length": 1842
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZYQY2V5T",
+      "name": "45 Mitchams to Madingley EB",
+      "description": "MACSSL208544 to MACSSL208546",
+      "sites": [
+        "{7E0659AA-D627-435E-BDCA-4BF01A65A5D9}",
+        "{54060BF9-8ABD-4567-B3AF-339E1F712E13}"
+      ],
+      "length": 1170
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YAJC06O6",
+      "name": "64 A14 J34-J33 WB *",
+      "description": "",
+      "sites": [
+        "{D3A66DC4-6F17-4451-8118-3CFBBBCC73E3}",
+        "{32E0BCF3-4F0F-4F5A-9FDA-E7F9DC37B1D3}"
+      ],
+      "length": 2202
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZOU6HKFP",
+      "name": "54 Grantchester SB",
+      "description": "MACSSL208518 to MACSSL208522",
+      "sites": [
+        "{11AB98B0-4A1A-478A-857D-A23C30C9CC48}",
+        "{F06AFB58-EEBB-4D0A-887E-BF7913B1B9E1}"
+      ],
+      "length": 4044
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800X7003HZY",
+      "name": "36 Milton InB **",
+      "description": "MACSSL210023 to MACSSL208512",
+      "sites": [
+        "{32E0BCF3-4F0F-4F5A-9FDA-E7F9DC37B1D3}",
+        "{ABD3D082-B375-4EFC-AC05-D7FDED3AB22A}"
+      ],
+      "length": 1125
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YHOTYC18",
+      "name": "30 Barnwell Rd SB",
+      "description": "MACSSL208527 to MACSSL210010",
+      "sites": [
+        "{F957674F-CBFF-4089-B45B-778FCDD80629}",
+        "{0D7C672E-EEE9-4924-815E-B49CC382DFFA}"
+      ],
+      "length": 1512
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WLZSM8UU",
+      "name": "31 Coldhams Ln InB *",
+      "description": "MACSSL210010 to\tMACSSL208530",
+      "sites": [
+        "{0D7C672E-EEE9-4924-815E-B49CC382DFFA}",
+        "{F99550C6-52B8-4906-BE1C-1D15C48062DD}"
+      ],
+      "length": 1473
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XKGDBDWJ",
+      "name": "15 Huntingdon Rd InB",
+      "description": "MACSSL208514 to MACSSL208552",
+      "sites": [
+        "{187D4636-FF4A-4EC4-98D5-70887A0C3898}",
+        "{1E9F6DD4-07EB-4FE3-BCE3-ADB901B8B8CC}"
+      ],
+      "length": 776
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800X3UWN2BX",
+      "name": "37 Ditton Lane InB",
+      "description": "MACSSL212484 to MACSSL208527",
+      "sites": [
+        "{D3A66DC4-6F17-4451-8118-3CFBBBCC73E3}",
+        "{F957674F-CBFF-4089-B45B-778FCDD80629}"
+      ],
+      "length": 2219
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WOZGV4D2",
+      "name": "4 Trumpington Rd OB",
+      "description": "MACSSL208547 to MACSSL208550",
+      "sites": [
+        "{F5F57BF9-4F89-4664-B233-38D36C3B68D1}",
+        "{CCDAFA02-1E22-484B-9CA2-02E05AA9201C}"
+      ],
+      "length": 712
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WS0IUKCJ",
+      "name": "42 Milton Rd/ Elizabeth Ave SB *",
+      "description": "MACSSL208513 to MACSSL208542",
+      "sites": [
+        "{FC9EAC00-9BAA-4A8E-861A-97531661D3C7}",
+        "{F26F9640-494D-4E39-AAEE-F89D3754E23E}"
+      ],
+      "length": 623
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XIAJFUMP",
+      "name": "34 Barton Rd InB *",
+      "description": "MACSSL208518 to MACSSL208528",
+      "sites": [
+        "{11AB98B0-4A1A-478A-857D-A23C30C9CC48}",
+        "{952D4ABB-857B-467D-9770-62DC0A4B5A5A}"
+      ],
+      "length": 2039
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YU0FYRKZ",
+      "name": "12 Milton Rd InB *",
+      "description": "MACSSL208512 to MACSSL208513",
+      "sites": [
+        "{ABD3D082-B375-4EFC-AC05-D7FDED3AB22A}",
+        "{FC9EAC00-9BAA-4A8E-861A-97531661D3C7}"
+      ],
+      "length": 1061
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XMPLJZ1P",
+      "name": "39 Hills Rd Out - calibrated",
+      "description": "",
+      "sites": [
+        "{CA31BF74-167C-469D-A2BF-63F9C2CE919A}",
+        "{E5A5E9B5-4AED-43AC-B379-2F5F208F86A1}"
+      ],
+      "length": 1532
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XJHHZ5OD",
+      "name": "72 M11 J11-J13 NB *",
+      "description": "",
+      "sites": [
+        "{5D6F13FA-AE7B-4924-B37C-F9D899FAA325}",
+        "{1F867FB8-83E6-4E63-A265-51CD2E71E053}"
+      ],
+      "length": 7199
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YO6L09UY",
+      "name": "33 Histon Rd InB",
+      "description": "MACSSL210018 to MACSSL208552",
+      "sites": [
+        "{911C93B2-19C9-402B-9685-32F124260BF9}",
+        "{1E9F6DD4-07EB-4FE3-BCE3-ADB901B8B8CC}"
+      ],
+      "length": 965
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZU1J86D8",
+      "name": "57 Fendon / Mowbray Rd NB - calibrated",
+      "description": "",
+      "sites": [
+        "{CA31BF74-167C-469D-A2BF-63F9C2CE919A}",
+        "{98E55D29-1E7B-408D-A20B-193A11C61210}"
+      ],
+      "length": 1272
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YGD93F5D",
+      "name": "2 East Rd WB *",
+      "description": "MACSSL208541 to MACSSL208543",
+      "sites": [
+        "{60D1C306-08B8-44C5-A635-8C1F8D138320}",
+        "{4F06512E-609C-4A43-947F-610721F931E0}"
+      ],
+      "length": 763
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZVE0DFMP",
+      "name": "9 Victoria Rd WB",
+      "description": "MACSSL208546 to MACSSL208552",
+      "sites": [
+        "{54060BF9-8ABD-4567-B3AF-339E1F712E13}",
+        "{1E9F6DD4-07EB-4FE3-BCE3-ADB901B8B8CC}"
+      ],
+      "length": 1280
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YP00LP4O",
+      "name": "9 Victoria Rd EB",
+      "description": "MACSSL208552 to MACSSL208546",
+      "sites": [
+        "{1E9F6DD4-07EB-4FE3-BCE3-ADB901B8B8CC}",
+        "{54060BF9-8ABD-4567-B3AF-339E1F712E13}"
+      ],
+      "length": 1096
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WDYEV0RY",
+      "name": "21b Trumpington Rd OB*",
+      "description": "MACSSL210020 to MACSSL208522",
+      "sites": [
+        "{BF4B5889-5496-4DAA-BE5D-A0405E3AF65C}",
+        "{F06AFB58-EEBB-4D0A-887E-BF7913B1B9E1}"
+      ],
+      "length": 1081
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZDGCLO0Z",
+      "name": "53 Gilbert IB **",
+      "description": "MACSSL210018 to MACSSL208546",
+      "sites": [
+        "{911C93B2-19C9-402B-9685-32F124260BF9}",
+        "{54060BF9-8ABD-4567-B3AF-339E1F712E13}"
+      ],
+      "length": 1380
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZQFIRDTY",
+      "name": "33 Histon Rd Out - calibrated",
+      "description": "",
+      "sites": [
+        "{1E9F6DD4-07EB-4FE3-BCE3-ADB901B8B8CC}",
+        "{911C93B2-19C9-402B-9685-32F124260BF9}"
+      ],
+      "length": 905
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZRJX0GEF",
+      "name": "59 Queen Edith's Way WB *",
+      "description": "",
+      "sites": [
+        "{F66B4D3F-0294-41ED-AA5C-8EEAA787F8F9}",
+        "{AFB967E5-37F0-406A-B273-0F3BABC08484}"
+      ],
+      "length": 2098
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800W5R3DRXB",
+      "name": "1 Elizabeth Wy NB",
+      "description": "MACSSL208541 to MACSSL208542",
+      "sites": [
+        "{60D1C306-08B8-44C5-A635-8C1F8D138320}",
+        "{F26F9640-494D-4E39-AAEE-F89D3754E23E}"
+      ],
+      "length": 954
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XMT2VJAM",
+      "name": "21a: Trumpington Rd InB**",
+      "description": "MACSSL208526 to MACSSL208522",
+      "sites": [
+        "{5D6F13FA-AE7B-4924-B37C-F9D899FAA325}",
+        "{F06AFB58-EEBB-4D0A-887E-BF7913B1B9E1}"
+      ],
+      "length": 1313
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800Y3M15EQ5",
+      "name": "1 Elizabeth Wy SB *",
+      "description": "MACSSL208542 to MACSSL208541",
+      "sites": [
+        "{F26F9640-494D-4E39-AAEE-F89D3754E23E}",
+        "{60D1C306-08B8-44C5-A635-8C1F8D138320}"
+      ],
+      "length": 974
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WUW4QTBC",
+      "name": "28 Newmarket Rd InB *",
+      "description": "MACSSL208530 to MACSSL208541",
+      "sites": [
+        "{F99550C6-52B8-4906-BE1C-1D15C48062DD}",
+        "{60D1C306-08B8-44C5-A635-8C1F8D138320}"
+      ],
+      "length": 381
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800X0ZIVU6O",
+      "name": "69 M11 J12-J11 SB *",
+      "description": "",
+      "sites": [
+        "{11AB98B0-4A1A-478A-857D-A23C30C9CC48}",
+        "{5D6F13FA-AE7B-4924-B37C-F9D899FAA325}"
+      ],
+      "length": 4199
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZACH8L2P",
+      "name": "20 Trumpington Rd InB",
+      "description": "MACSSL210020 to MACSSL208550",
+      "sites": [
+        "{BF4B5889-5496-4DAA-BE5D-A0405E3AF65C}",
+        "{CCDAFA02-1E22-484B-9CA2-02E05AA9201C}"
+      ],
+      "length": 1351
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZQVSTZQ0",
+      "name": "16 Madingley Rd InB **",
+      "description": "MACSSL208519 to MACSSL208510",
+      "sites": [
+        "{D863B3A5-4330-4A3B-AE61-5B5F435FB335}",
+        "{1F867FB8-83E6-4E63-A265-51CD2E71E053}"
+      ],
+      "length": 2827
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YCCDWGW1",
+      "name": "66 Storey's Way NB *",
+      "description": "",
+      "sites": [
+        "{C0669D53-2DA2-435C-B425-74179143795A}",
+        "{187D4636-FF4A-4EC4-98D5-70887A0C3898}"
+      ],
+      "length": 1009
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WRBZNTGG",
+      "name": "52 Arbury OB",
+      "description": "MACSSL208513 to MACSSL208516",
+      "sites": [
+        "{FC9EAC00-9BAA-4A8E-861A-97531661D3C7}",
+        "{DB14D55D-A7C2-432C-8A46-284815154833}"
+      ],
+      "length": 2047
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800Y6CS0QK2",
+      "name": "29 Newmarket Rd OB ***",
+      "description": "MACSSL208530 to MACSSL208527",
+      "sites": [
+        "{F99550C6-52B8-4906-BE1C-1D15C48062DD}",
+        "{F957674F-CBFF-4089-B45B-778FCDD80629}"
+      ],
+      "length": 1615
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YRC720KT",
+      "name": "43 Lensfield Rd WB *",
+      "description": "MACSSL212483 to MACSSL208547",
+      "sites": [
+        "{F1C8F438-3BB7-476E-A868-C398E4366BB9}",
+        "{F5F57BF9-4F89-4664-B233-38D36C3B68D1}"
+      ],
+      "length": 381
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YZUTNEFM",
+      "name": "5 Fen Causeway EB *",
+      "description": "MACSSL208551 to MACSSL208547",
+      "sites": [
+        "{F0686BD9-379A-44BC-928D-5BB28A762281}",
+        "{F5F57BF9-4F89-4664-B233-38D36C3B68D1}"
+      ],
+      "length": 726
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800Z0R09UAU",
+      "name": "60 Queen Edith's / Mowbray SB *",
+      "description": "",
+      "sites": [
+        "{98E55D29-1E7B-408D-A20B-193A11C61210}",
+        "{AFB967E5-37F0-406A-B273-0F3BABC08484}"
+      ],
+      "length": 1321
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XMRV0HQE",
+      "name": "24 Hills Rd OB - calibrated",
+      "description": "",
+      "sites": [
+        "{AFB967E5-37F0-406A-B273-0F3BABC08484}",
+        "{CA31BF74-167C-469D-A2BF-63F9C2CE919A}"
+      ],
+      "length": 365
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800Y0BINGGE",
+      "name": "48 A1303 / Storeys Way - Murketts IB",
+      "description": "MACSSL208511 to MACSSL208552",
+      "sites": [
+        "{C0669D53-2DA2-435C-B425-74179143795A}",
+        "{1E9F6DD4-07EB-4FE3-BCE3-ADB901B8B8CC}"
+      ],
+      "length": 913
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WK1UL2BE",
+      "name": "23 Hills OB - calibrated",
+      "description": "",
+      "sites": [
+        "{47B9F7F7-81A8-4DCC-83A1-B9E177D71D38}",
+        "{AFB967E5-37F0-406A-B273-0F3BABC08484}"
+      ],
+      "length": 1283
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YEDVIYOL",
+      "name": "4 Trumpington Rd InB",
+      "description": "MACSSL208550 to MACSSL208547",
+      "sites": [
+        "{CCDAFA02-1E22-484B-9CA2-02E05AA9201C}",
+        "{F5F57BF9-4F89-4664-B233-38D36C3B68D1}"
+      ],
+      "length": 729
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZFE9FFOQ",
+      "name": "2 East Rd EB **",
+      "description": "MACSSL208543 to MACSSL208541",
+      "sites": [
+        "{4F06512E-609C-4A43-947F-610721F931E0}",
+        "{60D1C306-08B8-44C5-A635-8C1F8D138320}"
+      ],
+      "length": 764
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800X9JXWMZU",
+      "name": "16 Madingley Rd OB",
+      "description": "MACSSL208510 to MACSSL208519",
+      "sites": [
+        "{1F867FB8-83E6-4E63-A265-51CD2E71E053}",
+        "{D863B3A5-4330-4A3B-AE61-5B5F435FB335}"
+      ],
+      "length": 2820
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WB11SHZ7",
+      "name": "53 Gilbert OB",
+      "description": "MACSSL208546 to MACSSL210018",
+      "sites": [
+        "{54060BF9-8ABD-4567-B3AF-339E1F712E13}",
+        "{911C93B2-19C9-402B-9685-32F124260BF9}"
+      ],
+      "length": 1363
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WSCW47P1",
+      "name": "44 Histon Rd to CRC WB - calibrated",
+      "description": "",
+      "sites": [
+        "{ED6D0930-73E0-4777-8C4E-28B4AAF66F8A}",
+        "{DB14D55D-A7C2-432C-8A46-284815154833}"
+      ],
+      "length": 1673
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800X3SMZMC0",
+      "name": "32 Histon Rd Out - calibrated",
+      "description": "",
+      "sites": [
+        "{911C93B2-19C9-402B-9685-32F124260BF9}",
+        "{DB14D55D-A7C2-432C-8A46-284815154833}"
+      ],
+      "length": 1179
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YN9NE8YZ",
+      "name": "62 Limekiln Rd SB - calibrated",
+      "description": "",
+      "sites": [
+        "{F66B4D3F-0294-41ED-AA5C-8EEAA787F8F9}",
+        "{E5A5E9B5-4AED-43AC-B379-2F5F208F86A1}"
+      ],
+      "length": 2341
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800Z71EBTBC",
+      "name": "71 A14 J32-J34 EB *",
+      "description": "",
+      "sites": [
+        "{DB14D55D-A7C2-432C-8A46-284815154833}",
+        "{D3A66DC4-6F17-4451-8118-3CFBBBCC73E3}"
+      ],
+      "length": 5386
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WFCAVLJM",
+      "name": "21a Trumpington Rd OB*",
+      "description": "MACSSL208522 to MACSSL208526",
+      "sites": [
+        "{F06AFB58-EEBB-4D0A-887E-BF7913B1B9E1}",
+        "{5D6F13FA-AE7B-4924-B37C-F9D899FAA325}"
+      ],
+      "length": 1311
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800X00QABLF",
+      "name": "67 Eddington NB *",
+      "description": "",
+      "sites": [
+        "{1F867FB8-83E6-4E63-A265-51CD2E71E053}",
+        "{5A5B326F-B70D-4BB2-AA31-8D647DB54E83}"
+      ],
+      "length": 2368
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZAZIOGHG",
+      "name": "14 Huntingdon Rd InB",
+      "description": "MACSSL208517 to MACSSL208514",
+      "sites": [
+        "{5A5B326F-B70D-4BB2-AA31-8D647DB54E83}",
+        "{187D4636-FF4A-4EC4-98D5-70887A0C3898}"
+      ],
+      "length": 1347
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XMD9MJ0V",
+      "name": "48 Hills Road in **",
+      "description": "",
+      "sites": [
+        "{47B9F7F7-81A8-4DCC-83A1-B9E177D71D38}",
+        "{F1C8F438-3BB7-476E-A868-C398E4366BB9}"
+      ],
+      "length": 1257
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YY0NFVJM",
+      "name": "25 Long Rd EB - calibrated",
+      "description": "",
+      "sites": [
+        "{BF4B5889-5496-4DAA-BE5D-A0405E3AF65C}",
+        "{AFB967E5-37F0-406A-B273-0F3BABC08484}"
+      ],
+      "length": 1814
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800W3ZWF41I",
+      "name": "17 Madingley Rd InB **",
+      "description": "MACSSL208510 to MACSSL208511",
+      "sites": [
+        "{1F867FB8-83E6-4E63-A265-51CD2E71E053}",
+        "{C0669D53-2DA2-435C-B425-74179143795A}"
+      ],
+      "length": 1708
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XEGUVGMV",
+      "name": "5 Fen Causeway WB",
+      "description": "MACSSL208547 to MACSSL208551",
+      "sites": [
+        "{F5F57BF9-4F89-4664-B233-38D36C3B68D1}",
+        "{F0686BD9-379A-44BC-928D-5BB28A762281}"
+      ],
+      "length": 744
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WKZHHMHK",
+      "name": "65 A14 J33-J32 WB *",
+      "description": "",
+      "sites": [
+        "{32E0BCF3-4F0F-4F5A-9FDA-E7F9DC37B1D3}",
+        "{DB14D55D-A7C2-432C-8A46-284815154833}"
+      ],
+      "length": 2795
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WJULOCLE",
+      "name": "36 Milton OB *",
+      "description": "MACSSL208512 to MACSSL210023",
+      "sites": [
+        "{ABD3D082-B375-4EFC-AC05-D7FDED3AB22A}",
+        "{32E0BCF3-4F0F-4F5A-9FDA-E7F9DC37B1D3}"
+      ],
+      "length": 1135
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YIZKVIHJ",
+      "name": "55 Brooks Rd SB *",
+      "description": "MACSSL210010 to MACSSL208545",
+      "sites": [
+        "{0D7C672E-EEE9-4924-815E-B49CC382DFFA}",
+        "{6C962749-9A2A-433F-B7A2-EDFDC5E25A18}"
+      ],
+      "length": 490
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XVOXBNLX",
+      "name": "17 Madingley Rd OB **",
+      "description": "MACSSL208511 to MACSSL208510",
+      "sites": [
+        "{C0669D53-2DA2-435C-B425-74179143795A}",
+        "{1F867FB8-83E6-4E63-A265-51CD2E71E053}"
+      ],
+      "length": 1710
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WBKMTUIZ",
+      "name": "3 Gonville Place EB **",
+      "description": "MACSSL212483 to MACSSL208543",
+      "sites": [
+        "{F1C8F438-3BB7-476E-A868-C398E4366BB9}",
+        "{4F06512E-609C-4A43-947F-610721F931E0}"
+      ],
+      "length": 430
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800X0IM4Q3M",
+      "name": "20 Trumpington Rd OB",
+      "description": "MACSSL208550 to MACSSL210020",
+      "sites": [
+        "{CCDAFA02-1E22-484B-9CA2-02E05AA9201C}",
+        "{BF4B5889-5496-4DAA-BE5D-A0405E3AF65C}"
+      ],
+      "length": 1351
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZABOPQO4",
+      "name": "58 Fendon / Queen Edith's EB *",
+      "description": "",
+      "sites": [
+        "{CA31BF74-167C-469D-A2BF-63F9C2CE919A}",
+        "{F66B4D3F-0294-41ED-AA5C-8EEAA787F8F9}"
+      ],
+      "length": 2081
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XGN2FCFX",
+      "name": "45 Mitchams to Madingley WB",
+      "description": "MACSSL208546 to MACSSL208544",
+      "sites": [
+        "{54060BF9-8ABD-4567-B3AF-339E1F712E13}",
+        "{7E0659AA-D627-435E-BDCA-4BF01A65A5D9}"
+      ],
+      "length": 1213
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZYSTB4WM",
+      "name": "44 Histon Rd to CRC EB",
+      "description": "MACSSL208516 to MACSSL212485",
+      "sites": [
+        "{DB14D55D-A7C2-432C-8A46-284815154833}",
+        "{ED6D0930-73E0-4777-8C4E-28B4AAF66F8A}"
+      ],
+      "length": 1665
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XBZ4H0YT",
+      "name": "59 Queen Edith's Way EB",
+      "description": "",
+      "sites": [
+        "{AFB967E5-37F0-406A-B273-0F3BABC08484}",
+        "{F66B4D3F-0294-41ED-AA5C-8EEAA787F8F9}"
+      ],
+      "length": 2092
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YQSIUW2Z",
+      "name": "60 Queen Edith's / Mowbray NB *",
+      "description": "",
+      "sites": [
+        "{AFB967E5-37F0-406A-B273-0F3BABC08484}",
+        "{98E55D29-1E7B-408D-A20B-193A11C61210}"
+      ],
+      "length": 1292
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WSL0VRZ2",
+      "name": "43 Lensfield Rd EB **",
+      "description": "MACSSL208547 to MACSSL212483",
+      "sites": [
+        "{F5F57BF9-4F89-4664-B233-38D36C3B68D1}",
+        "{F1C8F438-3BB7-476E-A868-C398E4366BB9}"
+      ],
+      "length": 417
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZZXPG0A5",
+      "name": "8 SB",
+      "description": "MACSSL208552 to MACSSL208544",
+      "sites": [
+        "{1E9F6DD4-07EB-4FE3-BCE3-ADB901B8B8CC}",
+        "{7E0659AA-D627-435E-BDCA-4BF01A65A5D9}"
+      ],
+      "length": 549
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XKGQVE1Z",
+      "name": "61 Brooklands Avenue EB *",
+      "description": "",
+      "sites": [
+        "{CCDAFA02-1E22-484B-9CA2-02E05AA9201C}",
+        "{47B9F7F7-81A8-4DCC-83A1-B9E177D71D38}"
+      ],
+      "length": 1017
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XA63H1YU",
+      "name": "19 Barton Rd OB *",
+      "description": "MACSSL208551 to MACSSL208528",
+      "sites": [
+        "{F0686BD9-379A-44BC-928D-5BB28A762281}",
+        "{952D4ABB-857B-467D-9770-62DC0A4B5A5A}"
+      ],
+      "length": 626
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WURXH5KB",
+      "name": "50 Mill Rd - Eastbound",
+      "description": "MACSSL208543 to MACSSL208545",
+      "sites": [
+        "{4F06512E-609C-4A43-947F-610721F931E0}",
+        "{6C962749-9A2A-433F-B7A2-EDFDC5E25A18}"
+      ],
+      "length": 1848
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800Y5UMQ5GE",
+      "name": "38 Newmarket Rd InB *",
+      "description": "MACSSL210011 to MACSSL208527",
+      "sites": [
+        "{F9072877-E815-4D5C-9DB4-76F7C7C27D7C}",
+        "{F957674F-CBFF-4089-B45B-778FCDD80629}"
+      ],
+      "length": 1939
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YLJPNESW",
+      "name": "56 Perne Rd SB *",
+      "description": "",
+      "sites": [
+        "{6C962749-9A2A-433F-B7A2-EDFDC5E25A18}",
+        "{98E55D29-1E7B-408D-A20B-193A11C61210}"
+      ],
+      "length": 1055
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WYQUXWQT",
+      "name": "10 Chesterton Rd EB",
+      "description": "MACSSL208546 to MACSSL208542",
+      "sites": [
+        "{54060BF9-8ABD-4567-B3AF-339E1F712E13}",
+        "{F26F9640-494D-4E39-AAEE-F89D3754E23E}"
+      ],
+      "length": 638
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800Z09T4ENM",
+      "name": "25 Long Rd WB - calibrated",
+      "description": "",
+      "sites": [
+        "{AFB967E5-37F0-406A-B273-0F3BABC08484}",
+        "{BF4B5889-5496-4DAA-BE5D-A0405E3AF65C}"
+      ],
+      "length": 1816
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YSC5LT8K",
+      "name": "52 Arbury Rd IB",
+      "description": "MACSSL208516 to MACSSL208513",
+      "sites": [
+        "{DB14D55D-A7C2-432C-8A46-284815154833}",
+        "{FC9EAC00-9BAA-4A8E-861A-97531661D3C7}"
+      ],
+      "length": 2057
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZK0BQM8Z",
+      "name": "68 M11 J13-J12 SB *",
+      "description": "",
+      "sites": [
+        "{1F867FB8-83E6-4E63-A265-51CD2E71E053}",
+        "{11AB98B0-4A1A-478A-857D-A23C30C9CC48}"
+      ],
+      "length": 2674
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WBCHNB6O",
+      "name": "72 M11 J13-J11 SB *",
+      "description": "",
+      "sites": [
+        "{1F867FB8-83E6-4E63-A265-51CD2E71E053}",
+        "{5D6F13FA-AE7B-4924-B37C-F9D899FAA325}"
+      ],
+      "length": 6654
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800X0YR0MJP",
+      "name": "23 Hills IB - calibrated",
+      "description": "",
+      "sites": [
+        "{AFB967E5-37F0-406A-B273-0F3BABC08484}",
+        "{47B9F7F7-81A8-4DCC-83A1-B9E177D71D38}"
+      ],
+      "length": 1270
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WEJ8XOW0",
+      "name": "47 Cherry Hinton Rd OB - calibrated",
+      "description": "",
+      "sites": [
+        "{47B9F7F7-81A8-4DCC-83A1-B9E177D71D38}",
+        "{98E55D29-1E7B-408D-A20B-193A11C61210}"
+      ],
+      "length": 1151
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YFEZUDEF",
+      "name": "48 Murketts - A1303 / Storeys Way OB",
+      "description": "MACSSL208552 to MACSSL208511",
+      "sites": [
+        "{1E9F6DD4-07EB-4FE3-BCE3-ADB901B8B8CC}",
+        "{C0669D53-2DA2-435C-B425-74179143795A}"
+      ],
+      "length": 924
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZMJIIRA4",
+      "name": "28 Newmarket Rd OB *",
+      "description": "MACSSL208541 to MACSSL208530",
+      "sites": [
+        "{60D1C306-08B8-44C5-A635-8C1F8D138320}",
+        "{F99550C6-52B8-4906-BE1C-1D15C48062DD}"
+      ],
+      "length": 415
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WBG2ZOAI",
+      "name": "63 Airport Way NB *",
+      "description": "",
+      "sites": [
+        "{F66B4D3F-0294-41ED-AA5C-8EEAA787F8F9}",
+        "{F9072877-E815-4D5C-9DB4-76F7C7C27D7C}"
+      ],
+      "length": 3541
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YDGZL0K5",
+      "name": "42 Milton Rd/Eliz Av NB *",
+      "description": "MACSSL208542 to MACSSL208513",
+      "sites": [
+        "{F26F9640-494D-4E39-AAEE-F89D3754E23E}",
+        "{FC9EAC00-9BAA-4A8E-861A-97531661D3C7}"
+      ],
+      "length": 714
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800Z0SUAHN1",
+      "name": "38 Newmarket Rd Out",
+      "description": "MACSSL208527 to MACSSL210011",
+      "sites": [
+        "{F957674F-CBFF-4089-B45B-778FCDD80629}",
+        "{F9072877-E815-4D5C-9DB4-76F7C7C27D7C}"
+      ],
+      "length": 1932
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZT9A0TG6",
+      "name": "18 Madingley Rd OB **",
+      "description": "MACSSL208544 to MACSSL208511",
+      "sites": [
+        "{7E0659AA-D627-435E-BDCA-4BF01A65A5D9}",
+        "{C0669D53-2DA2-435C-B425-74179143795A}"
+      ],
+      "length": 566
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800W3OXDX4I",
+      "name": "A14 J32-J33 EB *",
+      "description": "",
+      "sites": [
+        "{DB14D55D-A7C2-432C-8A46-284815154833}",
+        "{32E0BCF3-4F0F-4F5A-9FDA-E7F9DC37B1D3}"
+      ],
+      "length": 3310
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XL1RZZPA",
+      "name": "12 Milton Rd OB **",
+      "description": "MACSSL208513 to MACSSL208512",
+      "sites": [
+        "{FC9EAC00-9BAA-4A8E-861A-97531661D3C7}",
+        "{ABD3D082-B375-4EFC-AC05-D7FDED3AB22A}"
+      ],
+      "length": 1061
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XVT0GHMV",
+      "name": "56 Perne Road NB *",
+      "description": "",
+      "sites": [
+        "{98E55D29-1E7B-408D-A20B-193A11C61210}",
+        "{6C962749-9A2A-433F-B7A2-EDFDC5E25A18}"
+      ],
+      "length": 1071
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZITGHVMF",
+      "name": "11 Milton Rd InB",
+      "description": "MACSSL208513 to MACSSL208546",
+      "sites": [
+        "{FC9EAC00-9BAA-4A8E-861A-97531661D3C7}",
+        "{54060BF9-8ABD-4567-B3AF-339E1F712E13}"
+      ],
+      "length": 1005
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800Z9MXKHRS",
+      "name": "37 Ditton Lane Out *",
+      "description": "MACSSL208527 to MACSSL212484",
+      "sites": [
+        "{F957674F-CBFF-4089-B45B-778FCDD80629}",
+        "{D3A66DC4-6F17-4451-8118-3CFBBBCC73E3}"
+      ],
+      "length": 2213
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YXQN3Q37",
+      "name": "18 Madingley Rd In **",
+      "description": "MACSSL208511 to MACSSL208544",
+      "sites": [
+        "{C0669D53-2DA2-435C-B425-74179143795A}",
+        "{7E0659AA-D627-435E-BDCA-4BF01A65A5D9}"
+      ],
+      "length": 565
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WWXM290F",
+      "name": "63 Airport Way SB *",
+      "description": "",
+      "sites": [
+        "{F9072877-E815-4D5C-9DB4-76F7C7C27D7C}",
+        "{F66B4D3F-0294-41ED-AA5C-8EEAA787F8F9}"
+      ],
+      "length": 3543
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZXH0E7F0",
+      "name": "46 Queen NB",
+      "description": "MACSSL208551 to MACSSL208544",
+      "sites": [
+        "{F0686BD9-379A-44BC-928D-5BB28A762281}",
+        "{7E0659AA-D627-435E-BDCA-4BF01A65A5D9}"
+      ],
+      "length": 1415
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZIR408ME",
+      "name": "8 NB",
+      "description": "MACSSL208544 to MACSSL208552",
+      "sites": [
+        "{7E0659AA-D627-435E-BDCA-4BF01A65A5D9}",
+        "{1E9F6DD4-07EB-4FE3-BCE3-ADB901B8B8CC}"
+      ],
+      "length": 539
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YRFYK4MB",
+      "name": "69 M11 J11-J12 NB *",
+      "description": "",
+      "sites": [
+        "{5D6F13FA-AE7B-4924-B37C-F9D899FAA325}",
+        "{11AB98B0-4A1A-478A-857D-A23C30C9CC48}"
+      ],
+      "length": 4599
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZN0UJRJR",
+      "name": "32 Histon Rd InB",
+      "description": "MACSSL208516 to MACSSL210018",
+      "sites": [
+        "{DB14D55D-A7C2-432C-8A46-284815154833}",
+        "{911C93B2-19C9-402B-9685-32F124260BF9}"
+      ],
+      "length": 1199
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YZBT7MC0",
+      "name": "67 Eddington SB *",
+      "description": "",
+      "sites": [
+        "{5A5B326F-B70D-4BB2-AA31-8D647DB54E83}",
+        "{1F867FB8-83E6-4E63-A265-51CD2E71E053}"
+      ],
+      "length": 2380
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WXRWFIM6",
+      "name": "21b Trumpington Rd InB*",
+      "description": "MACSSL208522 to MACSSL210020",
+      "sites": [
+        "{F06AFB58-EEBB-4D0A-887E-BF7913B1B9E1}",
+        "{BF4B5889-5496-4DAA-BE5D-A0405E3AF65C}"
+      ],
+      "length": 1098
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800Y0TZ4R7F",
+      "name": "51 KH EB to Milton Rd",
+      "description": "MACSSL212485 to MACSSL208512",
+      "sites": [
+        "{ED6D0930-73E0-4777-8C4E-28B4AAF66F8A}",
+        "{ABD3D082-B375-4EFC-AC05-D7FDED3AB22A}"
+      ],
+      "length": 1001
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZNBKR5BY",
+      "name": "3 Gonville Place WB **",
+      "description": "MACSSL208543 to MACSSL212483",
+      "sites": [
+        "{4F06512E-609C-4A43-947F-610721F931E0}",
+        "{F1C8F438-3BB7-476E-A868-C398E4366BB9}"
+      ],
+      "length": 435
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800W1CHALH6",
+      "name": "10 Chesterton Rd WB",
+      "description": "MACSSL208542 to MACSSL208546",
+      "sites": [
+        "{F26F9640-494D-4E39-AAEE-F89D3754E23E}",
+        "{54060BF9-8ABD-4567-B3AF-339E1F712E13}"
+      ],
+      "length": 1106
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YPWMC3HE",
+      "name": "49 Cherry Hinton Rd OB - calibrated",
+      "description": "",
+      "sites": [
+        "{98E55D29-1E7B-408D-A20B-193A11C61210}",
+        "{F66B4D3F-0294-41ED-AA5C-8EEAA787F8F9}"
+      ],
+      "length": 1323
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YPAOGVV0",
+      "name": "50 Mill Rd - Westbound **",
+      "description": "MACSSL208545 to MACSSL208543",
+      "sites": [
+        "{6C962749-9A2A-433F-B7A2-EDFDC5E25A18}",
+        "{4F06512E-609C-4A43-947F-610721F931E0}"
+      ],
+      "length": 1851
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XFLLOSRD",
+      "name": "58 Fendon / Queen Edith's WB *",
+      "description": "",
+      "sites": [
+        "{F66B4D3F-0294-41ED-AA5C-8EEAA787F8F9}",
+        "{CA31BF74-167C-469D-A2BF-63F9C2CE919A}"
+      ],
+      "length": 2098
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YOMOIY5F",
+      "name": "24 Hills Rd InB - calibrated",
+      "description": "",
+      "sites": [
+        "{CA31BF74-167C-469D-A2BF-63F9C2CE919A}",
+        "{AFB967E5-37F0-406A-B273-0F3BABC08484}"
+      ],
+      "length": 330
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XYNTVQMQ",
+      "name": "61 Brooklands Avenue WB *",
+      "description": "",
+      "sites": [
+        "{47B9F7F7-81A8-4DCC-83A1-B9E177D71D38}",
+        "{CCDAFA02-1E22-484B-9CA2-02E05AA9201C}"
+      ],
+      "length": 1016
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WENYEPFN",
+      "name": "30 Barnwell Rd NB **",
+      "description": "MACSSL210010 to MACSSL208527",
+      "sites": [
+        "{0D7C672E-EEE9-4924-815E-B49CC382DFFA}",
+        "{F957674F-CBFF-4089-B45B-778FCDD80629}"
+      ],
+      "length": 1606
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XCX8CQW2",
+      "name": "15 Huntingdon Rd OB",
+      "description": "MACSSL208552 to MACSSL208514",
+      "sites": [
+        "{1E9F6DD4-07EB-4FE3-BCE3-ADB901B8B8CC}",
+        "{187D4636-FF4A-4EC4-98D5-70887A0C3898}"
+      ],
+      "length": 780
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WF0F5X0F",
+      "name": "47 Cherry Hinton Rd IB - calibrated",
+      "description": "",
+      "sites": [
+        "{98E55D29-1E7B-408D-A20B-193A11C61210}",
+        "{47B9F7F7-81A8-4DCC-83A1-B9E177D71D38}"
+      ],
+      "length": 1148
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YR0MWWBK",
+      "name": "39 Hills Rd IB - calibrated",
+      "description": "",
+      "sites": [
+        "{E5A5E9B5-4AED-43AC-B379-2F5F208F86A1}",
+        "{CA31BF74-167C-469D-A2BF-63F9C2CE919A}"
+      ],
+      "length": 1565
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XNOQJX4J",
+      "name": "19 Barton Rd InB *",
+      "description": "MACSSL208528 to MACSSL208551",
+      "sites": [
+        "{952D4ABB-857B-467D-9770-62DC0A4B5A5A}",
+        "{F0686BD9-379A-44BC-928D-5BB28A762281}"
+      ],
+      "length": 627
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800W5876JBL",
+      "name": "64 A14 J33-J34 EB *",
+      "description": "",
+      "sites": [
+        "{32E0BCF3-4F0F-4F5A-9FDA-E7F9DC37B1D3}",
+        "{D3A66DC4-6F17-4451-8118-3CFBBBCC73E3}"
+      ],
+      "length": 2655
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WVVAYPZM",
+      "name": "62 Limekiln Rd NB - calibrated",
+      "description": "",
+      "sites": [
+        "{E5A5E9B5-4AED-43AC-B379-2F5F208F86A1}",
+        "{F66B4D3F-0294-41ED-AA5C-8EEAA787F8F9}"
+      ],
+      "length": 2279
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XPN6JMGX",
+      "name": "51 KH WB to Milton Rd",
+      "description": "MACSSL208512 to MACSSL212485",
+      "sites": [
+        "{ABD3D082-B375-4EFC-AC05-D7FDED3AB22A}",
+        "{ED6D0930-73E0-4777-8C4E-28B4AAF66F8A}"
+      ],
+      "length": 1002
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800W1NX9BF2",
+      "name": "55 Brooks Rd NB *",
+      "description": "MACSSL208545 to MACSSL210010",
+      "sites": [
+        "{6C962749-9A2A-433F-B7A2-EDFDC5E25A18}",
+        "{0D7C672E-EEE9-4924-815E-B49CC382DFFA}"
+      ],
+      "length": 487
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XPCNJANM",
+      "name": "68 M11 J12-J13 *",
+      "description": "",
+      "sites": [
+        "{11AB98B0-4A1A-478A-857D-A23C30C9CC48}",
+        "{1F867FB8-83E6-4E63-A265-51CD2E71E053}"
+      ],
+      "length": 4078
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YDKVJZKE",
+      "name": "29 Newmarket Rd InB **",
+      "description": "MACSSL208527 to MACSSL208530",
+      "sites": [
+        "{F957674F-CBFF-4089-B45B-778FCDD80629}",
+        "{F99550C6-52B8-4906-BE1C-1D15C48062DD}"
+      ],
+      "length": 1607
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800W6VRPJER",
+      "name": "11 Milton Rd OB",
+      "description": "MACSSL208546 to MACSSL208513",
+      "sites": [
+        "{54060BF9-8ABD-4567-B3AF-339E1F712E13}",
+        "{FC9EAC00-9BAA-4A8E-861A-97531661D3C7}"
+      ],
+      "length": 948
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YTSQYLFZ",
+      "name": "71 A14 J34-J32 WB *",
+      "description": "",
+      "sites": [
+        "{D3A66DC4-6F17-4451-8118-3CFBBBCC73E3}",
+        "{DB14D55D-A7C2-432C-8A46-284815154833}"
+      ],
+      "length": 5004
+    }
+  ],
+  "compoundRoutes": [
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZOHMPGPY",
+      "name": "Cambridge - A14 Junc 35 Outbound",
+      "description": "",
+      "sites": [
+        "{60D1C306-08B8-44C5-A635-8C1F8D138320}",
+        "{F99550C6-52B8-4906-BE1C-1D15C48062DD}",
+        "{F957674F-CBFF-4089-B45B-778FCDD80629}",
+        "{F9072877-E815-4D5C-9DB4-76F7C7C27D7C}"
+      ],
+      "links": [
+        "CAMBRIDGE_JTMS|9800ZMJIIRA4",
+        "CAMBRIDGE_JTMS|9800Y6CS0QK2",
+        "CAMBRIDGE_JTMS|9800Z0SUAHN1"
+      ],
+      "length": 3962
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WMBVAGBF",
+      "name": "M11 Junc 11 Inbound",
+      "description": "",
+      "sites": [
+        "{5D6F13FA-AE7B-4924-B37C-F9D899FAA325}",
+        "{F06AFB58-EEBB-4D0A-887E-BF7913B1B9E1}",
+        "{BF4B5889-5496-4DAA-BE5D-A0405E3AF65C}",
+        "{CCDAFA02-1E22-484B-9CA2-02E05AA9201C}",
+        "{F5F57BF9-4F89-4664-B233-38D36C3B68D1}"
+      ],
+      "links": [
+        "CAMBRIDGE_JTMS|9800XMT2VJAM",
+        "CAMBRIDGE_JTMS|9800WXRWFIM6",
+        "CAMBRIDGE_JTMS|9800ZACH8L2P",
+        "CAMBRIDGE_JTMS|9800YEDVIYOL"
+      ],
+      "length": 4458
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YDYIZQJP",
+      "name": "Madingley - Cambridge Inbound",
+      "description": "",
+      "sites": [
+        "{D863B3A5-4330-4A3B-AE61-5B5F435FB335}",
+        "{1F867FB8-83E6-4E63-A265-51CD2E71E053}",
+        "{C0669D53-2DA2-435C-B425-74179143795A}",
+        "{7E0659AA-D627-435E-BDCA-4BF01A65A5D9}"
+      ],
+      "links": [
+        "CAMBRIDGE_JTMS|9800ZQVSTZQ0",
+        "CAMBRIDGE_JTMS|9800W3ZWF41I",
+        "CAMBRIDGE_JTMS|9800YXQN3Q37"
+      ],
+      "length": 5101
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZCGH4MLU",
+      "name": "Cambridge - Girton Outbound",
+      "description": "",
+      "sites": [
+        "{1E9F6DD4-07EB-4FE3-BCE3-ADB901B8B8CC}",
+        "{187D4636-FF4A-4EC4-98D5-70887A0C3898}",
+        "{5A5B326F-B70D-4BB2-AA31-8D647DB54E83}"
+      ],
+      "links": [
+        "CAMBRIDGE_JTMS|9800XCX8CQW2",
+        "CAMBRIDGE_JTMS|9800XEYKHHKD"
+      ],
+      "length": 2124
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800Y0SKT50H",
+      "name": "A603 Outbound",
+      "description": "",
+      "sites": [
+        "{F0686BD9-379A-44BC-928D-5BB28A762281}",
+        "{952D4ABB-857B-467D-9770-62DC0A4B5A5A}",
+        "{11AB98B0-4A1A-478A-857D-A23C30C9CC48}"
+      ],
+      "links": [
+        "CAMBRIDGE_JTMS|9800XA63H1YU",
+        "CAMBRIDGE_JTMS|9800WBETRSU3"
+      ],
+      "length": 2671
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YD8IQFM5",
+      "name": "Cambridge - A14 Junc 33 Outbound",
+      "description": "",
+      "sites": [
+        "{F26F9640-494D-4E39-AAEE-F89D3754E23E}",
+        "{FC9EAC00-9BAA-4A8E-861A-97531661D3C7}",
+        "{ABD3D082-B375-4EFC-AC05-D7FDED3AB22A}",
+        "{32E0BCF3-4F0F-4F5A-9FDA-E7F9DC37B1D3}"
+      ],
+      "links": [
+        "CAMBRIDGE_JTMS|9800YDGZL0K5",
+        "CAMBRIDGE_JTMS|9800XL1RZZPA",
+        "CAMBRIDGE_JTMS|9800WJULOCLE"
+      ],
+      "length": 2911
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XYLUIYVC",
+      "name": "Orchard Park - Cambridge Inbound",
+      "description": "",
+      "sites": [
+        "{DB14D55D-A7C2-432C-8A46-284815154833}",
+        "{911C93B2-19C9-402B-9685-32F124260BF9}",
+        "{1E9F6DD4-07EB-4FE3-BCE3-ADB901B8B8CC}"
+      ],
+      "links": [
+        "CAMBRIDGE_JTMS|9800ZN0UJRJR",
+        "CAMBRIDGE_JTMS|9800YO6L09UY"
+      ],
+      "length": 2164
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZWEIWCLA",
+      "name": "A14 Junc 35 - Cambridge Inbound",
+      "description": "",
+      "sites": [
+        "{F9072877-E815-4D5C-9DB4-76F7C7C27D7C}",
+        "{F957674F-CBFF-4089-B45B-778FCDD80629}",
+        "{F99550C6-52B8-4906-BE1C-1D15C48062DD}",
+        "{60D1C306-08B8-44C5-A635-8C1F8D138320}"
+      ],
+      "links": [
+        "CAMBRIDGE_JTMS|9800Y5UMQ5GE",
+        "CAMBRIDGE_JTMS|9800YDKVJZKE",
+        "CAMBRIDGE_JTMS|9800WUW4QTBC"
+      ],
+      "length": 3927
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XCZR4LWP",
+      "name": "Milton Inbound to GA/Vivacity",
+      "description": "",
+      "sites": [
+        "{32E0BCF3-4F0F-4F5A-9FDA-E7F9DC37B1D3}",
+        "{ABD3D082-B375-4EFC-AC05-D7FDED3AB22A}",
+        "{FC9EAC00-9BAA-4A8E-861A-97531661D3C7}",
+        "{F26F9640-494D-4E39-AAEE-F89D3754E23E}",
+        "{60D1C306-08B8-44C5-A635-8C1F8D138320}",
+        "{4F06512E-609C-4A43-947F-610721F931E0}",
+        "{F1C8F438-3BB7-476E-A868-C398E4366BB9}",
+        "{F5F57BF9-4F89-4664-B233-38D36C3B68D1}"
+      ],
+      "links": [
+        "CAMBRIDGE_JTMS|9800X7003HZY",
+        "CAMBRIDGE_JTMS|9800YU0FYRKZ",
+        "CAMBRIDGE_JTMS|9800WS0IUKCJ",
+        "CAMBRIDGE_JTMS|9800Y3M15EQ5",
+        "CAMBRIDGE_JTMS|9800YGD93F5D",
+        "CAMBRIDGE_JTMS|9800ZNBKR5BY",
+        "CAMBRIDGE_JTMS|9800YRC720KT"
+      ],
+      "length": 5364
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800XDBZTSCW",
+      "name": "A603 Inbound",
+      "description": "",
+      "sites": [
+        "{11AB98B0-4A1A-478A-857D-A23C30C9CC48}",
+        "{952D4ABB-857B-467D-9770-62DC0A4B5A5A}",
+        "{F0686BD9-379A-44BC-928D-5BB28A762281}"
+      ],
+      "links": [
+        "CAMBRIDGE_JTMS|9800XIAJFUMP",
+        "CAMBRIDGE_JTMS|9800XNOQJX4J"
+      ],
+      "length": 2666
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800Z3WUXA4G",
+      "name": "Cambridge - Madingley Outbound",
+      "description": "",
+      "sites": [
+        "{7E0659AA-D627-435E-BDCA-4BF01A65A5D9}",
+        "{C0669D53-2DA2-435C-B425-74179143795A}",
+        "{1F867FB8-83E6-4E63-A265-51CD2E71E053}",
+        "{D863B3A5-4330-4A3B-AE61-5B5F435FB335}"
+      ],
+      "links": [
+        "CAMBRIDGE_JTMS|9800ZT9A0TG6",
+        "CAMBRIDGE_JTMS|9800XVOXBNLX",
+        "CAMBRIDGE_JTMS|9800X9JXWMZU"
+      ],
+      "length": 5097
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WWPLEU5F",
+      "name": "A14 Junc 33 - Cambridge Inbound",
+      "description": "",
+      "sites": [
+        "{32E0BCF3-4F0F-4F5A-9FDA-E7F9DC37B1D3}",
+        "{ABD3D082-B375-4EFC-AC05-D7FDED3AB22A}",
+        "{FC9EAC00-9BAA-4A8E-861A-97531661D3C7}",
+        "{F26F9640-494D-4E39-AAEE-F89D3754E23E}"
+      ],
+      "links": [
+        "CAMBRIDGE_JTMS|9800X7003HZY",
+        "CAMBRIDGE_JTMS|9800YU0FYRKZ",
+        "CAMBRIDGE_JTMS|9800WS0IUKCJ"
+      ],
+      "length": 2824
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YTX10SCT",
+      "name": "Ring Road Anti-Clockwise",
+      "description": "",
+      "sites": [
+        "{4F06512E-609C-4A43-947F-610721F931E0}",
+        "{60D1C306-08B8-44C5-A635-8C1F8D138320}",
+        "{F26F9640-494D-4E39-AAEE-F89D3754E23E}",
+        "{54060BF9-8ABD-4567-B3AF-339E1F712E13}",
+        "{7E0659AA-D627-435E-BDCA-4BF01A65A5D9}",
+        "{F0686BD9-379A-44BC-928D-5BB28A762281}",
+        "{F5F57BF9-4F89-4664-B233-38D36C3B68D1}",
+        "{F1C8F438-3BB7-476E-A868-C398E4366BB9}"
+      ],
+      "links": [
+        "CAMBRIDGE_JTMS|9800ZFE9FFOQ",
+        "CAMBRIDGE_JTMS|9800W5R3DRXB",
+        "CAMBRIDGE_JTMS|9800W1CHALH6",
+        "CAMBRIDGE_JTMS|9800XGN2FCFX",
+        "CAMBRIDGE_JTMS|9800Y7QUVJYW",
+        "CAMBRIDGE_JTMS|9800YZUTNEFM",
+        "CAMBRIDGE_JTMS|9800WSL0VRZ2"
+      ],
+      "length": 5550
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800WVMCRNM0",
+      "name": "M11 junc11 Outbound",
+      "description": "",
+      "sites": [
+        "{F5F57BF9-4F89-4664-B233-38D36C3B68D1}",
+        "{CCDAFA02-1E22-484B-9CA2-02E05AA9201C}",
+        "{BF4B5889-5496-4DAA-BE5D-A0405E3AF65C}",
+        "{F06AFB58-EEBB-4D0A-887E-BF7913B1B9E1}",
+        "{5D6F13FA-AE7B-4924-B37C-F9D899FAA325}"
+      ],
+      "links": [
+        "CAMBRIDGE_JTMS|9800WOZGV4D2",
+        "CAMBRIDGE_JTMS|9800X0IM4Q3M",
+        "CAMBRIDGE_JTMS|9800WDYEV0RY",
+        "CAMBRIDGE_JTMS|9800WFCAVLJM"
+      ],
+      "length": 4455
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800YBZOPJSJ",
+      "name": "Cambridge - Orchard Park Outbound - calibrated",
+      "description": "",
+      "sites": [
+        "{1E9F6DD4-07EB-4FE3-BCE3-ADB901B8B8CC}",
+        "{911C93B2-19C9-402B-9685-32F124260BF9}",
+        "{DB14D55D-A7C2-432C-8A46-284815154833}"
+      ],
+      "links": [
+        "CAMBRIDGE_JTMS|9800ZQFIRDTY",
+        "CAMBRIDGE_JTMS|9800X3SMZMC0"
+      ],
+      "length": 2085
+    },
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZMASCJDM",
+      "name": "Girton - Cambridge Inbound",
+      "description": "",
+      "sites": [
+        "{5A5B326F-B70D-4BB2-AA31-8D647DB54E83}",
+        "{187D4636-FF4A-4EC4-98D5-70887A0C3898}",
+        "{1E9F6DD4-07EB-4FE3-BCE3-ADB901B8B8CC}"
+      ],
+      "links": [
+        "CAMBRIDGE_JTMS|9800ZAZIOGHG",
+        "CAMBRIDGE_JTMS|9800XKGDBDWJ"
+      ],
+      "length": 2124
+    }
+  ]
+}

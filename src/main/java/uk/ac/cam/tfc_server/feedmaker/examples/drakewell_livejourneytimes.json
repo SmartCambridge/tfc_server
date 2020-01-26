@@ -1,0 +1,1010 @@
+[
+  {
+    "id": "CAMBRIDGE_JTMS|9800WBETRSU3",
+    "time": "2020-01-26 09:28:22",
+    "period": 674,
+    "travelTime": 127,
+    "normalTravelTime": 129.39
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZOHMPGPY",
+    "time": "2020-01-26 09:29:43",
+    "period": 594,
+    "travelTime": 348,
+    "normalTravelTime": 419.038
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XIVHRXA0",
+    "time": "2020-01-26 09:26:35",
+    "period": 300,
+    "travelTime": 159,
+    "normalTravelTime": 176
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YUH7KFF1",
+    "time": "2020-01-26 09:32:32",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 166.081
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XEYKHHKD",
+    "time": "2020-01-26 09:27:49",
+    "period": 300,
+    "travelTime": 106,
+    "normalTravelTime": 117.824
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XFYLRKEG",
+    "time": "2020-01-26 09:26:16",
+    "period": 560,
+    "travelTime": 208,
+    "normalTravelTime": 231.732
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZQVSGEM1",
+    "time": "2020-01-26 09:30:52",
+    "period": 300,
+    "travelTime": 144,
+    "normalTravelTime": 156.264
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WMBVAGBF",
+    "time": "2020-01-26 09:28:58",
+    "period": 451,
+    "travelTime": 372,
+    "normalTravelTime": 428.808
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WJ0FVHGT",
+    "time": "2020-01-26 09:30:17",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 6684.544
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800Y7QUVJYW",
+    "time": "2020-01-26 09:27:48",
+    "period": 300,
+    "travelTime": 138,
+    "normalTravelTime": 144.17
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZS0TMB0N",
+    "time": "2020-01-26 09:30:16",
+    "period": 736,
+    "travelTime": 147,
+    "normalTravelTime": 143.791
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZYQY2V5T",
+    "time": "2020-01-26 09:25:48",
+    "period": 300,
+    "travelTime": 123,
+    "normalTravelTime": 180.161
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YAJC06O6",
+    "time": "2020-01-26 09:31:45",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 140.21
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZOU6HKFP",
+    "time": "2020-01-26 09:33:05",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 734.292
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800X7003HZY",
+    "time": "2020-01-26 09:26:51",
+    "period": 868,
+    "travelTime": 101,
+    "normalTravelTime": 96.406
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YHOTYC18",
+    "time": "2020-01-26 09:26:39",
+    "period": 300,
+    "travelTime": 99,
+    "normalTravelTime": 99.541
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WLZSM8UU",
+    "time": "2020-01-26 09:25:23",
+    "period": 446,
+    "travelTime": 196,
+    "normalTravelTime": 162.285
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XKGDBDWJ",
+    "time": "2020-01-26 09:29:50",
+    "period": 300,
+    "travelTime": 61,
+    "normalTravelTime": 67.04
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800X3UWN2BX",
+    "time": "2020-01-26 09:28:20",
+    "period": 300,
+    "travelTime": 199,
+    "normalTravelTime": 195.096
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WOZGV4D2",
+    "time": "2020-01-26 09:27:29",
+    "period": 300,
+    "travelTime": 63,
+    "normalTravelTime": 59.418
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WS0IUKCJ",
+    "time": "2020-01-26 09:26:04",
+    "period": 368,
+    "travelTime": 72,
+    "normalTravelTime": 71.685
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XIAJFUMP",
+    "time": "2020-01-26 09:28:36",
+    "period": 300,
+    "travelTime": 114,
+    "normalTravelTime": 128.915
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YU0FYRKZ",
+    "time": "2020-01-26 09:29:06",
+    "period": 505,
+    "travelTime": 186,
+    "normalTravelTime": 116.264
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XMPLJZ1P",
+    "time": "2020-01-26 09:26:25",
+    "period": 399,
+    "travelTime": 123,
+    "normalTravelTime": 120.305
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XJHHZ5OD",
+    "time": "2020-01-26 09:28:03",
+    "period": 300,
+    "travelTime": 260,
+    "normalTravelTime": 253.378
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YO6L09UY",
+    "time": "2020-01-26 09:27:52",
+    "period": 374,
+    "travelTime": 79,
+    "normalTravelTime": 93.096
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZU1J86D8",
+    "time": "2020-01-26 09:28:12",
+    "period": 425,
+    "travelTime": 169,
+    "normalTravelTime": 144.558
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YGD93F5D",
+    "time": "2020-01-26 09:26:04",
+    "period": 604,
+    "travelTime": 108,
+    "normalTravelTime": 118.669
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZVE0DFMP",
+    "time": "2020-01-26 09:33:14",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 359.972
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YDYIZQJP",
+    "time": "2020-01-26 09:30:37",
+    "period": 522,
+    "travelTime": 348,
+    "normalTravelTime": 372.615
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YP00LP4O",
+    "time": "2020-01-26 09:29:40",
+    "period": 300,
+    "travelTime": 145,
+    "normalTravelTime": 141.072
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WDYEV0RY",
+    "time": "2020-01-26 09:27:03",
+    "period": 300,
+    "travelTime": 127,
+    "normalTravelTime": 119.698
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZDGCLO0Z",
+    "time": "2020-01-26 09:28:16",
+    "period": 364,
+    "travelTime": 151,
+    "normalTravelTime": 216.024
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZQFIRDTY",
+    "time": "2020-01-26 09:31:47",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 203.188
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZRJX0GEF",
+    "time": "2020-01-26 09:33:08",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 314.062
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZCGH4MLU",
+    "time": "2020-01-26 09:27:49",
+    "period": 363,
+    "travelTime": 190,
+    "normalTravelTime": 211.875
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800W5R3DRXB",
+    "time": "2020-01-26 09:29:14",
+    "period": 300,
+    "travelTime": 100,
+    "normalTravelTime": 105.811
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XMT2VJAM",
+    "time": "2020-01-26 09:27:46",
+    "period": 379,
+    "travelTime": 115,
+    "normalTravelTime": 130.595
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800Y3M15EQ5",
+    "time": "2020-01-26 09:29:47",
+    "period": 300,
+    "travelTime": 88,
+    "normalTravelTime": 92.265
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WUW4QTBC",
+    "time": "2020-01-26 09:30:51",
+    "period": 300,
+    "travelTime": 49,
+    "normalTravelTime": 53.006
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800X0ZIVU6O",
+    "time": "2020-01-26 09:26:01",
+    "period": 575,
+    "travelTime": 188,
+    "normalTravelTime": 188.848
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZACH8L2P",
+    "time": "2020-01-26 09:26:27",
+    "period": 300,
+    "travelTime": 95,
+    "normalTravelTime": 95.849
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZQVSTZQ0",
+    "time": "2020-01-26 09:26:55",
+    "period": 300,
+    "travelTime": 168,
+    "normalTravelTime": 172.361
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YCCDWGW1",
+    "time": "2020-01-26 09:31:49",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 259.125
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WRBZNTGG",
+    "time": "2020-01-26 09:30:29",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 965.173
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800Y6CS0QK2",
+    "time": "2020-01-26 09:28:01",
+    "period": 492,
+    "travelTime": 157,
+    "normalTravelTime": 187.275
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YRC720KT",
+    "time": "2020-01-26 09:28:52",
+    "period": 300,
+    "travelTime": 92,
+    "normalTravelTime": 82.527
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YZUTNEFM",
+    "time": "2020-01-26 09:30:20",
+    "period": 300,
+    "travelTime": 71,
+    "normalTravelTime": 78.364
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800Z0R09UAU",
+    "time": "2020-01-26 09:28:02",
+    "period": 347,
+    "travelTime": 241,
+    "normalTravelTime": 186.37
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XMRV0HQE",
+    "time": "2020-01-26 09:26:27",
+    "period": 519,
+    "travelTime": 60,
+    "normalTravelTime": 61.035
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800Y0BINGGE",
+    "time": "2020-01-26 09:31:38",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 124
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WK1UL2BE",
+    "time": "2020-01-26 09:25:19",
+    "period": 875,
+    "travelTime": 125,
+    "normalTravelTime": 152.284
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YEDVIYOL",
+    "time": "2020-01-26 09:28:58",
+    "period": 395,
+    "travelTime": 56,
+    "normalTravelTime": 68.333
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZFE9FFOQ",
+    "time": "2020-01-26 09:27:47",
+    "period": 300,
+    "travelTime": 94,
+    "normalTravelTime": 113.869
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800X9JXWMZU",
+    "time": "2020-01-26 09:29:41",
+    "period": 573,
+    "travelTime": 167,
+    "normalTravelTime": 174.411
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WB11SHZ7",
+    "time": "2020-01-26 09:30:07",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 803.789
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WSCW47P1",
+    "time": "2020-01-26 09:30:35",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 258.126
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800Y0SKT50H",
+    "time": "2020-01-26 09:28:22",
+    "period": 674,
+    "travelTime": 200,
+    "normalTravelTime": 213.843
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800X3SMZMC0",
+    "time": "2020-01-26 09:28:36",
+    "period": 425,
+    "travelTime": 381,
+    "normalTravelTime": 106.674
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YN9NE8YZ",
+    "time": "2020-01-26 09:27:07",
+    "period": 387,
+    "travelTime": 159,
+    "normalTravelTime": 187.986
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800Z71EBTBC",
+    "time": "2020-01-26 09:32:45",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 701.889
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WFCAVLJM",
+    "time": "2020-01-26 09:30:45",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 131.324
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YD8IQFM5",
+    "time": "2020-01-26 09:30:16",
+    "period": 750,
+    "travelTime": 308,
+    "normalTravelTime": 316.115
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800X00QABLF",
+    "time": "2020-01-26 09:30:57",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 580.955
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XYLUIYVC",
+    "time": "2020-01-26 09:27:52",
+    "period": 374,
+    "travelTime": 203,
+    "normalTravelTime": 217.692
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZWEIWCLA",
+    "time": "2020-01-26 09:31:45",
+    "period": 868,
+    "travelTime": 390,
+    "normalTravelTime": 398.75
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZAZIOGHG",
+    "time": "2020-01-26 09:28:56",
+    "period": 300,
+    "travelTime": 90,
+    "normalTravelTime": 115.265
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XCZR4LWP",
+    "time": "2020-01-26 09:29:47",
+    "period": 1044,
+    "travelTime": 686,
+    "normalTravelTime": 649.192
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XMD9MJ0V",
+    "time": "2020-01-26 09:29:13",
+    "period": 300,
+    "travelTime": 191,
+    "normalTravelTime": 207.581
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YY0NFVJM",
+    "time": "2020-01-26 09:32:34",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 142.865
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XDBZTSCW",
+    "time": "2020-01-26 09:28:36",
+    "period": 318,
+    "travelTime": 183,
+    "normalTravelTime": 200.058
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800Z3WUXA4G",
+    "time": "2020-01-26 09:29:41",
+    "period": 870,
+    "travelTime": 354,
+    "normalTravelTime": 360.294
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800W3ZWF41I",
+    "time": "2020-01-26 09:30:37",
+    "period": 385,
+    "travelTime": 128,
+    "normalTravelTime": 128.676
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XEGUVGMV",
+    "time": "2020-01-26 09:28:21",
+    "period": 300,
+    "travelTime": 56,
+    "normalTravelTime": 59.265
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WKZHHMHK",
+    "time": "2020-01-26 09:30:21",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 572.907
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WJULOCLE",
+    "time": "2020-01-26 09:30:16",
+    "period": 300,
+    "travelTime": 113,
+    "normalTravelTime": 121.525
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YIZKVIHJ",
+    "time": "2020-01-26 09:28:30",
+    "period": 300,
+    "travelTime": 61,
+    "normalTravelTime": 57.004
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XVOXBNLX",
+    "time": "2020-01-26 09:27:41",
+    "period": 750,
+    "travelTime": 128,
+    "normalTravelTime": 120.341
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WWPLEU5F",
+    "time": "2020-01-26 09:29:06",
+    "period": 1003,
+    "travelTime": 312,
+    "normalTravelTime": 286.192
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WBKMTUIZ",
+    "time": "2020-01-26 09:28:11",
+    "period": 300,
+    "travelTime": 91,
+    "normalTravelTime": 80.874
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800X0IM4Q3M",
+    "time": "2020-01-26 09:28:37",
+    "period": 300,
+    "travelTime": 101,
+    "normalTravelTime": 103.992
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZABOPQO4",
+    "time": "2020-01-26 09:32:47",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 552.818
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XGN2FCFX",
+    "time": "2020-01-26 09:29:51",
+    "period": 345,
+    "travelTime": 185,
+    "normalTravelTime": 172.135
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZYSTB4WM",
+    "time": "2020-01-26 09:28:21",
+    "period": 300,
+    "travelTime": 124,
+    "normalTravelTime": 167.309
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XBZ4H0YT",
+    "time": "2020-01-26 09:31:02",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 286.587
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YQSIUW2Z",
+    "time": "2020-01-26 09:27:16",
+    "period": 825,
+    "travelTime": 249,
+    "normalTravelTime": 208.219
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WSL0VRZ2",
+    "time": "2020-01-26 09:30:49",
+    "period": 300,
+    "travelTime": 43,
+    "normalTravelTime": 56.879
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZZXPG0A5",
+    "time": "2020-01-26 09:26:19",
+    "period": 300,
+    "travelTime": 82,
+    "normalTravelTime": 97.957
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XKGQVE1Z",
+    "time": "2020-01-26 09:28:21",
+    "period": 300,
+    "travelTime": 152,
+    "normalTravelTime": 176.439
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XA63H1YU",
+    "time": "2020-01-26 09:26:40",
+    "period": 402,
+    "travelTime": 73,
+    "normalTravelTime": 85.953
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WURXH5KB",
+    "time": "2020-01-26 09:25:44",
+    "period": 533,
+    "travelTime": 684,
+    "normalTravelTime": 791.579
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800Y5UMQ5GE",
+    "time": "2020-01-26 09:31:45",
+    "period": 300,
+    "travelTime": 171,
+    "normalTravelTime": 162.517
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YLJPNESW",
+    "time": "2020-01-26 09:29:59",
+    "period": 300,
+    "travelTime": 101,
+    "normalTravelTime": 109.644
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WYQUXWQT",
+    "time": "2020-01-26 09:28:08",
+    "period": 625,
+    "travelTime": 77,
+    "normalTravelTime": 72.244
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800Z09T4ENM",
+    "time": "2020-01-26 09:29:27",
+    "period": 300,
+    "travelTime": 162,
+    "normalTravelTime": 180.368
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YSC5LT8K",
+    "time": "2020-01-26 09:32:22",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 830.035
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZK0BQM8Z",
+    "time": "2020-01-26 09:27:57",
+    "period": 473,
+    "travelTime": 86,
+    "normalTravelTime": 103.948
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WBCHNB6O",
+    "time": "2020-01-26 09:25:08",
+    "period": 416,
+    "travelTime": 257,
+    "normalTravelTime": 250.574
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800X0YR0MJP",
+    "time": "2020-01-26 09:26:05",
+    "period": 300,
+    "travelTime": 108,
+    "normalTravelTime": 153.068
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WEJ8XOW0",
+    "time": "2020-01-26 09:26:40",
+    "period": 888,
+    "travelTime": 175,
+    "normalTravelTime": 209.429
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YFEZUDEF",
+    "time": "2020-01-26 09:32:02",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 165.878
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZMJIIRA4",
+    "time": "2020-01-26 09:29:36",
+    "period": 300,
+    "travelTime": 42,
+    "normalTravelTime": 54.743
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WBG2ZOAI",
+    "time": "2020-01-26 09:30:10",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 398.496
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YDGZL0K5",
+    "time": "2020-01-26 09:26:51",
+    "period": 545,
+    "travelTime": 70,
+    "normalTravelTime": 65.196
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800Z0SUAHN1",
+    "time": "2020-01-26 09:29:43",
+    "period": 300,
+    "travelTime": 149,
+    "normalTravelTime": 171.397
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZT9A0TG6",
+    "time": "2020-01-26 09:28:38",
+    "period": 300,
+    "travelTime": 59,
+    "normalTravelTime": 69.337
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800W3OXDX4I",
+    "time": "2020-01-26 09:35:01",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 984.111
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XL1RZZPA",
+    "time": "2020-01-26 09:26:51",
+    "period": 322,
+    "travelTime": 125,
+    "normalTravelTime": 119.194
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XVT0GHMV",
+    "time": "2020-01-26 09:30:01",
+    "period": 300,
+    "travelTime": 108,
+    "normalTravelTime": 116.329
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZITGHVMF",
+    "time": "2020-01-26 09:32:55",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 136.115
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800Z9MXKHRS",
+    "time": "2020-01-26 09:31:58",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 199.493
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YXQN3Q37",
+    "time": "2020-01-26 09:30:18",
+    "period": 420,
+    "travelTime": 52,
+    "normalTravelTime": 63.212
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WWXM290F",
+    "time": "2020-01-26 09:28:17",
+    "period": 611,
+    "travelTime": 284,
+    "normalTravelTime": 348.13
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YTX10SCT",
+    "time": "2020-01-26 09:30:49",
+    "period": 708,
+    "travelTime": 656,
+    "normalTravelTime": 948.538
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WVMCRNM0",
+    "time": "2020-01-26 09:28:37",
+    "period": 368,
+    "travelTime": 440,
+    "normalTravelTime": 410.843
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZXH0E7F0",
+    "time": "2020-01-26 09:30:58",
+    "period": 300,
+    "travelTime": 171,
+    "normalTravelTime": 157.729
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZIR408ME",
+    "time": "2020-01-26 09:27:53",
+    "period": 300,
+    "travelTime": 66,
+    "normalTravelTime": 84.636
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YRFYK4MB",
+    "time": "2020-01-26 09:32:20",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 292.658
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZN0UJRJR",
+    "time": "2020-01-26 09:26:41",
+    "period": 300,
+    "travelTime": 124,
+    "normalTravelTime": 114.214
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YZBT7MC0",
+    "time": "2020-01-26 09:32:36",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 469.31
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WXRWFIM6",
+    "time": "2020-01-26 09:26:53",
+    "period": 300,
+    "travelTime": 107,
+    "normalTravelTime": 135.696
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800Y0TZ4R7F",
+    "time": "2020-01-26 09:29:54",
+    "period": 428,
+    "travelTime": 102,
+    "normalTravelTime": 100.911
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZNBKR5BY",
+    "time": "2020-01-26 09:26:04",
+    "period": 560,
+    "travelTime": 39,
+    "normalTravelTime": 71.099
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800W1CHALH6",
+    "time": "2020-01-26 09:32:25",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 239.944
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YPWMC3HE",
+    "time": "2020-01-26 09:27:14",
+    "period": 632,
+    "travelTime": 139,
+    "normalTravelTime": 166.023
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YPAOGVV0",
+    "time": "2020-01-26 09:32:13",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 718.115
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XFLLOSRD",
+    "time": "2020-01-26 09:31:14",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 380.103
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YOMOIY5F",
+    "time": "2020-01-26 09:29:35",
+    "period": 300,
+    "travelTime": 51,
+    "normalTravelTime": 51.023
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XYNTVQMQ",
+    "time": "2020-01-26 09:26:37",
+    "period": 720,
+    "travelTime": 141,
+    "normalTravelTime": 166.121
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WENYEPFN",
+    "time": "2020-01-26 09:29:48",
+    "period": 395,
+    "travelTime": 132,
+    "normalTravelTime": 114.603
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XCX8CQW2",
+    "time": "2020-01-26 09:27:49",
+    "period": 363,
+    "travelTime": 84,
+    "normalTravelTime": 94.266
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WF0F5X0F",
+    "time": "2020-01-26 09:25:16",
+    "period": 300,
+    "travelTime": 134,
+    "normalTravelTime": 172.306
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YBZOPJSJ",
+    "time": "2020-01-26 09:31:47",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 401.771
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YR0MWWBK",
+    "time": "2020-01-26 09:28:43",
+    "period": 395,
+    "travelTime": 110,
+    "normalTravelTime": 114.697
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XNOQJX4J",
+    "time": "2020-01-26 09:28:18",
+    "period": 300,
+    "travelTime": 69,
+    "normalTravelTime": 72.187
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800W5876JBL",
+    "time": "2020-01-26 09:35:03",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 459.118
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800WVVAYPZM",
+    "time": "2020-01-26 09:25:50",
+    "period": 482,
+    "travelTime": 141,
+    "normalTravelTime": 174.769
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XPN6JMGX",
+    "time": "2020-01-26 09:31:30",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 122.925
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800ZMASCJDM",
+    "time": "2020-01-26 09:29:50",
+    "period": 354,
+    "travelTime": 151,
+    "normalTravelTime": 182.792
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800W1NX9BF2",
+    "time": "2020-01-26 09:33:30",
+    "period": 322,
+    "travelTime": 74,
+    "normalTravelTime": 63.31
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800XPCNJANM",
+    "time": "2020-01-26 09:31:29",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 124.071
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YDKVJZKE",
+    "time": "2020-01-26 09:30:02",
+    "period": 765,
+    "travelTime": 170,
+    "normalTravelTime": 182.552
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800W6VRPJER",
+    "time": "2020-01-26 09:35:05",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 127.556
+  },
+  {
+    "id": "CAMBRIDGE_JTMS|9800YTSQYLFZ",
+    "time": "2020-01-26 09:32:23",
+    "period": 0,
+    "travelTime": null,
+    "normalTravelTime": 827.12
+  }
+]

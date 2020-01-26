@@ -65,7 +65,7 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class FeedMaker extends AbstractVerticle {
 
-    private final String VERSION = "0.53";
+    private final String VERSION = "0.54";
     
     // from config()
     private String MODULE_NAME;       // config module.name - normally "feedscraper"
@@ -187,6 +187,14 @@ public class FeedMaker extends AbstractVerticle {
           else if (config.getString("feed_type").equals(Constants.FEED_GTFS))
           {
               parser = new ParseFeedGTFS(config, logger);
+          }
+          else if (config.getString("feed_type").equals(Constants.FEED_BTJOURNEY_LOCATIONS))
+          {
+              parser = new ParseBTJourneyLocations(config, logger);
+          }
+          else if (config.getString("feed_type").equals(Constants.FEED_JSON))
+          {
+              parser = new ParseJson(config, logger);
           }
           else
           {

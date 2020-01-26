@@ -25,7 +25,8 @@ public class FilerConfig {
     
     public String source_address;     // eventbus address to listen for messages
     public FilerFilter source_filter; // filter criteria defining which message to store
-    public String flatten;            // field name that contains a JsonArray to be flattened
+    public String flatten;            // e.g. "request_data" field name that contains a JsonArray to be flattened
+    public String flatten_path;       // e.g. "request_data[0]>sites" field path that contains a JsonArray to be flattened
     public String store_path;         // directory path to store message
     public String store_name;         // filename to store message
     public String store_mode;         // append | write
@@ -47,6 +48,7 @@ public class FilerConfig {
                 source_filter = new FilerFilter(config.getJsonObject("source_filter"));
             }
         flatten = config.getString("flatten");
+        flatten_path = config.getString("flatten_path");
         store_path = config.getString("store_path");
         store_name = config.getString("store_name");
         store_mode = config.getString("store_mode");

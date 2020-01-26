@@ -30,6 +30,9 @@ package uk.ac.cam.tfc_server.msgfiler;
 import java.time.*;
 import java.time.format.*;
 import java.io.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -47,10 +50,17 @@ public class FilerUtils {
 
     private Vertx vertx;
     
+    private JsonSubArray json_sub_array;
+
     public FilerUtils (Vertx v, FilerConfig fc)
     {
         filer_config = fc;
         vertx = v;
+
+        if (fc.flatten_path != null)
+        {
+            json_sub_array = new JsonSubArray(fc.flatten_path);
+        }
     }
 
     // *******************************************************************************
@@ -60,23 +70,22 @@ public class FilerUtils {
     // *******************************************************************************
     public void store_msg(JsonObject msg)
     {
+        //debug
+        if (true) return;
+
         // skip this message if if doesn't match the source_filter
         if (filer_config.source_filter != null && !(filer_config.source_filter.match(msg)))
             {
                 return;
             }
 
-        if (filer_config.flatten==null)
-        {
-            store_immediate(msg);
-        }
-        else
+        if (filer_config.flatten != null)
         {
             JsonArray flatten_array = msg.getJsonArray(filer_config.flatten);
-            //System.out.println("MsgFiler."+filer_config.module_id+": flattening " +
-            //               filer_config.flatten + " " +
-            //               filer_config.store_mode + " " + 
-            //               filer_config.store_path + " " + filer_config.store_name );
+            System.out.println("MsgFiler."+filer_config.module_id+": flattening " +
+                           filer_config.flatten + " " +
+                           filer_config.store_mode + " " + 
+                           filer_config.store_path + " " + filer_config.store_name );
 
             // create a new JsonObject which is the original msg WITHOUT the field we'll flatten
             JsonObject flat_msg = msg.copy();
@@ -95,6 +104,37 @@ public class FilerUtils {
                 store_immediate(immediate_msg);
             }
             //System.out.println("MsgFiler."+filer_config.module_id+": leaving store_msg\n");
+        }
+        else if (filer_config.flatten_path != null)
+        {
+            //debug flatten_path only simple string allowed
+            JsonArray flatten_array = msg.getJsonArray(filer_config.flatten_path);
+            System.out.println("MsgFiler."+filer_config.module_id+": flattening " +
+                           filer_config.flatten_path + " " +
+                           filer_config.store_mode + " " + 
+                           filer_config.store_path + " " + filer_config.store_name );
+
+            // create a new JsonObject which is the original msg WITHOUT the field we'll flatten
+            JsonObject flat_msg = msg.copy();
+            flat_msg.remove(filer_config.flatten_path);
+
+            // Iterate through the JsonObjects in the JsonArray field to flatten
+            // and add those fields to the flat msg, creating immediate_msg to save
+            for (int i=0; i<flatten_array.size(); i++)
+            {
+                // start with flat_msg, i.e. original excluding flatten_array
+                JsonObject immediate_msg = flat_msg.copy();
+                // merge in the fields from current element in flatten-array
+                immediate_msg.mergeIn(flatten_array.getJsonObject(i));
+
+                //System.out.println("will store "+immediate_msg.toString());
+                store_immediate(immediate_msg);
+            }
+            //System.out.println("MsgFiler."+filer_config.module_id+": leaving store_msg\n");
+        }
+        else // no flattening, so go ahead and store
+        {
+            store_immediate(msg);
         }
     }
 
@@ -444,5 +484,123 @@ public class FilerUtils {
         } // end try/catch/finally
 
     } // end append_file
+
+    // Helper class to provide JsonArray from source object given a flatten_path
+    // e.g. flatten_path = "foo>request_data[0]>sites"
+    // means get(source_object) will return the JsonArray at the location foo->request_data[0]->sites
+    // where "foo" will be a JsonObject and "request_data" and "sites" must be JsonArrays (because
+    // an index was provided for "request_data" and "sites" is the last element on the path.
+    //
+    // If the filter_path is simply "request_data", the .get(msg) method will simply return the 
+    // JsonArray that must be present at that property.
+    class JsonSubArray {
+
+        // The three types of things we can have on a Json path
+        private int JSON_OBJECT = 0; // "foo": {obj}
+        private int JSON_ARRAY = 1;  // "foo": [ obj,...]
+        private int JSON_INDEXED_ARRAY = 2;  // "foo[0]"
+
+        public String flatten_path;
+
+        private List<PathElement> path_steps;
+
+        // Convert String flatten_path into a list of PathElements,
+        // e.g. "a>b[7]>c" becomes
+        // OBJECT a
+        // ARRAY b
+        // INDEX 7
+        // ARRAY c -- Note this is an ARRAY because it is the LAST element, otherwise it would be an OBJECT
+        public JsonSubArray(String fp)
+        {
+            flatten_path = fp;
+
+            String [] path_strings = fp.split(">");
+
+            path_steps = new ArrayList<PathElement>();
+
+            for (int i=0; i<path_strings.length; i++)
+            {
+                path_steps.add(new PathElement(path_strings[i],i==path_strings.length-1));
+            }
+
+            System.out.println("MsgFiler.FilerUtils.JsonSubArray new: "+ fp);
+            System.out.println(toString());
+        }
+
+        public String toString()
+        {
+            String s = "";
+            Iterator i = path_steps.iterator();
+            while (i.hasNext())
+            {
+                s = s + i.next().toString()+"\n";
+            }
+            return s;
+        }
+
+        // A PathElement is {object, name} | {array, name} | {index, number}
+        // e.g.
+        // foo => OBJECT unless last element in path
+        // foo[7] => ARRAY followed by INDEX
+        class PathElement {
+            public int element_type; // JSON_OBJECT | JSON_ARRAY | JSON_INDEX
+
+            public String element_name; // this is name of object/array
+            public int element_index; // int value of array index
+            public boolean element_indexed = false;
+
+            public PathElement(String path_string, boolean last_element)
+            {
+                if (path_string.endsWith("]"))
+                {
+                    // e.g. foo[7] in a>foo[7]>b
+                    element_type = JSON_INDEXED_ARRAY;
+
+                    int open_bracket = path_string.indexOf('[');
+                    int close_bracket = path_string.indexOf(']');
+                    String array_index_string = path_string.substring(open_bracket+1,close_bracket);
+
+                    element_index = Integer.parseInt(array_index_string); // "foo[7]" -> "7"
+
+                    element_indexed = true;
+
+                    element_name = path_string.substring(0,open_bracket); // "foo[7]" -> "foo"
+                }
+                else if (last_element)
+                {
+                    // e.g. "foo" from "a>b>foo"
+                    element_type = JSON_ARRAY;
+                    element_name = path_string;
+                }
+                else
+                {
+                    element_type = JSON_OBJECT;
+                    element_name = path_string;
+                }
+
+            }
+
+            public String toString()
+            {
+                if (element_type==JSON_OBJECT)
+                {
+                    return "OBJECT: " + element_name;
+                }
+
+                if (element_type == JSON_ARRAY)
+                {
+                    return "ARRAY: " + element_name;
+                }
+
+                if (element_type == JSON_INDEXED_ARRAY)
+                {
+                    return "INDEXED_ARRAY: "+ element_name + "["+element_index+"]";
+                }
+
+                return "MsgFiler.FilerUtils.PathElement.toString() BAD element_type";
+            }
+        }
+
+    }
 
 } // end class FilerUtils
