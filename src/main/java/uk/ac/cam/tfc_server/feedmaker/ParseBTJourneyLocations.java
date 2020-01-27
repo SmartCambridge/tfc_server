@@ -38,9 +38,28 @@ package uk.ac.cam.tfc_server.feedmaker;
       "length": 2045
     },
     ...
+  ],
+  "compoundRoutes": [
+    {
+      "id": "CAMBRIDGE_JTMS|9800ZOHMPGPY",
+      "name": "Cambridge - A14 Junc 35 Outbound",
+      "description": "",
+      "sites": [
+        "{60D1C306-08B8-44C5-A635-8C1F8D138320}",
+        "{F99550C6-52B8-4906-BE1C-1D15C48062DD}",
+        "{F957674F-CBFF-4089-B45B-778FCDD80629}",
+        "{F9072877-E815-4D5C-9DB4-76F7C7C27D7C}"
+      ],
+      "links": [
+        "CAMBRIDGE_JTMS|9800ZMJIIRA4",
+        "CAMBRIDGE_JTMS|9800Y6CS0QK2",
+        "CAMBRIDGE_JTMS|9800Z0SUAHN1"
+      ],
+      "length": 3962
+    },
+    ...
   ]
 }
-
 */
 
 //

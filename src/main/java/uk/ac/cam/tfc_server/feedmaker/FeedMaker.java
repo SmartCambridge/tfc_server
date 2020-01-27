@@ -192,6 +192,10 @@ public class FeedMaker extends AbstractVerticle {
           {
               parser = new ParseBTJourneyLocations(config, logger);
           }
+          else if (config.getString("feed_type").equals(Constants.FEED_BTJOURNEY_JOURNEYTIMES))
+          {
+              parser = new ParseBTJourneyTimes(config, logger);
+          }
           else if (config.getString("feed_type").equals(Constants.FEED_JSON))
           {
               parser = new ParseJson(config, logger);

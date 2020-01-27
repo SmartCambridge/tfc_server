@@ -22,7 +22,7 @@ public class Constants {
     public static final String FEED_EVENTBUS_MSG  = "feed_eventbus_msg"; // A feed that receives platform eventbus messages directly
     public static final String FEED_EVENTBUS_0  = "feed_eventbus_0"; // A feed that receives the FIRST element of the eventbus request_data array
     public static final String FEED_BTJOURNEY_LOCATIONS  = "feed_btjourney_locations"; // Drakewell Bluetruth sites/links metadata
-    public static final String FEED_BTJOURNEY_LINK_DATA  = "feed_btjourney_link_data"; // Drakewell Bluetruth livejourneytimes real-time data
+    public static final String FEED_BTJOURNEY_JOURNEYTIMES  = "feed_btjourney_journeytimes"; // Drakewell Bluetruth livejourneytimes real-time data
     public static final int    FEEDHANDLER_MAX_POST = 1000000; // max feed post in bytes
     
     // Zone msg_type values which flow on zone.address

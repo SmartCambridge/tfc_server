@@ -90,10 +90,10 @@ public class FilerUtils {
         if (filer_config.flatten != null)
         {
             JsonArray flatten_array = msg.getJsonArray(filer_config.flatten);
-            System.out.println("MsgFiler."+filer_config.module_id+".FilerUtils store_msg(): flatten " +
-                           filer_config.flatten + " " +
-                           filer_config.store_mode + " " + 
-                           filer_config.store_path + " " + filer_config.store_name );
+            //System.out.println("MsgFiler."+filer_config.module_id+".FilerUtils store_msg(): flatten " +
+            //               filer_config.flatten + " " +
+            //               filer_config.store_mode + " " + 
+            //               filer_config.store_path + " " + filer_config.store_name );
 
             // create a new JsonObject which is the original msg WITHOUT the field we'll flatten
             JsonObject flat_msg = msg.copy();
@@ -118,10 +118,10 @@ public class FilerUtils {
             // Get the data records from the message
             JsonArray records = records_finder.get(msg);
 
-            System.out.println("MsgFiler."+filer_config.module_id+".FilerUtils store_msg(): records_data " +
-                           filer_config.records_data + ", " +
-                           filer_config.store_mode + ", " + 
-                           filer_config.store_path + "/" + filer_config.store_name );
+            //System.out.println("MsgFiler."+filer_config.module_id+".FilerUtils store_msg(): records_data " +
+            //               filer_config.records_data + ", " +
+            //               filer_config.store_mode + ", " + 
+            //               filer_config.store_path + "/" + filer_config.store_name );
 
             JsonObject base_msg = new JsonObject();
 
@@ -449,7 +449,7 @@ public class FilerUtils {
                      buf, 
                      result -> {
           if (result.succeeded()) {
-              System.out.println("MsgFiler: File "+file_path+" written");
+              //System.out.println("MsgFiler: File "+file_path+" written");
           } else {
             Log.log_err("MsgFiler."+filer_config.module_id+": overwrite_file error ..." + result.cause());
           }
@@ -477,7 +477,7 @@ public class FilerUtils {
     // BLOCKING code that will open and append 'msg'+'\n' to file 'filepath'
     public void append_file(String msg, String file_path)
     {
-        System.out.println("MsgFiler."+filer_config.module_id+": append_file "+ file_path);
+        //System.out.println("MsgFiler."+filer_config.module_id+": append_file "+ file_path);
  
         BufferedWriter bw = null;
 
@@ -557,8 +557,6 @@ public class FilerUtils {
         // Return the JsonArray at the end of "record_data" e.g. "request_data[0]>item>foo"
         public JsonArray get(JsonObject msg)
         {
-            //debug
-            System.out.println("MsgFiler.FilerUtils.RecordsFinder.get()");
 
             // We basically walk the Json object structure until we reach the end of path_steps.
             JsonObject current_object = msg;
@@ -574,19 +572,19 @@ public class FilerUtils {
 
                 if (p.element_type == JSON_OBJECT)
                 {
-                    System.out.println("MsgFiler.FilerUtils.RecordsFinder get() OBJECT "+p.element_name);
+                    //System.out.println("MsgFiler.FilerUtils.RecordsFinder get() OBJECT "+p.element_name);
                     current_object = current_object.getJsonObject(p.element_name);
                 }
                 else if (p.element_type == JSON_ARRAY)
                 {
-                    System.out.println("MsgFiler.FilerUtils.RecordsFinder get() ARRAY "+p.element_name);
+                    //System.out.println("MsgFiler.FilerUtils.RecordsFinder get() ARRAY "+p.element_name);
                     current_array = current_object.getJsonArray(p.element_name);
                 }
                 else if (p.element_type == JSON_INDEXED_ARRAY)
                 {
                     // we currently support only a single index, e.g. "request_data[0]"
                     current_array = current_object.getJsonArray(p.element_name);
-                    System.out.println("MsgFiler.FilerUtils.RecordsFinder get() INDEXED_ARRAY "+p.element_name+"["+p.element_index+"]");
+                    //System.out.println("MsgFiler.FilerUtils.RecordsFinder get() INDEXED_ARRAY "+p.element_name+"["+p.element_index+"]");
                     current_object = current_array.getJsonObject(p.element_index);
                 }
             }
