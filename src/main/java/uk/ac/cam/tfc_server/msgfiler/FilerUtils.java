@@ -4,7 +4,7 @@ package uk.ac.cam.tfc_server.msgfiler;
 // *************************************************************************************************
 // *************************************************************************************************
 // FilerUtils.java
-// Version 0.02
+// Version 0.12
 // Author: Ian Lewis ijl20@cam.ac.uk
 //
 // Forms part of the 'tfc_server' next-generation Realtime Intelligent Traffic Analysis system
@@ -15,6 +15,7 @@ package uk.ac.cam.tfc_server.msgfiler;
 //   "source_address": the eventbus address to listen to for messages
 //      e.g. "tfc.zone"
 //   "flatten": the name of a JsonArray sub-field that is to be iterated into multiple messages
+//   "records_data": a path to an array of data records within the message.
 //   "source_filter" : a json object that specifies which subset of messages to write to disk
 //      e.g. { "field": "msg_type", "compare": "=", "value": "zone_completion" }
 //   "store_path" : a parameterized string giving the full filepath for storing the message
@@ -22,6 +23,10 @@ package uk.ac.cam.tfc_server.msgfiler;
 //   "store_name" : a parameterized string giving the filename for storing the message
 //      e.g. "{{module_id}}.txt"
 //   "store_mode" : "write" | "append", defining whether the given file should be written or appended
+//
+//  In summary, "store_msg(msg)" will determine the data to be stored (with the most common
+//  requirement being the whole message) and "build_string(pattern, msg)" will use config
+//  parameters to create the required file_path and file_name.
 //
 // *************************************************************************************************
 // *************************************************************************************************
@@ -49,30 +54,33 @@ public class FilerUtils {
     private FilerConfig filer_config;
 
     private Vertx vertx;
-    
-    private JsonSubArray json_sub_array;
+
+    // If config has a "records_data" path to the data records, then
+    // records_finder.get(msg) will return the required JsonArray in
+    // the original message.
+    private RecordsFinder records_finder;
 
     public FilerUtils (Vertx v, FilerConfig fc)
     {
         filer_config = fc;
         vertx = v;
 
-        if (fc.flatten_path != null)
+        if (fc.records_data != null)
         {
-            json_sub_array = new JsonSubArray(fc.flatten_path);
+            records_finder = new RecordsFinder(fc.records_data);
         }
     }
 
-    // *******************************************************************************
+    // *************************************************************************************************
     // store_msg()
-    // Store the message to the filesystem, either as-is, or flattened by iterating a
-    // defined field (filer_config.flatten)
-    // *******************************************************************************
+    // Store the message to the filesystem, either 
+    // * as-is, i.e. whole received msg is stored.
+    // * flattenin and iterating a defined base-level field (in filer_config.flatten, e.g.
+    //   "request_data"). These records will be merged with the other proprties in the message.
+    // * iterating records (i.e. array) at a defined path (in filer-config.records_data)
+    // *************************************************************************************************
     public void store_msg(JsonObject msg)
     {
-        //debug
-        if (true) return;
-
         // skip this message if if doesn't match the source_filter
         if (filer_config.source_filter != null && !(filer_config.source_filter.match(msg)))
             {
@@ -82,7 +90,7 @@ public class FilerUtils {
         if (filer_config.flatten != null)
         {
             JsonArray flatten_array = msg.getJsonArray(filer_config.flatten);
-            System.out.println("MsgFiler."+filer_config.module_id+": flattening " +
+            System.out.println("MsgFiler."+filer_config.module_id+".FilerUtils store_msg(): flatten " +
                            filer_config.flatten + " " +
                            filer_config.store_mode + " " + 
                            filer_config.store_path + " " + filer_config.store_name );
@@ -105,32 +113,38 @@ public class FilerUtils {
             }
             //System.out.println("MsgFiler."+filer_config.module_id+": leaving store_msg\n");
         }
-        else if (filer_config.flatten_path != null)
+        else if (filer_config.records_data != null)
         {
-            //debug flatten_path only simple string allowed
-            JsonArray flatten_array = msg.getJsonArray(filer_config.flatten_path);
-            System.out.println("MsgFiler."+filer_config.module_id+": flattening " +
-                           filer_config.flatten_path + " " +
-                           filer_config.store_mode + " " + 
-                           filer_config.store_path + " " + filer_config.store_name );
+            // Get the data records from the message
+            JsonArray records = records_finder.get(msg);
 
-            // create a new JsonObject which is the original msg WITHOUT the field we'll flatten
-            JsonObject flat_msg = msg.copy();
-            flat_msg.remove(filer_config.flatten_path);
+            System.out.println("MsgFiler."+filer_config.module_id+".FilerUtils store_msg(): records_data " +
+                           filer_config.records_data + ", " +
+                           filer_config.store_mode + ", " + 
+                           filer_config.store_path + "/" + filer_config.store_name );
 
-            // Iterate through the JsonObjects in the JsonArray field to flatten
-            // and add those fields to the flat msg, creating immediate_msg to save
-            for (int i=0; i<flatten_array.size(); i++)
+            JsonObject base_msg = new JsonObject();
+
+            if (filer_config.merge_base != null)
+            {
+                for (int i=0; i<filer_config.merge_base.size(); i++)
+                {
+                    String key = filer_config.merge_base.getString(i);
+                    base_msg.put(key, msg.getValue(key));
+                }
+            }
+
+            // Iterate through the JsonObjects in the JsonArray field
+            for (int i=0; i<records.size(); i++)
             {
                 // start with flat_msg, i.e. original excluding flatten_array
-                JsonObject immediate_msg = flat_msg.copy();
-                // merge in the fields from current element in flatten-array
-                immediate_msg.mergeIn(flatten_array.getJsonObject(i));
+                JsonObject immediate_msg = records.getJsonObject(i);
+
+                immediate_msg.mergeIn(base_msg);
 
                 //System.out.println("will store "+immediate_msg.toString());
                 store_immediate(immediate_msg);
             }
-            //System.out.println("MsgFiler."+filer_config.module_id+": leaving store_msg\n");
         }
         else // no flattening, so go ahead and store
         {
@@ -464,7 +478,7 @@ public class FilerUtils {
     public void append_file(String msg, String file_path)
     {
         System.out.println("MsgFiler."+filer_config.module_id+": append_file "+ file_path);
-
+ 
         BufferedWriter bw = null;
 
         try {
@@ -485,36 +499,38 @@ public class FilerUtils {
 
     } // end append_file
 
-    // Helper class to provide JsonArray from source object given a flatten_path
-    // e.g. flatten_path = "foo>request_data[0]>sites"
+    // Helper class to provide JsonArray from source object given a records_data
+    // e.g. records_data = "foo>request_data[0]>sites"
     // means get(source_object) will return the JsonArray at the location foo->request_data[0]->sites
     // where "foo" will be a JsonObject and "request_data" and "sites" must be JsonArrays (because
     // an index was provided for "request_data" and "sites" is the last element on the path.
     //
     // If the filter_path is simply "request_data", the .get(msg) method will simply return the 
     // JsonArray that must be present at that property.
-    class JsonSubArray {
+    //
+    class RecordsFinder {
 
         // The three types of things we can have on a Json path
         private int JSON_OBJECT = 0; // "foo": {obj}
         private int JSON_ARRAY = 1;  // "foo": [ obj,...]
         private int JSON_INDEXED_ARRAY = 2;  // "foo[0]"
 
-        public String flatten_path;
+        public String records_data;
 
+        // path_steps contains the 'compiled' version of 
         private List<PathElement> path_steps;
 
-        // Convert String flatten_path into a list of PathElements,
-        // e.g. "a>b[7]>c" becomes
+        // Convert String records_data into a list of PathElements,
+        // e.g. rd: "a>b[7]>c" becomes
         // OBJECT a
         // ARRAY b
         // INDEX 7
         // ARRAY c -- Note this is an ARRAY because it is the LAST element, otherwise it would be an OBJECT
-        public JsonSubArray(String fp)
+        public RecordsFinder(String config_records_data)
         {
-            flatten_path = fp;
+            records_data = config_records_data;
 
-            String [] path_strings = fp.split(">");
+            String [] path_strings = records_data.split(">");
 
             path_steps = new ArrayList<PathElement>();
 
@@ -523,7 +539,7 @@ public class FilerUtils {
                 path_steps.add(new PathElement(path_strings[i],i==path_strings.length-1));
             }
 
-            System.out.println("MsgFiler.FilerUtils.JsonSubArray new: "+ fp);
+            System.out.println("MsgFiler.FilerUtils.RecordsFinder new: "+ records_data);
             System.out.println(toString());
         }
 
@@ -533,10 +549,50 @@ public class FilerUtils {
             Iterator i = path_steps.iterator();
             while (i.hasNext())
             {
-                s = s + i.next().toString()+"\n";
+                s = s + i.next().toString()+" > ";
             }
             return s;
         }
+
+        // Return the JsonArray at the end of "record_data" e.g. "request_data[0]>item>foo"
+        public JsonArray get(JsonObject msg)
+        {
+            //debug
+            System.out.println("MsgFiler.FilerUtils.RecordsFinder.get()");
+
+            // We basically walk the Json object structure until we reach the end of path_steps.
+            JsonObject current_object = msg;
+
+            JsonArray current_array = new JsonArray();
+
+            //Iterator i = path_steps.iterator();
+            //while (i.hasNext())
+            for (int i=0; i<path_steps.size(); i++)
+            {
+                //PathElement p = i.next();
+                PathElement p = path_steps.get(i);
+
+                if (p.element_type == JSON_OBJECT)
+                {
+                    System.out.println("MsgFiler.FilerUtils.RecordsFinder get() OBJECT "+p.element_name);
+                    current_object = current_object.getJsonObject(p.element_name);
+                }
+                else if (p.element_type == JSON_ARRAY)
+                {
+                    System.out.println("MsgFiler.FilerUtils.RecordsFinder get() ARRAY "+p.element_name);
+                    current_array = current_object.getJsonArray(p.element_name);
+                }
+                else if (p.element_type == JSON_INDEXED_ARRAY)
+                {
+                    // we currently support only a single index, e.g. "request_data[0]"
+                    current_array = current_object.getJsonArray(p.element_name);
+                    System.out.println("MsgFiler.FilerUtils.RecordsFinder get() INDEXED_ARRAY "+p.element_name+"["+p.element_index+"]");
+                    current_object = current_array.getJsonObject(p.element_index);
+                }
+            }
+            return current_array;
+        }
+
 
         // A PathElement is {object, name} | {array, name} | {index, number}
         // e.g.
@@ -597,10 +653,11 @@ public class FilerUtils {
                     return "INDEXED_ARRAY: "+ element_name + "["+element_index+"]";
                 }
 
-                return "MsgFiler.FilerUtils.PathElement.toString() BAD element_type";
+                return "MsgFiler.FilerUtils.RecordsFinder.PathElement.toString() BAD element_type";
             }
-        }
 
-    }
+        } // end class PathElement
+
+    } // end class RecordsFinder
 
 } // end class FilerUtils

@@ -17,6 +17,7 @@ package uk.ac.cam.tfc_server.msgfiler;
 // *************************************************************************************************
 
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.json.JsonArray;
 
 public class FilerConfig {
 
@@ -26,7 +27,8 @@ public class FilerConfig {
     public String source_address;     // eventbus address to listen for messages
     public FilerFilter source_filter; // filter criteria defining which message to store
     public String flatten;            // e.g. "request_data" field name that contains a JsonArray to be flattened
-    public String flatten_path;       // e.g. "request_data[0]>sites" field path that contains a JsonArray to be flattened
+    public String records_data;       // e.g. "request_data[0]>sites" field path that contains a JsonArray with the data records
+    public JsonArray merge_base;      // List of property names. When using "records_data", merge these properties from the original message into each saved file. 
     public String store_path;         // directory path to store message
     public String store_name;         // filename to store message
     public String store_mode;         // append | write
@@ -47,16 +49,19 @@ public class FilerConfig {
             {
                 source_filter = new FilerFilter(config.getJsonObject("source_filter"));
             }
+
         flatten = config.getString("flatten");
-        flatten_path = config.getString("flatten_path");
+        records_data = config.getString("records_data");
+        merge_base = config.getJsonArray("merge_base");
+
         store_path = config.getString("store_path");
         store_name = config.getString("store_name");
         store_mode = config.getString("store_mode");
 
         System.out.println(module_name+"."+module_id+": FilerConfig loaded:");
         System.out.println(module_name+"."+module_id+
-                           ": "+source_address+","+(source_filter != null ? source_filter.toString() : "no source filter")+","+
-                           flatten+","+store_path+","+store_name+","+store_mode);
+                           ": FilerConfig "+source_address+","+(source_filter != null ? source_filter.toString() : "no source filter")+","+
+                           flatten+","+records_data+','+store_path+","+store_name+","+store_mode);
     }
 } // end class FilterConfig
 
