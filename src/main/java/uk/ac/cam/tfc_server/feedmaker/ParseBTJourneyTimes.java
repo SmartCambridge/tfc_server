@@ -21,6 +21,8 @@ package uk.ac.cam.tfc_server.feedmaker;
 
 /*
  
+The Drakewell 'journeytimes' API returns a JsonArray containing a JsonObject for
+each link or route in the system (both are defined by a common 'id'):
 
 [
   {
@@ -33,10 +35,11 @@ package uk.ac.cam.tfc_server.feedmaker;
   ...
 ]
 
+These JsonObjects will be returned in the EventBus message "request_data" property.
 */
 
 //
-// As a minimum, a FeedParse will return a JsonObject { "request_data": [ ...parsed contents ] }
+// As a minimum, a FeedParser will return a JsonObject { "request_data": [ ...parsed contents ] }
 // and the FeedMaker will add other properties to the EventBus Message (like ts)
 
 import io.vertx.core.json.JsonObject;
@@ -73,17 +76,8 @@ public class ParseBTJourneyTimes implements FeedParser {
         // Create the eventbus message JsonObject this FeedParser will return
         JsonObject msg = new JsonObject();
 
-        JsonArray records = new JsonArray();
+        msg.put("request_data", feed_json_array);
 
-        JsonObject feed_jo = new JsonObject();
-
-        feed_jo.put("journeytimes", feed_json_array);
-
-        records.add(feed_jo);
-
-        msg.put("request_data", records);
-
-        // return { "request_data": [ {original feed data json object} ] }
         return msg;
     }
 

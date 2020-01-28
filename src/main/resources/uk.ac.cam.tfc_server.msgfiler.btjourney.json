@@ -65,7 +65,7 @@
                                      "compare": "=",
                                      "value": "feed_btjourney_journeytimes"
                                    },
-                  "records_data":   "request_data[0]>journeytimes",
+                  "records_data":   "request_data",
                   "merge_base":     [ "ts" ],
                   "store_path":     "/media/tfc/btjourney/journeytimes/data_link/{{ts|yyyy}}/{{ts|MM}}/{{ts|dd}}",
                   "store_name":     "{{id}}_{{ts|yyyy}}-{{ts|MM}}-{{ts|dd}}.txt",
