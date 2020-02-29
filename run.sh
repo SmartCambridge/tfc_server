@@ -82,10 +82,18 @@ nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server
 nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.msgrouter.cloudamber" -cluster >/dev/null 2>>/var/log/tfc_prod/msgrouter.cloudamber.err & disown
 
 # #############################################################################################
-# ################   MQTT FEED HANDLER            #############################################
+# ################   TTN MQTT FEED HANDLER        #############################################
 # #############################################################################################
 
 nohup java -cp "$TFC_JAR:secrets" -Xmx100m -Xms10m -Xmn2m -Xss10m io.vertx.core.Launcher run "service:feedmqtt.ttn" -cluster >/dev/null 2>>/var/log/tfc_prod/feedmqtt.ttn.err & disown
+
+# #############################################################################################
+# ################   DRAKEWELL BTJOURNEY FEED                ##################################
+# #############################################################################################
+
+nohup java -cp "$TFC_JAR:secrets" -Xmx100m -Xms10m -Xmn2m -Xss10m io.vertx.core.Launcher run "service:feedmaker.btjourney" -cluster >/dev/null 2>>/var/log/tfc_prod/feedmaker.btjourney.err & disown
+
+nohup java -cp "$TFC_JAR" -Xmx100m -Xms10m -Xmn2m -Xss10m io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.msgfiler.btjourney" -cluster >/dev/null 2>>/var/log/tfc_prod/msgfiler.btjourney.err & disown
 
 # #############################################################################################
 # ################   RTMONITOR                    #############################################
