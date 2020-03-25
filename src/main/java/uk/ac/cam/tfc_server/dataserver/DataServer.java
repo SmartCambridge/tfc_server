@@ -250,8 +250,7 @@ public class DataServer extends AbstractVerticle {
         if (GOOGLE_MAP_API_KEY==null)
             {
                 Log.log_err(MODULE_NAME+"."+MODULE_ID+": no "+MODULE_NAME+".google_map_api_key in config()");
-                //debug remove generic google api key from DataServer.java
-                GOOGLE_MAP_API_KEY = "AIzaSyBrsJPwD7keGUnm_2lnQi33uRe_LsYxR3Y"; // generic open-use key
+                return false;
             }
 
         return true;
