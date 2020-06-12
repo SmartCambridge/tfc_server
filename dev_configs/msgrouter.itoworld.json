@@ -1,0 +1,59 @@
+
+{
+    "main":    "uk.ac.cam.tfc_server.msgrouter.MsgRouter",
+    "options":
+        { "config":
+          {
+
+            "module.name":           "msgrouter",
+            "module.id":             "itoworld",
+
+            "eb.system_status":      "tfc.system_status",
+            "eb.console_out":        "tfc.console_out",
+            "eb.manager":            "tfc.manager",
+
+            "msgrouter.log_level":     2,
+
+            "msgrouter.address": "tfc.msgrouter.itoworld",
+
+            "msgrouter.routers":
+            [
+                {
+                    "source_address": "tfc.feedmaker.itoworld.sirivm_xml",
+                    "destination_id": "tfc-app1.feedmaker.B",
+                    "destination_type": "feed_eventbus_msg",
+                    "url": "http://tfc-app1.cl.cam.ac.uk/feedmaker/B/sirivm_json",
+                    "http_token": "cam-test-siri"
+                },
+                {
+                    "source_address": "tfc.feedmaker.itoworld.sirivm_xml",
+                    "destination_id": "tfc-app2.feedmaker.B",
+                    "destination_type": "feed_eventbus_msg",
+                    "url": "http://tfc-app2.cl.cam.ac.uk/feedmaker/B/sirivm_json",
+                    "http_token": "cam-test-siri"
+                },
+                {
+                    "source_address": "tfc.feedmaker.itoworld.sirivm_xml",
+                    "destination_id": "tfc-app3.feedmaker.B",
+                    "destination_type": "feed_eventbus_msg",
+                    "url": "http://tfc-app3.cl.cam.ac.uk/feedmaker/B/sirivm_json",
+                    "http_token": "cam-test-siri"
+                },
+                {
+                    "source_address": "tfc.feedmaker.itoworld.sirivm_xml",
+                    "destination_id": "tfc-app4.feedmaker.B",
+                    "destination_type": "feed_eventbus_msg",
+                    "url": "http://tfc-app4.cl.cam.ac.uk/feedmaker/B/sirivm_json",
+                    "http_token": "cam-test-siri"
+                },
+                {
+                    "source_address": "tfc.feedmaker.itoworld.sirivm_xml",
+                    "destination_id": "tfc-app5.feedmaker.B",
+                    "destination_type": "feed_eventbus_msg",
+                    "url": "http://tfc-app5.cl.cam.ac.uk/feedmaker/B/sirivm_json",
+                    "http_token": "cam-test-siri"
+                }
+            ]
+          }
+        }
+}
