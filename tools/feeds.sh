@@ -7,6 +7,7 @@ FEEDS=(
 /media/tfc/itoworld/sirivm/data_monitor
 /media/tfc/itoworld/sirivm/data_monitor_json
 /media/tfc/itoworld/sirivm/data_zone/$TODAY
+/media/tfc/cloudamber/sirivm/data_zone/$TODAY
 /media/tfc/cam_park_rss/data_monitor
 /media/tfc/cam_park_rss/data_monitor_json
 /media/tfc/csn_ttn/data_monitor

@@ -27,9 +27,6 @@ SECRETS_FILE=$SCRIPT_DIR/secrets.sh && test -f $SECRETS_FILE && source $SECRETS_
 # CONSOLE
 nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.console.A" -cluster >/dev/null 2>>/var/log/tfc_prod/console.A.err & disown
 
-# DATASERVER TO PROVIDE DATA API FOR TFC_WEB
-#nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.dataserver.vix" -cluster >/dev/null 2>>/var/log/tfc_prod/dataserver.vix.err & disown
-
 # #############################################################################################
 # ################  PARK_LOCAL_RSS FEEDMAKER  #################################################
 # #############################################################################################
@@ -41,45 +38,35 @@ nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server
 nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.msgfiler.cam.to_json" -cluster >/dev/null 2>>/var/log/tfc_prod/msgfiler.cam.to_json.err & disown
 
 # #############################################################################################
-# ################  EVERYNET FEED HANDLER  ####################################################
-# #############################################################################################
-
-# EVERYNETFEED (receives http PUSH sensor data messages from EveryNet)
-nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.everynet_feed.A" -cluster >/dev/null 2>>/var/log/tfc_prod/everynet_feed.A.err & disown
-
-# MSGROUTER (forwards EveryNet messages to onward destinations)
-#nohup java -cp "postgresql-42.1.3.jar:$TFC_JAR" io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.msgrouter.A" -cluster >/dev/null 2>>/var/log/tfc_prod/msgrouter.A.err & disown
-
-# HTTPMSG (command API for tfc_web)
-#nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.httpmsg.A" -cluster >/dev/null 2>>/var/log/tfc_prod/httpmsg.A.err & disown
-
-# #############################################################################################
-# ################   VIX GTFS FEEDMAKER  ######################################################
-# #############################################################################################
-
-# VIX2 FEEDMAKER FOR GTFS VIX DATA
-#nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.feedmaker.vix2" -cluster >/dev/null 2>>/var/log/tfc_prod/feedmaker.vix2.err & disown
-
-# VIX2 ZONEMANAGER FOR GTFS VIX DATA
-#nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.zonemanager.vix2" -cluster >/dev/null 2>>/var/log/tfc_prod/zonemanager.vix2.err & disown
-
-# VIX2 MSGFILER FOR GTFS VIX DATA AND ZONE TRANSITS
-#nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.msgfiler.vix2" -cluster >/dev/null 2>>/var/log/tfc_prod/msgfiler.vix2.err & disown
-
-# #############################################################################################
 # ################   SIRIVM CLOUDAMBER FEEDMAKER  #############################################
 # #############################################################################################
 
 # SIRIVM FEEDMAKER FOR CLOUDAMBER SIRIVM AND SIRIVM_JSON DATA
-nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.feedmaker.A" -cluster >/dev/null 2>>/var/log/tfc_prod/feedmaker.A.err & disown
+#nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.feedmaker.A" -cluster >/dev/null 2>>/var/log/tfc_prod/feedmaker.A.err & disown
 
 # SIRIVM ZONEMANAGER FOR CLOUDAMBER SIRIVM DATA
-nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.zonemanager.cloudamber.sirivm" -cluster >/dev/null 2>>/var/log/tfc_prod/zonemanager.cloudamber.sirivm.err & disown
+#nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.zonemanager.cloudamber.sirivm" -cluster >/dev/null 2>>/var/log/tfc_prod/zonemanager.cloudamber.sirivm.err & disown
 
 # SIRIVM MSGFILER FOR CLOUDAMBER SIRIVM DATA
-nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.msgfiler.cloudamber.sirivm" -cluster >/dev/null 2>>/var/log/tfc_prod/msgfiler.cloudamber.sirivm.err & disown
+#nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.msgfiler.cloudamber.sirivm" -cluster >/dev/null 2>>/var/log/tfc_prod/msgfiler.cloudamber.sirivm.err & disown
 
-nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.msgrouter.cloudamber" -cluster >/dev/null 2>>/var/log/tfc_prod/msgrouter.cloudamber.err & disown
+#nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.msgrouter.cloudamber" -cluster >/dev/null 2>>/var/log/tfc_prod/msgrouter.cloudamber.err & disown
+
+# #############################################################################################
+# ################   ITOWORLD SIRIVM FEED         #############################################
+# #############################################################################################
+
+# SIRIVM FEEDMAKER FOR ITOWORLD SIRIVM AND SIRIVM_JSON DATA
+nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.feedmaker.B" -cluster >/dev/null 2>>/var/log/tfc_prod/feedmaker.B.err & disown
+
+# SIRIVM ZONEMANAGER FOR ITOWORLD SIRIVM DATA
+nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.zonemanager.itoworld" -cluster >/dev/null 2>>/var/log/tfc_prod/zonemanager.itoworld.err & disown
+
+# SIRIVM MSGFILER FOR ITOWORLD SIRIVM DATA
+nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.msgfiler.itoworld" -cluster >/dev/null 2>>/var/log/tfc_prod/msgfiler.itoworld.err & disown
+
+# SIRIVM MSGROUTER FOR ITOWORLD SIRIVM DATA
+nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.msgrouter.itoworld" -cluster >/dev/null 2>>/var/log/tfc_prod/msgrouter.itoworld.err & disown
 
 # #############################################################################################
 # ################   TTN MQTT FEED HANDLER        #############################################
