@@ -86,6 +86,8 @@ nohup java -cp "$TFC_JAR" -Xmx100m -Xms10m -Xmn2m -Xss10m io.vertx.core.Launcher
 # ################   RTMONITOR                    #############################################
 # #############################################################################################
 
-# RTMONITOR.SIRIVM
-nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.rtmonitor.sirivm" -cluster >/dev/null 2>>/var/log/tfc_prod/rtmonitor.sirivm.err & disown
+# RTMONITOR.SIRIVM FOR CLOUDAMBER
+#nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.rtmonitor.sirivm" -cluster >/dev/null 2>>/var/log/tfc_prod/rtmonitor.sirivm.err & disown
 
+# RTMONITOR.ITOWORLD
+nohup java -cp $TFC_JAR io.vertx.core.Launcher run "service:uk.ac.cam.tfc_server.rtmonitor.itoworld" -cluster >/dev/null 2>>/var/log/tfc_prod/rtmonitor.itoworld.err & disown
