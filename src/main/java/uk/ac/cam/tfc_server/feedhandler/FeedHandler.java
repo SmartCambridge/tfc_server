@@ -117,15 +117,16 @@ public class FeedHandler extends AbstractVerticle {
     private Log logger;
     
     
-  @Override
-  public void start(Future<Void> fut) throws Exception {
+    @Override
+    public void start() throws Exception
+    {
 
     boolean ok = true; // simple boolean to flag an abort during startup
 
     // load FeedHandler initialization values from config()
     if (!get_config())
           {
-              Log.log_err("FeedHandler: "+ MODULE_ID + " failed to load initial config()");
+              Log.log_err("FeedHandler: failed to load initial config()");
               vertx.close();
               return;
           }

@@ -70,14 +70,15 @@ public class FeedPlayer extends AbstractVerticle {
     private EventBus eb = null;
     
     @Override
-    public void start(Future<Void> fut) throws Exception
+    public void start() throws Exception
     {
-
-        // load initialization values from config()
+	// Get src/main/conf/tfc_server.conf config values for module
         if (!get_config())
-              {
-                  fut.fail("FeedPlayer: failed to load initial config()");
-              }
+        {
+            System.err.println("FeedPlayer: problem loading config");
+            vertx.close();
+            return;
+        }
 
         logger = new Log(LOG_LEVEL);
 

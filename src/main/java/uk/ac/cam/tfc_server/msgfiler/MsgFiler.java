@@ -63,16 +63,16 @@ public class MsgFiler extends AbstractVerticle {
 
     private EventBus eb = null;
     
-  @Override
-  public void start(Future<Void> fut) throws Exception {
-      
-    // load initialization values from config()
+    @Override
+    public void start() throws Exception
+    {
+    // Get src/main/conf/tfc_server.conf config values for module
     if (!get_config())
-          {
-              Log.log_err("MsgFiler."+ MODULE_ID + ": failed to load initial config()");
-              vertx.close();
-              return;
-          }
+        {
+            System.err.println("MsgFiler: problem loading config");
+            vertx.close();
+            return;
+        }
       
     System.out.println("MsgFiler." + MODULE_ID + ": started");
 

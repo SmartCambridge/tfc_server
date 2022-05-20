@@ -53,7 +53,7 @@ public class StaticServer extends AbstractVerticle {
     private EventBus eb = null;
 
     @Override
-    public void start(Future<Void> fut) throws Exception
+    public void start() throws Exception
     {
 
     // Get src/main/conf/tfc_server.conf config values for module

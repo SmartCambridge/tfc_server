@@ -4,7 +4,7 @@
     <groupId>uk.ac.cam.tfc_server</groupId>
     <artifactId>tfc_server</artifactId>
     <packaging>jar</packaging>
-    <version>3.6.3</version>
+    <version>4.3.0</version>
     <name>tfc_server</name>
     <url>http://maven.apache.org</url>
     <properties>

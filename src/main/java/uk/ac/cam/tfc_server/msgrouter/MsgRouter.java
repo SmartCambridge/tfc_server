@@ -14,7 +14,7 @@ package uk.ac.cam.tfc_server.msgrouter;
 // *************************************************************************************************
 
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.EventBus;
@@ -68,7 +68,8 @@ public class MsgRouter extends AbstractVerticle {
     private Sensors sensors; // stores sensor_type-> sensor_id -> destination_type/id mapping
 
     @Override
-    public void start(Future<Void> fut) throws Exception {
+    public void start() throws Exception
+    {
 
         // load initialization values from config()
         if (!get_config())
@@ -136,8 +137,8 @@ public class MsgRouter extends AbstractVerticle {
     // Note the procedure will return *immediately* due to it's asynchronous call
     private void load_data()
     {
-        vertx.executeBlocking(load_fut -> {
-                    load_data_sql(load_fut);
+        vertx.executeBlocking(promise -> {
+                    load_data_sql(promise);
                 },
                 res -> {
                     if (res.succeeded())
@@ -154,7 +155,7 @@ public class MsgRouter extends AbstractVerticle {
 
     }
 
-    private boolean load_data_sql(Future<Object> fut)
+    private boolean load_data_sql(Promise<Object> promise)
     {
         String db_user = config().getString(MODULE_NAME+".db.user");
 
@@ -184,7 +185,7 @@ public class MsgRouter extends AbstractVerticle {
             {
                 logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
                             ": load_data getConnection failed.");
-                fut.fail(res.cause());
+                promise.fail(res.cause());
             }
             else
             {
@@ -199,7 +200,7 @@ public class MsgRouter extends AbstractVerticle {
                               {
                                   logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
                                                ": Failed query SELECT info FROM csn_destination");
-                                  fut.fail(rd.cause());
+                                  promise.fail(rd.cause());
                                   return;
                               }
 
@@ -224,7 +225,7 @@ public class MsgRouter extends AbstractVerticle {
                                                             {
                                                                 logger.log(Constants.LOG_WARN, MODULE_NAME+"."+MODULE_ID+
                                                                             ": Failed query SELECT info FROM csn_sensor");
-                                                                fut.fail(rs.cause());
+                                                                promise.fail(rs.cause());
                                                                 return;
                                                             }
 
@@ -248,7 +249,7 @@ public class MsgRouter extends AbstractVerticle {
                                                         sql_connection.close(v -> {
                                                                 logger.log(Constants.LOG_DEBUG, MODULE_NAME+
                                                                            ": sql_connection closed.");
-                                                                fut.complete("ok");
+                                                                promise.complete("ok");
                                                             });
                                                     });
                           });

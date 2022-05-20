@@ -77,14 +77,16 @@ public class Batcher extends AbstractVerticle {
     private EventBus eb = null;
     
     @Override
-    public void start(Future<Void> fut) throws Exception
+    public void start() throws Exception
     {
 
         // load initialization values from config()
-        if (!get_config())
-              {
-                  fut.fail("Batcher: failed to load initial config()");
-              }
+	if (!get_config())
+        {
+              Log.log_err("Batcher: failed to load initial config()");
+              vertx.close();
+              return;
+        }
 
         logger = new Log(LOG_LEVEL);
         
@@ -97,7 +99,7 @@ public class Batcher extends AbstractVerticle {
 
         for (String bw_id : BATCHERWORKERS.keySet())
             {
-                deploy_batcherworker(BATCHERWORKERS.get(bw_id), fut);
+                deploy_batcherworker(BATCHERWORKERS.get(bw_id));
             }
 
         // send periodic "system_status" messages
@@ -114,7 +116,7 @@ public class Batcher extends AbstractVerticle {
       } // end start()
 
     // Deploy BatcherWorker as a WORKER verticle
-    private void deploy_batcherworker(BatcherWorkerConfig bwc, Future fut)
+    private void deploy_batcherworker(BatcherWorkerConfig bwc)
     {
         logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": deploying "+BW_MODULE_NAME+"."+bwc.MODULE_ID);
         logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": "+bwc.DATA_BIN+","+bwc.START_TS+","+bwc.FINISH_TS);
@@ -166,7 +168,6 @@ public class Batcher extends AbstractVerticle {
                     logger.log(Constants.LOG_INFO, "Batcher."+MODULE_ID+": BatcherWorker "+bwc.MODULE_ID+ "started");
                 } else {
                     System.err.println("Batcher."+MODULE_ID+": failed to start BatcherWorker " + bwc.MODULE_ID);
-                    fut.fail(res.cause());
                 }
             });
     }

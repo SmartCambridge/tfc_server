@@ -86,8 +86,9 @@ public class EverynetFeed extends AbstractVerticle {
 
     private Log logger;
     
-  @Override
-  public void start(Future<Void> fut) throws Exception {
+    @Override
+    public void start() throws Exception
+    {
 
     Router router = null;
 

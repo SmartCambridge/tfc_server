@@ -82,8 +82,9 @@ public class Console extends AbstractVerticle {
     // declare object to hold latest status message from each active module
     private StatusCache status_cache;
     
-  @Override
-  public void start(Future<Void> fut) throws Exception {
+    @Override
+    public void start() throws Exception
+    {
 
     if (!get_config())
           {

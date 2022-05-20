@@ -81,13 +81,12 @@ public class DataServer extends AbstractVerticle {
     private EventBus eb = null; // at least for system_status messages, not for the browser
 
     @Override
-    public void start(Future<Void> fut) throws Exception
+    public void start() throws Exception
     {
-
     // Get src/main/conf/tfc_server.conf config values for module
     if (!get_config())
         {
-            Log.log_err("DataServer: problem loading config");
+            System.err.println("DataServer: problem loading config");
             vertx.close();
             return;
         }

@@ -87,14 +87,15 @@ public class BatcherWorker extends AbstractVerticle {
     private Log logger;
     
     @Override
-    public void start(Future<Void> fut) throws Exception
-    {
+    public void start() throws Exception {
 
         // load initialization values from config()
-        if (!get_config())
-              {
-                  fut.fail("BatcherWorker: failed to load initial config()");
-              }
+	if (!get_config())
+          {
+              Log.log_err("BatcherWorker: failed to load initial config()");
+              vertx.close();
+              return;
+          }
 
         logger = new Log(LOG_LEVEL);
         

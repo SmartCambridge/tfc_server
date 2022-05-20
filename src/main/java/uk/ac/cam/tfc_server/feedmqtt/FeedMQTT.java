@@ -81,7 +81,7 @@ public class FeedMQTT extends AbstractVerticle {
     private Log logger;
     
     @Override
-    public void start(Future<Void> fut) throws Exception {
+    public void start() throws Exception {
 
         // create holder for MqttClients, indexed on feed_id
         mqtt_feeds = new HashMap<String,MqttFeed>();

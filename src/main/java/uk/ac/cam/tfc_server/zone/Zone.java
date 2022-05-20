@@ -117,8 +117,9 @@ public class Zone extends AbstractVerticle {
     
   // **************************************************************************************
   // Zone Verticle Startup procedure
-  @Override
-  public void start(Future<Void> fut) throws Exception {
+    @Override
+    public void start() throws Exception
+    {
 
     // will publish to EventBus address ZONE_ADDRESS e.g. tfc.zone.madingley_road_in
 

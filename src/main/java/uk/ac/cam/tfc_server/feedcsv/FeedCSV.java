@@ -56,8 +56,9 @@ public class FeedCSV extends AbstractVerticle {
     
     private final String CSV_FILE_HEADER = "timestamp,vehicle_id,label,route_id,trip_id,latitude,longitude,bearing,current_stop_sequence,stop_id";
      
-  @Override
-  public void start(Future<Void> fut) throws Exception {
+    @Override
+    public void start() throws Exception
+    {
       
     // load FeedCSV initialization values from config()
     if (!get_config())
