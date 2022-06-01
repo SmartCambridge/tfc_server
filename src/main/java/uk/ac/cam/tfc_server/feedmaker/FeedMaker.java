@@ -65,17 +65,17 @@ import uk.ac.cam.tfc_server.util.Constants;
 
 public class FeedMaker extends AbstractVerticle {
 
-    private final String VERSION = "0.54";
-    
+    private final String VERSION = "0.60.1";
+
     // from config()
     private String MODULE_NAME;       // config module.name - normally "feedscraper"
     private String MODULE_ID;         // config module.id
     private String EB_SYSTEM_STATUS;  // config eb.system_status
     private String EB_MANAGER;        // config eb.manager
-    
+
     // maker configs:
     private JsonArray START_FEEDS; // config module_name.feeds parameters
-    
+
     public int LOG_LEVEL; // optional in config(), defaults to Constants.LOG_INFO
 
     private int HTTP_PORT;            // config feedmaker.http.port
@@ -90,7 +90,7 @@ public class FeedMaker extends AbstractVerticle {
     private EventBus eb = null;
 
     private Log logger;
-    
+
     @Override
     public void start() throws Exception {
 
@@ -110,7 +110,7 @@ public class FeedMaker extends AbstractVerticle {
           }
 
     logger = new Log(LOG_LEVEL);
-    
+
     logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": Version "+VERSION+" started");
 
     // create link to EventBus
@@ -140,12 +140,12 @@ public class FeedMaker extends AbstractVerticle {
 
     // *********************************************************************
     // connect router to http_server, including the feed POST handlers added
-    if (HTTP_PORT != 0) 
+    if (HTTP_PORT != 0)
         {
             http_server.requestHandler(router).listen(HTTP_PORT);
             logger.log(Constants.LOG_INFO, MODULE_NAME+"."+MODULE_ID+": http server started");
         }
-    
+
   } // end start()
 
     // **************************************************************************************
@@ -208,7 +208,7 @@ public class FeedMaker extends AbstractVerticle {
         // ********************************************************************
         // create monitor directory if necessary
         // ********************************************************************
-          FileSystem fs = vertx.fileSystem();          
+          FileSystem fs = vertx.fileSystem();
           String monitor_path = config.getString("data_monitor");
           if (!fs.existsBlocking(monitor_path))
           {
@@ -271,7 +271,7 @@ public class FeedMaker extends AbstractVerticle {
     // create handler for POST from BASE_URI/FEED_ID
     // ************************************************
     // ************************************************
-    private void add_feed_handler(Router router, 
+    private void add_feed_handler(Router router,
                                   String BASE_URI,
                                   JsonObject config,
                                   FeedParser parser)
@@ -280,10 +280,12 @@ public class FeedMaker extends AbstractVerticle {
         final String FEED_ID = config.getString("feed_id");
 
         final String URI = config.getString("http.uri", "/"+BASE_URI+"/"+FEED_ID);
-        
+
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
                    ": setting up POST listener on localhost:"+HTTP_PORT+URI);
         router.route(HttpMethod.POST,URI).handler( ctx -> {
+                logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
+                    ": Incoming POST");            
                 ctx.request().bodyHandler( buffer -> {
                         try {
                             // read the head value "X-Auth-Token" from the POST
@@ -297,7 +299,7 @@ public class FeedMaker extends AbstractVerticle {
                                 process_feed(buffer, config, parser);
                             }
                             else
-                            { 
+                            {
                                 logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+"."+FEED_ID+
                                        ": token error "+post_token+"/"+HTTP_TOKEN);
                             }
@@ -362,7 +364,7 @@ public class FeedMaker extends AbstractVerticle {
 
     } // end get_feed()
 
-    // ***********************************************    
+    // ***********************************************
     // get current local time as "YYYY-MM-DD-hh-mm-ss"
     private String local_datetime_string()
     {
@@ -372,11 +374,11 @@ public class FeedMaker extends AbstractVerticle {
 
   // *****************************************************************
   // process the received raw data
-  private void process_feed(Buffer buf, JsonObject config, FeedParser parser) throws Exception 
+  private void process_feed(Buffer buf, JsonObject config, FeedParser parser) throws Exception
   {
 
     LocalDateTime local_time = LocalDateTime.now();
-    
+
     String day = local_time.format(DateTimeFormatter.ofPattern("dd"));
     String month = local_time.format(DateTimeFormatter.ofPattern("MM"));
     String year = local_time.format(DateTimeFormatter.ofPattern("yyyy"));
@@ -399,7 +401,7 @@ public class FeedMaker extends AbstractVerticle {
     String filename = utc_ts+"_"+local_time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss"));
     // sub-dir structure to store the file
     String filepath = year+"/"+month+"/"+day;
-    
+
     // Write file to DATA_BIN
     //
     final String bin_path = config.getString("data_bin")+"/"+filepath;
@@ -417,7 +419,7 @@ public class FeedMaker extends AbstractVerticle {
     // Finally, here is where we PARSE the incoming data and put it in the 'request_data' property
     // ********************************************************************************************
 
-    try {            
+    try {
         // Parse the received data into a suitable EventBus JsonObject message
         JsonObject msg = parser.parse(buf);
 
@@ -440,10 +442,10 @@ public class FeedMaker extends AbstractVerticle {
             msg.put("msg_type", config.getString("msg_type"));
         }
 
-        // prev version - 
+        // prev version -
         //JsonArray request_data = parser.parse_array(buf.toString());
         //msg.put("request_data", request_data);
-    
+
         // debug print out the JsonObject message
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+": prepared EventBus msg:");
         logger.log(Constants.LOG_DEBUG, msg.toString());
@@ -451,7 +453,7 @@ public class FeedMaker extends AbstractVerticle {
         String feedmaker_address = config.getString("address");
 
         eb.publish(feedmaker_address, msg);
-    
+
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                    ": published latest feed data to "+feedmaker_address);
     }
@@ -473,7 +475,7 @@ public class FeedMaker extends AbstractVerticle {
         FileSystem fs = vertx.fileSystem();
         // if full directory path exists, then write file
         // otherwise create full path first
-    
+
         logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
                    ": Writing "+bin_path+"/"+filename + file_suffix);
         fs.exists(bin_path, result -> {
@@ -500,7 +502,7 @@ public class FeedMaker extends AbstractVerticle {
                             });
                     }
         });
-    }        
+    }
 
     // ************************************************************************************
     // write_monitor_file()
@@ -547,8 +549,8 @@ public class FeedMaker extends AbstractVerticle {
   // Write the 'buf' as a file 'filepath' (non-blocking)
   private void write_file(FileSystem fs, Buffer buf, String file_path)
   {
-    fs.writeFile(file_path, 
-                 buf, 
+    fs.writeFile(file_path,
+                 buf,
                  result -> {
       if (result.succeeded()) {
           logger.log(Constants.LOG_DEBUG, MODULE_NAME+"."+MODULE_ID+
@@ -634,7 +636,7 @@ public class FeedMaker extends AbstractVerticle {
                         return false;
                     }
 
-                // filesystem path to store the latest 'post_data.bin' file so 
+                // filesystem path to store the latest 'post_data.bin' file so
                 // it can be monitored for inotifywait processing
                 if (config.getString("data_monitor")==null)
                     {
@@ -658,7 +660,7 @@ public class FeedMaker extends AbstractVerticle {
                                                        .setKeepAlive(false)
                                                        .setSsl(config.getBoolean("http.ssl"))
                                                        .setTrustAll(true);
-                                                       
+
                         WebClient client = WebClient.create(vertx, options);
 
                         web_clients.put(config.getString("feed_id"), client);
@@ -666,7 +668,7 @@ public class FeedMaker extends AbstractVerticle {
             }
 
         return true; // if we got to here then we can return ok, error would have exitted earlier
-    }        
+    }
 
     // Load initialization global constants defining this FeedMaker from config()
     private boolean get_config()
@@ -676,7 +678,7 @@ public class FeedMaker extends AbstractVerticle {
         //   module.id - unique module reference to be used by this verticle
         //   eb.system_status - String eventbus address for system status messages
         //   eb.manager - eventbus address for manager messages
-        
+
         MODULE_NAME = config().getString("module.name");
         if (MODULE_NAME == null)
             {
@@ -696,7 +698,7 @@ public class FeedMaker extends AbstractVerticle {
             {
                 LOG_LEVEL = Constants.LOG_INFO;
             }
-        
+
         EB_SYSTEM_STATUS = config().getString("eb.system_status");
         if (EB_SYSTEM_STATUS == null)
             {
@@ -715,13 +717,13 @@ public class FeedMaker extends AbstractVerticle {
         HTTP_PORT = config().getInteger(MODULE_NAME+".http.port",0);
 
         START_FEEDS = config().getJsonArray(MODULE_NAME+".feeds");
-        
+
         if (!validate_feeds())
             {
                 Log.log_err(MODULE_NAME+"."+MODULE_ID+": feeds config() not valid");
                 return false;
             }
-                
+
         return true;
     }
 
